@@ -756,6 +756,12 @@
       "sessions": "会话",
       "quotas": "配额",
       "myQuota": "我的额度"
+    },
+    "traffic": {
+      "descriptions": {
+        "users": "在同一个流量工作区里查看用户权限、密钥库存和运营活动。",
+        "myQuota": "无需离开流量模块，就能查看当前额度使用情况和剩余额度。"
+      }
     }
   },
   "statistics": {

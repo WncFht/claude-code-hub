@@ -756,6 +756,12 @@
       "sessions": "Sessions",
       "quotas": "Quotas",
       "myQuota": "My Quota"
+    },
+    "traffic": {
+      "descriptions": {
+        "users": "Review user access, key inventory, and operator activity from the same traffic workspace.",
+        "myQuota": "Track your current quota usage and remaining budget without leaving the traffic module."
+      }
     }
   },
   "statistics": {

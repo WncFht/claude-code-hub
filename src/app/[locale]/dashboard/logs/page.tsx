@@ -7,6 +7,8 @@ import {
   UsageLogsDataSection,
 } from "./_components/usage-logs-sections";
 import { UsageLogsSkeleton } from "./_components/usage-logs-skeleton";
+import { TrafficModulePage } from "../_components/traffic-module-page";
+import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 
@@ -25,22 +27,28 @@ export default async function UsageLogsPage({
   }
 
   const isAdmin = session.user.role === "admin";
+  const t = await getTranslations("dashboard");
 
   return (
-    <div className="space-y-4">
-      {/* Active Sessions - Horizontal scrolling cards */}
-      <Suspense fallback={<ActiveSessionsSkeleton />}>
-        <UsageLogsActiveSessionsSection />
-      </Suspense>
+    <TrafficModulePage
+      role={isAdmin ? "admin" : "user"}
+      activeTab="logs"
+      title={t("logs.title")}
+      description={t("logs.description")}
+    >
+      <div className="space-y-4">
+        <Suspense fallback={<ActiveSessionsSkeleton />}>
+          <UsageLogsActiveSessionsSection />
+        </Suspense>
 
-      {/* Stats + Filters + Logs Table */}
-      <Suspense fallback={<UsageLogsSkeleton />}>
-        <UsageLogsDataSection
-          isAdmin={isAdmin}
-          userId={session.user.id}
-          searchParams={searchParams}
-        />
-      </Suspense>
-    </div>
+        <Suspense fallback={<UsageLogsSkeleton />}>
+          <UsageLogsDataSection
+            isAdmin={isAdmin}
+            userId={session.user.id}
+            searchParams={searchParams}
+          />
+        </Suspense>
+      </div>
+    </TrafficModulePage>
   );
 }

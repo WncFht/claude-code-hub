@@ -754,6 +754,12 @@
       "sessions": "會話",
       "quotas": "配額",
       "myQuota": "我的額度"
+    },
+    "traffic": {
+      "descriptions": {
+        "users": "在同一個流量工作區中檢視使用者權限、金鑰存量與營運活動。",
+        "myQuota": "不用離開流量模組，就能查看目前額度使用情況與剩餘額度。"
+      }
     }
   },
   "statistics": {

@@ -1,5 +1,7 @@
 import { redirect } from "@/i18n/routing";
 import { getSession } from "@/lib/auth";
+import { getTranslations } from "next-intl/server";
+import { TrafficModulePage } from "../_components/traffic-module-page";
 import { UsersPageClient } from "./users-page-client";
 
 export default async function UsersPage({ params }: { params: Promise<{ locale: string }> }) {
@@ -11,6 +13,16 @@ export default async function UsersPage({ params }: { params: Promise<{ locale: 
     return redirect({ href: "/login", locale });
   }
 
-  // TypeScript: session is guaranteed to be non-null after the redirect check
-  return <UsersPageClient currentUser={session.user} />;
+  const t = await getTranslations("dashboard");
+
+  return (
+    <TrafficModulePage
+      role={session.user.role === "admin" ? "admin" : "user"}
+      activeTab="users"
+      title={t("title.userAndKeyManagement")}
+      description={t("console.traffic.descriptions.users")}
+    >
+      <UsersPageClient currentUser={session.user} />
+    </TrafficModulePage>
+  );
 }
