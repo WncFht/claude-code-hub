@@ -175,6 +175,7 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.sensitiveWords",
     visibleForRoles: ["admin"],
     matchKind: "prefix",
+    secondaryTabId: "sensitive-words",
   },
   {
     id: "policy-error-rules",
@@ -183,6 +184,7 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.errorRules",
     visibleForRoles: ["admin"],
     matchKind: "prefix",
+    secondaryTabId: "error-rules",
   },
   {
     id: "policy-request-filters",
@@ -191,6 +193,7 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.requestFilters",
     visibleForRoles: ["admin"],
     matchKind: "prefix",
+    secondaryTabId: "request-filters",
   },
   {
     id: "policy-client-versions",
@@ -199,6 +202,7 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.clientVersions",
     visibleForRoles: ["admin"],
     matchKind: "prefix",
+    secondaryTabId: "client-versions",
   },
   {
     id: "system-config",
@@ -207,6 +211,7 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.config",
     visibleForRoles: ["admin"],
     matchKind: "prefix",
+    secondaryTabId: "config",
   },
   {
     id: "system-data",
@@ -215,14 +220,7 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.data",
     visibleForRoles: ["admin"],
     matchKind: "prefix",
-  },
-  {
-    id: "system-logs",
-    moduleId: "system",
-    href: "/settings/logs",
-    labelKey: "console.routes.systemLogs",
-    visibleForRoles: ["admin"],
-    matchKind: "prefix",
+    secondaryTabId: "data",
   },
   {
     id: "system-notifications",
@@ -231,6 +229,16 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.notifications",
     visibleForRoles: ["admin"],
     matchKind: "prefix",
+    secondaryTabId: "notifications",
+  },
+  {
+    id: "system-logs",
+    moduleId: "system",
+    href: "/settings/logs",
+    labelKey: "console.routes.systemLogs",
+    visibleForRoles: ["admin"],
+    matchKind: "prefix",
+    secondaryTabId: "logs",
   },
 ];
 
