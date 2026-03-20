@@ -737,6 +737,15 @@
     "login": "登入",
     "logout": "登出"
   },
+  "console": {
+    "modules": {
+      "overview": "總覽",
+      "traffic": "流量",
+      "providers": "供應商",
+      "policy": "策略",
+      "system": "系統"
+    }
+  },
   "statistics": {
     "title": "使用統計",
     "cost": "消費金額",

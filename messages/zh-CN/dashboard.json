@@ -739,6 +739,15 @@
     "login": "登录",
     "logout": "退出登录"
   },
+  "console": {
+    "modules": {
+      "overview": "总览",
+      "traffic": "流量",
+      "providers": "供应商",
+      "policy": "策略",
+      "system": "系统"
+    }
+  },
   "statistics": {
     "title": "使用统计",
     "cost": "消费金额",

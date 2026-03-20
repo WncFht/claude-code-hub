@@ -2,13 +2,43 @@
 
 import type { ReactNode } from "react";
 import { usePathname } from "@/i18n/routing";
+import { ConsoleShell } from "@/components/console/console-shell";
+import {
+  resolveConsoleRoute,
+  type ConsoleModuleId,
+  type ConsoleRole,
+} from "@/lib/console/module-registry";
 
 interface DashboardMainProps {
   children: ReactNode;
+  header?: ReactNode;
+  moduleLabels?: Record<ConsoleModuleId, string>;
+  role?: ConsoleRole;
+  shellEnabled?: boolean;
 }
 
-export function DashboardMain({ children }: DashboardMainProps) {
+export function DashboardMain({
+  children,
+  header,
+  moduleLabels,
+  role,
+  shellEnabled = false,
+}: DashboardMainProps) {
   const pathname = usePathname();
+  const activeRoute = resolveConsoleRoute(pathname);
+
+  if (shellEnabled && role && moduleLabels) {
+    return (
+      <ConsoleShell
+        header={header}
+        role={role}
+        activeRoute={activeRoute}
+        moduleLabels={moduleLabels}
+      >
+        {children}
+      </ConsoleShell>
+    );
+  }
 
   const normalizedPathname = pathname.endsWith("/") ? pathname.slice(0, -1) : pathname;
 

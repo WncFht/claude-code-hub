@@ -1,7 +1,10 @@
 import type { ReactNode } from "react";
+import { getTranslations } from "next-intl/server";
 import { redirect } from "@/i18n/routing";
 
 import { getSession } from "@/lib/auth";
+import { isOctopusConsoleShellEnabled } from "@/lib/console/console-shell-flag";
+import { CONSOLE_MODULES, type ConsoleModuleId } from "@/lib/console/module-registry";
 import { DashboardHeader } from "./_components/dashboard-header";
 import { DashboardMain } from "./_components/dashboard-main";
 import { WebhookMigrationDialog } from "./_components/webhook-migration-dialog";
@@ -26,9 +29,32 @@ export default async function DashboardLayout({
     return redirect({ href: "/my-usage", locale });
   }
 
+  const header = <DashboardHeader session={session} />;
+
+  if (isOctopusConsoleShellEnabled()) {
+    const t = await getTranslations("dashboard");
+    const moduleLabels = Object.fromEntries(
+      CONSOLE_MODULES.map((module) => [module.id, t(module.labelKey)])
+    ) as Record<ConsoleModuleId, string>;
+
+    return (
+      <>
+        <DashboardMain
+          header={header}
+          role={session.user.role}
+          moduleLabels={moduleLabels}
+          shellEnabled={true}
+        >
+          {children}
+        </DashboardMain>
+        <WebhookMigrationDialog />
+      </>
+    );
+  }
+
   return (
     <div className="min-h-[var(--cch-viewport-height,100vh)] bg-background">
-      <DashboardHeader session={session} />
+      {header}
       <DashboardMain>{children}</DashboardMain>
       <WebhookMigrationDialog />
     </div>

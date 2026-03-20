@@ -739,6 +739,15 @@
     "login": "Login",
     "logout": "Logout"
   },
+  "console": {
+    "modules": {
+      "overview": "Overview",
+      "traffic": "Traffic",
+      "providers": "Providers",
+      "policy": "Policy",
+      "system": "System"
+    }
+  },
   "statistics": {
     "title": "Usage Statistics",
     "cost": "Consumption Amount",

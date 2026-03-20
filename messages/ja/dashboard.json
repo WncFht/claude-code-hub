@@ -737,6 +737,15 @@
     "login": "ログイン",
     "logout": "ログアウト"
   },
+  "console": {
+    "modules": {
+      "overview": "概要",
+      "traffic": "トラフィック",
+      "providers": "プロバイダー",
+      "policy": "ポリシー",
+      "system": "システム"
+    }
+  },
   "statistics": {
     "title": "使用統計",
     "cost": "消費金額",

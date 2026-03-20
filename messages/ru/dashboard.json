@@ -740,6 +740,15 @@
     "login": "Вход",
     "logout": "Выход"
   },
+  "console": {
+    "modules": {
+      "overview": "Обзор",
+      "traffic": "Трафик",
+      "providers": "Провайдеры",
+      "policy": "Политика",
+      "system": "Система"
+    }
+  },
   "statistics": {
     "title": "Статистика",
     "cost": "Сумма расходов",
