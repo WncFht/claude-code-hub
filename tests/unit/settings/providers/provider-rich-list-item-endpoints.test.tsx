@@ -215,6 +215,7 @@ describe("ProviderRichListItem Endpoint Display", () => {
 
     await flushTicks(5);
 
+    expect(document.querySelector('[data-slot="provider-row"]')).not.toBeNull();
     expect(document.body.textContent).toContain("https://api.legacy.com");
     expect(document.body.textContent).not.toContain("Anthropic");
     expect(document.querySelector('[data-testid="mock-endpoint-hover"]')).toBeNull();

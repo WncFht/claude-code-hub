@@ -1,6 +1,5 @@
 import { BarChart3 } from "lucide-react";
 import { getTranslations } from "next-intl/server";
-import { Section } from "@/components/section";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
 import { getSession } from "@/lib/auth";
@@ -18,11 +17,11 @@ export default async function SettingsProvidersPage() {
 
   return (
     <>
-      <SettingsPageHeader title={t("providers.title")} description={t("providers.description")} />
-
-      <Section
-        title={t("providers.section.title")}
-        description={t("providers.section.description")}
+      <SettingsPageHeader
+        eyebrow={t("providers.operator.eyebrow")}
+        title={t("providers.title")}
+        description={t("providers.description")}
+        icon="database"
         actions={
           <>
             <Button asChild variant="outline">
@@ -36,9 +35,9 @@ export default async function SettingsProvidersPage() {
             <SchedulingRulesDialog />
           </>
         }
-      >
-        <ProviderManagerLoader currentUser={session?.user} />
-      </Section>
+      />
+
+      <ProviderManagerLoader currentUser={session?.user} />
     </>
   );
 }

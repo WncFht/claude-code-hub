@@ -572,11 +572,11 @@ function ProviderRichListItemInner({
   return (
     <>
       <div
+        data-slot="provider-row"
         className={cn(
-          "rounded-lg border border-l-[3px] bg-card shadow-sm p-4",
-          "md:shadow-none md:rounded-none md:border-0 md:border-b md:border-l-[3px] md:bg-transparent md:p-0 md:py-3 md:px-4",
+          "group relative rounded-[1.4rem] border border-l-[4px] border-border/70 bg-background/82 p-4 shadow-[0_18px_54px_-42px_rgba(15,23,42,0.28)]",
+          "transition-[transform,box-shadow,border-color,background-color] duration-200 hover:-translate-y-0.5 hover:border-border/90 hover:bg-background/92 hover:shadow-[0_26px_80px_-48px_rgba(15,23,42,0.28)] md:p-5",
           "flex flex-col gap-3 md:flex-row md:items-center md:gap-4",
-          "hover:bg-muted/50 transition-colors",
           accentColor
         )}
       >

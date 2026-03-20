@@ -35,6 +35,26 @@
   "searchResults": "{count} 件のプロバイダーが見つかりました",
   "subtitle": "プロバイダー管理",
   "subtitleDesc": "上流プロバイダーの支出制限とセッション並行制限を設定します。空のままにすると無制限です。",
+  "operator": {
+    "eyebrow": "オペレーターコックピット",
+    "title": "プロバイダー運用",
+    "description": "ヘルス状態の監視、表示切り替え、ルーティング変更の整理を一つの画面で行います。",
+    "surfaceEyebrow": "ライブ操作",
+    "surfaceTitle": "ルーティングワークスペース",
+    "surfaceDescription": "検索、フィルタ、一括編集、リスト/ベンダービューの切り替えを運用コンテキストを保ったまま行えます。",
+    "baseRouting": "基本ルーティング順序",
+    "activeFilters": "{count} 個のフィルタを適用中",
+    "metrics": {
+      "providers": "プロバイダー",
+      "providersHint": "{active} 有効 / {inactive} 無効",
+      "attention": "要対応",
+      "attentionHint": "キーまたはエンドポイント回路が開いています",
+      "groups": "グループ",
+      "groupsHint": "異なるルーティンググループ",
+      "scheduled": "時間帯設定",
+      "scheduledHint": "時間帯ウィンドウ付きプロバイダー"
+    }
+  },
   "title": "プロバイダー管理",
   "todayUsage": "今日の使用量",
   "todayUsageCount": "{count} 回",

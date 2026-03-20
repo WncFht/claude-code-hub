@@ -88,7 +88,7 @@ export function ProviderList({
 
   return (
     <TooltipProvider delayDuration={200}>
-      <div className="grid gap-3 md:block md:border md:rounded-lg md:overflow-hidden md:gap-0">
+      <div className="grid gap-4">
         {providers.map((provider) => (
           <ProviderRichListItem
             key={provider.id}

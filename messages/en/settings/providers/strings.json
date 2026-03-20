@@ -35,6 +35,26 @@
   "searchResults": "Found {count} matching providers",
   "subtitle": "Provider Management",
   "subtitleDesc": "Configure upstream provider rate limiting and concurrent session limits. Leave empty for unlimited.",
+  "operator": {
+    "eyebrow": "Operator cockpit",
+    "title": "Provider operations",
+    "description": "Monitor provider health, switch views, and keep routing changes organized from one surface.",
+    "surfaceEyebrow": "Live controls",
+    "surfaceTitle": "Routing workspace",
+    "surfaceDescription": "Search, filter, batch edit, and jump between list and vendor perspectives without losing operational context.",
+    "baseRouting": "Base routing order",
+    "activeFilters": "{count} active filters",
+    "metrics": {
+      "providers": "Providers",
+      "providersHint": "{active} active / {inactive} inactive",
+      "attention": "Attention",
+      "attentionHint": "Open key or endpoint circuits",
+      "groups": "Groups",
+      "groupsHint": "Distinct routing groups",
+      "scheduled": "Scheduled",
+      "scheduledHint": "Time-windowed providers"
+    }
+  },
   "title": "Provider Management",
   "todayUsage": "Today's Usage",
   "todayUsageCount": "{count} times",

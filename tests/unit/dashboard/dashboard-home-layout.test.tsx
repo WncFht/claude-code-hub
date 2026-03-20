@@ -183,6 +183,7 @@ describe("DashboardMain layout classes", () => {
     expect(main).toBeTruthy();
     expect(main?.className).toContain("px-6");
     expect(main?.className).toContain("max-w-7xl");
+    expect(main?.className).toContain("xl:px-8");
 
     unmount();
   });

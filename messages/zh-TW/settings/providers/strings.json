@@ -35,6 +35,26 @@
   "searchResults": "找到 {count} 個匹配的供應商",
   "subtitle": "供應商管理",
   "subtitleDesc": "設定上游供應商的金額限流和並行限制。留空表示無限制。",
+  "operator": {
+    "eyebrow": "運維駕駛艙",
+    "title": "Provider 運維台",
+    "description": "在同一個視圖裡監控健康狀態、切換視角，並把路由變更整理得更清楚。",
+    "surfaceEyebrow": "即時操作",
+    "surfaceTitle": "路由工作區",
+    "surfaceDescription": "在不丟失上下文的情況下完成搜尋、篩選、批次編輯，以及列表/供應商視圖切換。",
+    "baseRouting": "基礎路由順序",
+    "activeFilters": "已啟用 {count} 個篩選",
+    "metrics": {
+      "providers": "Provider 數",
+      "providersHint": "{active} 個啟用 / {inactive} 個停用",
+      "attention": "關注項",
+      "attentionHint": "存在已打開的 key 或 endpoint 熔斷",
+      "groups": "分組",
+      "groupsHint": "不同的路由分組",
+      "scheduled": "時段調度",
+      "scheduledHint": "帶時間視窗的 Provider"
+    }
+  },
   "title": "供應商管理",
   "todayUsage": "今日使用量",
   "todayUsageCount": "{count} 回",

@@ -34,6 +34,26 @@
   "searchResults": "找到 {count} 个匹配的供应商",
   "searchNoResults": "未找到匹配的供应商",
   "displayCount": "显示 {filtered} / {total} 个供应商",
+  "operator": {
+    "eyebrow": "运维驾驶舱",
+    "title": "Provider 运维台",
+    "description": "在一个视图里监控健康状态、切换视角，并把路由变更整理得更清楚。",
+    "surfaceEyebrow": "实时操作",
+    "surfaceTitle": "路由工作区",
+    "surfaceDescription": "在不丢失上下文的情况下完成搜索、筛选、批量编辑，以及列表/服务商视图切换。",
+    "baseRouting": "基础路由顺序",
+    "activeFilters": "已启用 {count} 个筛选",
+    "metrics": {
+      "providers": "Provider 数",
+      "providersHint": "{active} 个启用 / {inactive} 个停用",
+      "attention": "关注项",
+      "attentionHint": "存在已打开的 key 或 endpoint 熔断",
+      "groups": "分组",
+      "groupsHint": "不同的路由分组",
+      "scheduled": "时段调度",
+      "scheduledHint": "带时间窗口的 Provider"
+    }
+  },
   "todayUsage": "今日用量",
   "todayUsageCount": "{count} 次",
   "circuitBroken": "熔断中",

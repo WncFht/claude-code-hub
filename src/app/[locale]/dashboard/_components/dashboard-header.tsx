@@ -34,23 +34,25 @@ export function DashboardHeader({ session }: DashboardHeaderProps) {
   const items = NAV_ITEMS.filter((item) => !item.adminOnly || isAdmin);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-border/80 bg-card/80 backdrop-blur supports-[backdrop-filter]:bg-card/60">
-      <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-6">
-        <div className="flex items-center gap-4">
-          <MobileNav items={items} />
-          <DashboardNav items={items} />
-        </div>
-        <div className="flex items-center gap-3">
-          <ThemeSwitcher />
-          <LanguageSwitcher size="sm" />
-          {session && <VersionUpdateNotifier />}
-          {session ? (
-            <UserMenu user={session.user} />
-          ) : (
-            <Button asChild size="sm" variant="outline">
-              <Link href="/login">{t("login")}</Link>
-            </Button>
-          )}
+    <header className="sticky top-0 z-40 border-b border-border/50 bg-background/70 backdrop-blur-xl supports-[backdrop-filter]:bg-background/55">
+      <div className="mx-auto w-full max-w-7xl px-4 py-3 md:px-6 xl:px-8">
+        <div className="flex min-h-14 items-center justify-between rounded-[1.45rem] border border-border/65 bg-card/80 px-4 shadow-[0_24px_80px_-60px_rgba(15,23,42,0.32)] backdrop-blur-xl md:px-5">
+          <div className="flex items-center gap-4">
+            <MobileNav items={items} />
+            <DashboardNav items={items} />
+          </div>
+          <div className="flex items-center gap-3">
+            <ThemeSwitcher />
+            <LanguageSwitcher size="sm" />
+            {session && <VersionUpdateNotifier />}
+            {session ? (
+              <UserMenu user={session.user} />
+            ) : (
+              <Button asChild size="sm" variant="outline">
+                <Link href="/login">{t("login")}</Link>
+              </Button>
+            )}
+          </div>
         </div>
       </div>
     </header>

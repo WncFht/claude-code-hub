@@ -92,29 +92,30 @@ export function Section({
   noPadding,
 }: SectionProps) {
   const variantStyles = {
-    default: "bg-card/50 border-border/50 hover:border-border/80",
-    highlight: "bg-primary/5 border-primary/20 hover:border-primary/30",
-    warning: "bg-yellow-500/5 border-yellow-500/20 hover:border-yellow-500/30",
+    default:
+      "border-border/65 bg-card/82 shadow-[0_24px_70px_-52px_rgba(15,23,42,0.28)] hover:border-border/90",
+    highlight:
+      "border-primary/25 bg-[linear-gradient(135deg,rgba(223,235,229,0.82),rgba(255,255,255,0.86))] shadow-[0_28px_90px_-58px_rgba(69,115,92,0.42)] hover:border-primary/35",
+    warning:
+      "border-amber-300/40 bg-[linear-gradient(135deg,rgba(255,247,221,0.92),rgba(255,255,255,0.84))] shadow-[0_28px_90px_-64px_rgba(180,120,28,0.28)] hover:border-amber-400/50 dark:border-amber-800/70 dark:bg-amber-950/25",
   };
 
   const Icon = icon ? SECTION_ICON_MAP[icon] : null;
 
   return (
     <motion.section
+      data-slot="section"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 300, damping: 30 }}
       className={cn(
-        "relative overflow-hidden rounded-xl border backdrop-blur-sm transition-colors duration-200",
+        "relative overflow-hidden rounded-[1.75rem] border backdrop-blur-xl transition-[border-color,transform,box-shadow] duration-200",
         variantStyles[variant],
-        !noPadding && "p-5 md:p-6",
+        !noPadding && "p-5 md:p-6 lg:p-7",
         className
       )}
     >
-      {/* Decorative gradient blob for highlight variant */}
-      {variant === "highlight" && (
-        <div className="absolute top-0 right-0 w-48 h-48 bg-primary/10 rounded-full blur-3xl pointer-events-none -translate-y-1/2 translate-x-1/2" />
-      )}
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(117,160,132,0.12),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(245,222,178,0.12),transparent_28%)]" />
 
       <div className="relative z-10">
         {(title || description || Icon || actions) && (
@@ -123,8 +124,7 @@ export function Section({
               {Icon && (
                 <div
                   className={cn(
-                    "flex items-center justify-center w-9 h-9 rounded-lg shrink-0 mt-0.5",
-                    variant === "highlight" ? "bg-primary/20" : "bg-muted/50"
+                    "mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/50 bg-white/65 shadow-[inset_0_1px_0_rgba(255,255,255,0.85)] dark:border-white/10 dark:bg-white/5"
                   )}
                 >
                   <Icon className={cn("h-4 w-4", iconColor)} />
@@ -132,12 +132,12 @@ export function Section({
               )}
               <div className="min-w-0">
                 {title && (
-                  <h2 className="text-base font-semibold text-foreground tracking-tight">
+                  <h2 className="text-base font-semibold tracking-tight text-foreground md:text-lg">
                     {title}
                   </h2>
                 )}
                 {description && (
-                  <p className="text-sm text-muted-foreground mt-1 leading-relaxed">
+                  <p className="mt-1 text-sm leading-relaxed text-muted-foreground">
                     {description}
                   </p>
                 )}
@@ -162,8 +162,9 @@ export function SectionStatic({
 }: Omit<SectionProps, "icon" | "iconColor" | "variant" | "noPadding">) {
   return (
     <section
+      data-slot="section"
       className={cn(
-        "bg-card/50 border border-border/50 hover:border-border/80 rounded-xl p-5 md:p-6 transition-colors duration-200",
+        "rounded-[1.75rem] border border-border/65 bg-card/82 p-5 shadow-[0_24px_70px_-52px_rgba(15,23,42,0.28)] transition-[border-color,transform,box-shadow] duration-200 hover:border-border/90 md:p-6 lg:p-7",
         className
       )}
     >

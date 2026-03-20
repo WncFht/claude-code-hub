@@ -27,5 +27,7 @@ export function DashboardMain({ children }: DashboardMainProps) {
     );
   }
 
-  return <main className="mx-auto w-full max-w-7xl px-6 py-8">{children}</main>;
+  return (
+    <main className="mx-auto w-full max-w-7xl px-6 py-8 md:py-9 xl:px-8 xl:py-10">{children}</main>
+  );
 }
