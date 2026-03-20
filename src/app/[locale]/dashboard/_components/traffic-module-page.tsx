@@ -2,10 +2,7 @@ import { getTranslations } from "next-intl/server";
 import type { ReactNode } from "react";
 import { PageHero } from "@/components/page-hero";
 import { Link } from "@/i18n/routing";
-import {
-  getVisibleConsoleModuleTabs,
-  type ConsoleRole,
-} from "@/lib/console/module-registry";
+import { type ConsoleRole, getVisibleConsoleModuleTabs } from "@/lib/console/module-registry";
 import { cn } from "@/lib/utils";
 
 type TrafficModuleTabId = "logs" | "users" | "sessions" | "quotas" | "my-quota";

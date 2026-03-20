@@ -90,19 +90,10 @@ describe("overview and traffic route metadata", () => {
       role: "user",
     });
 
-    expect(adminOverviewTabs.map((tab) => tab.id)).toEqual([
-      "home",
-      "leaderboard",
-      "availability",
-    ]);
+    expect(adminOverviewTabs.map((tab) => tab.id)).toEqual(["home", "leaderboard", "availability"]);
     expect(userOverviewTabs.map((tab) => tab.id)).toEqual(["home", "leaderboard"]);
 
-    expect(adminTrafficTabs.map((tab) => tab.id)).toEqual([
-      "logs",
-      "users",
-      "sessions",
-      "quotas",
-    ]);
+    expect(adminTrafficTabs.map((tab) => tab.id)).toEqual(["logs", "users", "sessions", "quotas"]);
     expect(userTrafficTabs.map((tab) => tab.id)).toEqual(["logs", "users", "my-quota"]);
   });
 });

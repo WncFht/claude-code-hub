@@ -6,10 +6,7 @@ import type { ReactNode } from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, test, vi } from "vitest";
 import { ConsoleShell } from "@/components/console/console-shell";
-import {
-  resolveConsoleRoute,
-  type ConsoleModuleId,
-} from "@/lib/console/module-registry";
+import { resolveConsoleRoute, type ConsoleModuleId } from "@/lib/console/module-registry";
 
 const authMocks = vi.hoisted(() => ({
   getSession: vi.fn(),
@@ -132,13 +129,7 @@ describe("Traffic module page", () => {
   test("logs, users, sessions, my quota, and quota layout mount the shared traffic wrapper", async () => {
     vi.resetModules();
     vi.doMock("@/app/[locale]/dashboard/_components/traffic-module-page", () => ({
-      TrafficModulePage: ({
-        activeTab,
-        children,
-      }: {
-        activeTab: string;
-        children: ReactNode;
-      }) => (
+      TrafficModulePage: ({ activeTab, children }: { activeTab: string; children: ReactNode }) => (
         <div data-slot="traffic-module-page" data-active-tab={activeTab}>
           {children}
         </div>

@@ -1,14 +1,14 @@
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { redirect } from "@/i18n/routing";
 import { getSession } from "@/lib/auth";
+import { TrafficModulePage } from "../_components/traffic-module-page";
 import { ActiveSessionsSkeleton } from "./_components/active-sessions-skeleton";
 import {
   UsageLogsActiveSessionsSection,
   UsageLogsDataSection,
 } from "./_components/usage-logs-sections";
 import { UsageLogsSkeleton } from "./_components/usage-logs-skeleton";
-import { TrafficModulePage } from "../_components/traffic-module-page";
-import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 

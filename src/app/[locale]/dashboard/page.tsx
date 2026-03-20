@@ -1,3 +1,4 @@
+import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { hasPriceTable } from "@/actions/model-prices";
 import { redirect } from "@/i18n/routing";
@@ -5,7 +6,6 @@ import { getSession } from "@/lib/auth";
 import { DashboardBentoSection } from "./_components/dashboard-bento-sections";
 import { DashboardOverviewSkeleton } from "./_components/dashboard-skeletons";
 import { OverviewModulePage } from "./_components/overview-module-page";
-import { getTranslations } from "next-intl/server";
 
 export const dynamic = "force-dynamic";
 

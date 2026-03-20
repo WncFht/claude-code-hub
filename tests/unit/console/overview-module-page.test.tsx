@@ -105,13 +105,7 @@ describe("Overview module page", () => {
   test("dashboard landing, leaderboard, and availability mount the shared overview wrapper", async () => {
     vi.resetModules();
     vi.doMock("@/app/[locale]/dashboard/_components/overview-module-page", () => ({
-      OverviewModulePage: ({
-        activeTab,
-        children,
-      }: {
-        activeTab: string;
-        children: ReactNode;
-      }) => (
+      OverviewModulePage: ({ activeTab, children }: { activeTab: string; children: ReactNode }) => (
         <div data-slot="overview-module-page" data-active-tab={activeTab}>
           {children}
         </div>
