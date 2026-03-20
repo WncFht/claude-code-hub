@@ -746,6 +746,16 @@
       "providers": "Providers",
       "policy": "Policy",
       "system": "System"
+    },
+    "routes": {
+      "dashboard": "Dashboard",
+      "leaderboard": "Leaderboard",
+      "availability": "Availability",
+      "logs": "Logs",
+      "users": "Users",
+      "sessions": "Sessions",
+      "quotas": "Quotas",
+      "myQuota": "My Quota"
     }
   },
   "statistics": {

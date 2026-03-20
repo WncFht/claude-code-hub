@@ -747,6 +747,16 @@
       "providers": "Провайдеры",
       "policy": "Политика",
       "system": "Система"
+    },
+    "routes": {
+      "dashboard": "Панель",
+      "leaderboard": "Рейтинг",
+      "availability": "Доступность",
+      "logs": "Логи",
+      "users": "Пользователи",
+      "sessions": "Сессии",
+      "quotas": "Квоты",
+      "myQuota": "Моя квота"
     }
   },
   "statistics": {

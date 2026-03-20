@@ -744,6 +744,16 @@
       "providers": "プロバイダー",
       "policy": "ポリシー",
       "system": "システム"
+    },
+    "routes": {
+      "dashboard": "ダッシュボード",
+      "leaderboard": "ランキング",
+      "availability": "可用性",
+      "logs": "ログ",
+      "users": "ユーザー",
+      "sessions": "セッション",
+      "quotas": "クォータ",
+      "myQuota": "自分のクォータ"
     }
   },
   "statistics": {

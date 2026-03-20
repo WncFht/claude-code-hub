@@ -6,6 +6,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/i18n/routing";
 import { getSession } from "@/lib/auth";
 import { getSystemSettings } from "@/repository/system-config";
+import { OverviewModulePage } from "../_components/overview-module-page";
 import { LeaderboardView } from "./_components/leaderboard-view";
 
 export const dynamic = "force-dynamic";
@@ -18,16 +19,18 @@ export default async function LeaderboardPage() {
 
   // 检查权限
   const isAdmin = session?.user.role === "admin";
+  const role = isAdmin ? "admin" : "user";
   const hasPermission = isAdmin || systemSettings.allowGlobalUsageView;
 
   // 无权限时显示友好提示
   if (!hasPermission) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("title.costRanking")}</h1>
-          <p className="mt-2 text-muted-foreground">{t("title.costRankingDescription")}</p>
-        </div>
+      <OverviewModulePage
+        role={role}
+        activeTab="leaderboard"
+        title={t("title.costRanking")}
+        description={t("title.costRankingDescription")}
+      >
         <Section>
           <Card>
             <CardHeader>
@@ -57,20 +60,21 @@ export default async function LeaderboardPage() {
             </CardContent>
           </Card>
         </Section>
-      </div>
+      </OverviewModulePage>
     );
   }
 
   // 有权限时渲染排行榜
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("title.costRanking")}</h1>
-        <p className="mt-2 text-muted-foreground">{t("title.costRankingDescription")}</p>
-      </div>
+    <OverviewModulePage
+      role={role}
+      activeTab="leaderboard"
+      title={t("title.costRanking")}
+      description={t("title.costRankingDescription")}
+    >
       <Section>
         <LeaderboardView isAdmin={isAdmin} />
       </Section>
-    </div>
+    </OverviewModulePage>
   );
 }

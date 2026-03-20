@@ -746,6 +746,16 @@
       "providers": "供应商",
       "policy": "策略",
       "system": "系统"
+    },
+    "routes": {
+      "dashboard": "总览",
+      "leaderboard": "排行榜",
+      "availability": "可用性",
+      "logs": "日志",
+      "users": "用户",
+      "sessions": "会话",
+      "quotas": "配额",
+      "myQuota": "我的额度"
     }
   },
   "statistics": {

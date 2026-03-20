@@ -9,9 +9,13 @@ const getCachedSystemSettings = cache(getSystemSettings);
 
 interface DashboardBentoSectionProps {
   isAdmin: boolean;
+  embedded?: boolean;
 }
 
-export async function DashboardBentoSection({ isAdmin }: DashboardBentoSectionProps) {
+export async function DashboardBentoSection({
+  isAdmin,
+  embedded = false,
+}: DashboardBentoSectionProps) {
   const [systemSettings, statistics, overviewResult] = await Promise.all([
     getCachedSystemSettings(),
     getUserStatistics(DEFAULT_TIME_RANGE),
@@ -19,12 +23,14 @@ export async function DashboardBentoSection({ isAdmin }: DashboardBentoSectionPr
   ]);
 
   return (
-    <DashboardBento
-      isAdmin={isAdmin}
-      currencyCode={systemSettings.currencyDisplay}
-      allowGlobalUsageView={systemSettings.allowGlobalUsageView}
-      initialStatistics={statistics.ok ? statistics.data : undefined}
-      initialOverview={overviewResult.ok ? overviewResult.data : undefined}
-    />
+    <div data-slot="dashboard-bento-section" data-embedded={embedded ? "true" : "false"}>
+      <DashboardBento
+        isAdmin={isAdmin}
+        currencyCode={systemSettings.currencyDisplay}
+        allowGlobalUsageView={systemSettings.allowGlobalUsageView}
+        initialStatistics={statistics.ok ? statistics.data : undefined}
+        initialOverview={overviewResult.ok ? overviewResult.data : undefined}
+      />
+    </div>
   );
 }

@@ -5,6 +5,7 @@ import { Section } from "@/components/section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { getSession } from "@/lib/auth";
+import { OverviewModulePage } from "../_components/overview-module-page";
 import { AvailabilityDashboard } from "./_components/availability-dashboard";
 import { AvailabilityDashboardSkeleton } from "./_components/availability-skeleton";
 
@@ -16,14 +17,16 @@ export default async function AvailabilityPage() {
 
   // Only admin can access availability monitoring
   const isAdmin = session?.user.role === "admin";
+  const role = isAdmin ? "admin" : "user";
 
   if (!isAdmin) {
     return (
-      <div className="space-y-6">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight">{t("availability.title")}</h1>
-          <p className="mt-2 text-muted-foreground">{t("availability.description")}</p>
-        </div>
+      <OverviewModulePage
+        role={role}
+        activeTab="availability"
+        title={t("availability.title")}
+        description={t("availability.description")}
+      >
         <Section>
           <Card>
             <CardHeader>
@@ -41,21 +44,22 @@ export default async function AvailabilityPage() {
             </CardContent>
           </Card>
         </Section>
-      </div>
+      </OverviewModulePage>
     );
   }
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">{t("availability.title")}</h1>
-        <p className="mt-2 text-muted-foreground">{t("availability.description")}</p>
-      </div>
+    <OverviewModulePage
+      role={role}
+      activeTab="availability"
+      title={t("availability.title")}
+      description={t("availability.description")}
+    >
       <Section>
         <Suspense fallback={<AvailabilityDashboardSkeleton />}>
           <AvailabilityDashboard />
         </Suspense>
       </Section>
-    </div>
+    </OverviewModulePage>
   );
 }

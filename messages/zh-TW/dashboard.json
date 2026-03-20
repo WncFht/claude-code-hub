@@ -744,6 +744,16 @@
       "providers": "供應商",
       "policy": "策略",
       "system": "系統"
+    },
+    "routes": {
+      "dashboard": "總覽",
+      "leaderboard": "排行榜",
+      "availability": "可用性",
+      "logs": "日誌",
+      "users": "使用者",
+      "sessions": "會話",
+      "quotas": "配額",
+      "myQuota": "我的額度"
     }
   },
   "statistics": {
