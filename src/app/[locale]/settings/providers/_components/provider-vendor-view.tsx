@@ -48,6 +48,7 @@ export function ProviderVendorView(props: ProviderVendorViewProps) {
     statisticsLoading,
     currencyCode,
   } = props;
+  const tCommon = useTranslations("settings.common");
 
   const { data: vendors = [], isLoading: isVendorsLoading } = useQuery({
     queryKey: ["provider-vendors"],
@@ -91,14 +92,17 @@ export function ProviderVendorView(props: ProviderVendorViewProps) {
 
   if (isVendorsLoading) {
     return (
-      <div className="flex justify-center p-8">
-        <Loader2 className="h-8 w-8 animate-spin text-muted-foreground" />
+      <div className="rounded-[1.5rem] border border-border/65 bg-card/80 p-8 shadow-[0_24px_70px_-52px_rgba(15,23,42,0.28)]">
+        <div className="flex items-center justify-center gap-3 text-sm text-muted-foreground">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>{tCommon("loading")}</span>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-5">
       {allVendorIds.map((vendorId) => {
         const vendor = vendorId > 0 ? vendorById.get(vendorId) : undefined;
         const vendorProviders = providersByVendor[vendorId] || [];
@@ -152,16 +156,22 @@ function VendorCard({
   const faviconUrl = vendor?.faviconUrl;
 
   return (
-    <Card className="overflow-hidden">
-      <CardHeader className="bg-muted/30 pb-2">
+    <Card
+      data-slot="provider-vendor-card"
+      className="overflow-hidden rounded-[1.5rem] border border-border/65 bg-card/82 shadow-[0_26px_80px_-56px_rgba(15,23,42,0.28)]"
+    >
+      <CardHeader className="border-b border-border/50 bg-[linear-gradient(135deg,rgba(238,245,239,0.92),rgba(255,255,255,0.82))] pb-4 dark:bg-[linear-gradient(135deg,rgba(40,58,49,0.6),rgba(28,35,40,0.7))]">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <Avatar className="h-10 w-10 border bg-background">
+            <Avatar className="h-11 w-11 border border-white/60 bg-background shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
               <AvatarImage src={faviconUrl || ""} />
               <AvatarFallback>{displayName.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
-            <div>
-              <CardTitle className="flex items-center gap-2">
+            <div className="space-y-1">
+              <div className="text-[11px] font-semibold uppercase tracking-[0.2em] text-primary/75">
+                {vendorId === -1 ? t("orphanedProviders") : t("viewModeVendor")}
+              </div>
+              <CardTitle className="flex items-center gap-2 text-lg tracking-tight">
                 {displayName}
                 {vendorId > 0 && (
                   <TooltipProvider>
@@ -169,7 +179,7 @@ function VendorCard({
                       <TooltipTrigger asChild>
                         <button
                           type="button"
-                          className="text-muted-foreground hover:text-foreground"
+                          className="text-muted-foreground transition-colors hover:text-foreground"
                         >
                           <InfoIcon className="h-3.5 w-3.5" aria-hidden="true" />
                         </button>
@@ -183,13 +193,13 @@ function VendorCard({
                     href={websiteUrl}
                     target="_blank"
                     rel="noreferrer"
-                    className="text-muted-foreground hover:text-foreground"
+                    className="text-muted-foreground transition-colors hover:text-foreground"
                   >
                     <ExternalLink className="h-3 w-3" />
                   </a>
                 )}
               </CardTitle>
-              <CardDescription>
+              <CardDescription className="text-sm">
                 {providers.length} {t("vendorKeys")}
               </CardDescription>
             </div>
