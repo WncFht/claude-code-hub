@@ -257,4 +257,53 @@ describe("syncProviderModels", () => {
       })
     );
   });
+
+  it.each([
+    {
+      providerType: "openai-compatible" as const,
+      providerUrl: "https://provider.example.com/openai/responses",
+      expectedUrl: "https://provider.example.com/openai/models",
+    },
+    {
+      providerType: "claude" as const,
+      providerUrl: "https://provider.example.com/anthropic/v1/messages",
+      expectedUrl: "https://provider.example.com/anthropic/v1/models",
+    },
+  ])("replaces saved endpoint roots before fetching upstream models for $providerType providers", async ({
+    providerType,
+    providerUrl,
+    expectedUrl,
+  }) => {
+    const provider = makeProvider({
+      providerType,
+      url: providerUrl,
+      discoveredModels: null,
+      modelDiscoveryStatus: null,
+      lastModelSyncAt: null,
+      lastModelSyncError: null,
+    });
+
+    findProviderByIdMock.mockResolvedValue(provider);
+    updateProviderMock.mockImplementation(
+      async (_id: number, payload: Record<string, unknown>) => ({
+        ...provider,
+        discoveredModels: payload.discovered_models,
+        modelDiscoveryStatus: payload.model_discovery_status,
+        lastModelSyncAt: payload.last_model_sync_at,
+        lastModelSyncError: payload.last_model_sync_error,
+      })
+    );
+    vi.mocked(fetch).mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        data: [{ id: "model-a" }],
+      }),
+    } as Response);
+
+    const { syncProviderModels } = await import("@/actions/providers");
+    const result = await syncProviderModels(1);
+
+    expect(result.ok).toBe(true);
+    expect(vi.mocked(fetch)).toHaveBeenCalledWith(expectedUrl, expect.any(Object));
+  });
 });

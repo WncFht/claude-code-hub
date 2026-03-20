@@ -310,6 +310,7 @@
     "modelDiscovery": {
       "title": "Upstream Model Snapshot",
       "desc": "Persist the provider's upstream-discovered models and compare them with the routing allowlist.",
+      "saveBeforeSync": "Save endpoint, key, proxy, or provider-type changes before syncing the upstream snapshot.",
       "syncButton": "Sync Upstream Models",
       "syncSuccess": "Synced {count} upstream models",
       "syncFailed": "Failed to sync upstream models",

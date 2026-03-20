@@ -331,4 +331,31 @@ describe("ProviderRichListItem Endpoint Display", () => {
 
     unmount();
   });
+
+  test("wraps the mobile model summary in a responsive hidden container", async () => {
+    const provider = makeProviderDisplay({
+      discoveredModels: ["claude-haiku-4-5", "claude-sonnet-4-5"],
+      modelDiscoveryStatus: "success",
+      lastModelSyncAt: "2026-03-20T00:00:00.000Z",
+      allowedModels: null,
+    });
+
+    const { container, unmount } = renderWithProviders(
+      <ProviderRichListItem
+        provider={provider}
+        currentUser={ADMIN_USER}
+        enableMultiProviderTypes={true}
+      />
+    );
+
+    await flushTicks(5);
+
+    const mobileSummaryContainer = Array.from(
+      container.querySelectorAll('[class*="md:hidden"]')
+    ).find((element) => element.textContent?.includes("Upstream 2"));
+
+    expect(mobileSummaryContainer).toBeTruthy();
+
+    unmount();
+  });
 });

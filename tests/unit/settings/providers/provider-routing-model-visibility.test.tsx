@@ -367,4 +367,27 @@ describe("RoutingSection model visibility", () => {
 
     unmount();
   });
+
+  it("disables sync and warns when connection settings have unsaved edits", () => {
+    const state = createMockState();
+    state.basic.url = "https://api.changed.example.com";
+
+    setMockForm({
+      state,
+      provider: makeProvider({
+        url: "https://api.example.com",
+      }),
+      mode: "edit",
+    });
+
+    const { container, unmount } = render(<RoutingSection />);
+    const syncButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("sections.routing.modelDiscovery.syncButton")
+    );
+
+    expect(getBodyText()).toContain("sections.routing.modelDiscovery.saveBeforeSync");
+    expect(syncButton?.hasAttribute("disabled")).toBe(true);
+
+    unmount();
+  });
 });

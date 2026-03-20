@@ -671,15 +671,17 @@ function ProviderRichListItemInner({
         </div>
 
         {/* Mobile: metrics row */}
-        <ProviderModelSummary
-          hasDiscoveredSnapshot={modelVisibility.hasDiscoveredSnapshot}
-          discoveredCount={modelVisibility.discoveredModels.length}
-          allowAllModels={modelVisibility.allowAllModels}
-          whitelistCount={modelVisibility.allowedModels.length}
-          whitelistOnlyCount={modelVisibility.whitelistOnlyModels.length}
-          modelDiscoveryStatus={provider.modelDiscoveryStatus ?? null}
-          tList={tList}
-        />
+        <div className="md:hidden">
+          <ProviderModelSummary
+            hasDiscoveredSnapshot={modelVisibility.hasDiscoveredSnapshot}
+            discoveredCount={modelVisibility.discoveredModels.length}
+            allowAllModels={modelVisibility.allowAllModels}
+            whitelistCount={modelVisibility.allowedModels.length}
+            whitelistOnlyCount={modelVisibility.whitelistOnlyModels.length}
+            modelDiscoveryStatus={provider.modelDiscoveryStatus ?? null}
+            tList={tList}
+          />
+        </div>
 
         <div className="flex items-center gap-3 text-sm md:hidden">
           <div className="flex items-center gap-1">

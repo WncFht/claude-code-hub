@@ -4536,6 +4536,80 @@ type AnthropicModelsResponse = {
 
 const UPSTREAM_FETCH_TIMEOUT_MS = 10000;
 
+const RELATED_ENDPOINT_SUFFIXES = [
+  "/chat/completions",
+  "/responses",
+  "/messages",
+  "/embeddings",
+  "/models",
+] as const;
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function joinEndpointPath(prefix: string, suffix: string): string {
+  const combined = `${prefix}${suffix}`.replace(/\/{2,}/g, "/");
+  return combined.startsWith("/") ? combined : `/${combined}`;
+}
+
+function normalizeBaseUrlForRelatedEndpoint(baseUrl: string, requestPath: string): string {
+  const targetEndpoint = RELATED_ENDPOINT_SUFFIXES.find((endpoint) => {
+    const endpointRegex = new RegExp(
+      `^/(?:(?<version>v\\d+[a-z0-9]*))?${escapeRegex(endpoint)}(?:/.*)?$`,
+      "i"
+    );
+    return endpointRegex.test(requestPath);
+  });
+
+  if (!targetEndpoint) {
+    return baseUrl;
+  }
+
+  const url = new URL(baseUrl);
+  const basePath = url.pathname.replace(/\/$/, "");
+
+  for (const endpoint of RELATED_ENDPOINT_SUFFIXES) {
+    const versionedMatch = basePath.match(
+      new RegExp(`^(?<prefix>.*?)/(?<version>v\\d+[a-z0-9]*)${escapeRegex(endpoint)}(?:/.*)?$`, "i")
+    );
+
+    if (versionedMatch?.groups?.version) {
+      url.pathname = joinEndpointPath(
+        versionedMatch.groups.prefix ?? "",
+        `/${versionedMatch.groups.version}${targetEndpoint}`
+      );
+      url.search = "";
+      url.hash = "";
+      return url.toString();
+    }
+
+    const bareMatch = basePath.match(
+      new RegExp(`^(?<prefix>.*?)${escapeRegex(endpoint)}(?:/.*)?$`, "i")
+    );
+
+    if (bareMatch) {
+      url.pathname = joinEndpointPath(bareMatch.groups?.prefix ?? "", targetEndpoint);
+      url.search = "";
+      url.hash = "";
+      return url.toString();
+    }
+  }
+
+  return baseUrl;
+}
+
+function buildUpstreamModelsUrl(
+  baseUrl: string,
+  requestPath: string,
+  searchParams?: URLSearchParams
+): string {
+  const normalizedBaseUrl = normalizeBaseUrlForRelatedEndpoint(baseUrl, requestPath);
+  const requestUrl = new URL(`https://dummy.com${requestPath}`);
+  requestUrl.search = searchParams?.toString() ?? "";
+  return buildProxyUrl(normalizedBaseUrl, requestUrl);
+}
+
 // 通用 fetch 选项类型（undici 兼容）
 interface UndiciFetchOptions extends RequestInit {
   dispatcher?: unknown;
@@ -4668,7 +4742,7 @@ async function fetchOpenAIModels(
   normalizedUrl: string,
   timeoutMs: number
 ): Promise<FetchUpstreamModelsResult> {
-  const url = `${normalizedUrl}/v1/models`;
+  const url = buildUpstreamModelsUrl(normalizedUrl, "/v1/models");
 
   try {
     const response = await executeProxiedFetch(
@@ -4722,7 +4796,11 @@ async function fetchGeminiModels(
     logger.warn("fetchGeminiModels: auth process failed", { error: e });
   }
 
-  const url = `${normalizedUrl}/v1beta/models?pageSize=100`;
+  const url = buildUpstreamModelsUrl(
+    normalizedUrl,
+    "/v1beta/models",
+    new URLSearchParams({ pageSize: "100" })
+  );
   const headers: Record<string, string> = isJsonCreds
     ? { Authorization: `Bearer ${processedApiKey}` }
     : { "x-goog-api-key": processedApiKey };
@@ -4733,7 +4811,14 @@ async function fetchGeminiModels(
     // 如果 header 认证失败（401/403），尝试 URL 参数认证（不动此逻辑）
     if (!isJsonCreds && (response.status === 401 || response.status === 403)) {
       logger.debug("fetchGeminiModels: header auth failed, trying URL param auth");
-      const urlWithKey = `${normalizedUrl}/v1beta/models?pageSize=100&key=${encodeURIComponent(processedApiKey)}`;
+      const urlWithKey = buildUpstreamModelsUrl(
+        normalizedUrl,
+        "/v1beta/models",
+        new URLSearchParams({
+          pageSize: "100",
+          key: processedApiKey,
+        })
+      );
       response = await executeProxiedFetch(
         proxyConfig,
         urlWithKey,
@@ -4776,7 +4861,7 @@ async function fetchAnthropicModels(
   normalizedUrl: string,
   timeoutMs: number
 ): Promise<FetchUpstreamModelsResult> {
-  const url = `${normalizedUrl}/v1/models`;
+  const url = buildUpstreamModelsUrl(normalizedUrl, "/v1/models");
 
   // 复用认证逻辑：官方 API 用 x-api-key，代理用 Bearer token
   const authHeaders = resolveAnthropicAuthHeaders(data.apiKey, normalizedUrl);

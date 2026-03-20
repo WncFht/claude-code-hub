@@ -56,6 +56,7 @@
     "modelDiscovery": {
       "title": "上游模型快照",
       "desc": "持久化记录供应商上游探测到的模型，并与当前路由白名单进行对比。",
+      "saveBeforeSync": "请先保存 endpoint、密钥、代理或 provider 类型的改动，再同步上游快照。",
       "syncButton": "同步上游模型",
       "syncSuccess": "已同步 {count} 个上游模型",
       "syncFailed": "同步上游模型失败",

@@ -130,6 +130,14 @@ export function RoutingSection({ subSectionRefs }: RoutingSectionProps) {
 
   const doInvalidate = () => invalidateProviderQueries(queryClient);
   const canSyncModelSnapshot = isEdit && provider?.id != null;
+  const hasUnsavedConnectionChanges =
+    isEdit &&
+    provider != null &&
+    (state.basic.url.trim() !== provider.url.trim() ||
+      state.basic.key.trim().length > 0 ||
+      state.routing.providerType !== provider.providerType ||
+      state.network.proxyUrl.trim() !== (provider.proxyUrl ?? "").trim() ||
+      state.network.proxyFallbackToDirect !== (provider.proxyFallbackToDirect ?? false));
   const modelVisibility = useMemo(
     () =>
       buildProviderModelVisibility({
@@ -369,13 +377,18 @@ export function RoutingSection({ subSectionRefs }: RoutingSectionProps) {
                     type="button"
                     variant="outline"
                     onClick={handleSyncModelSnapshot}
-                    disabled={!canSyncModelSnapshot || syncPending}
+                    disabled={!canSyncModelSnapshot || syncPending || hasUnsavedConnectionChanges}
                     className="gap-2 self-start"
                   >
                     <RefreshCw className={syncPending ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
                     {t("sections.routing.modelDiscovery.syncButton")}
                   </Button>
                 </div>
+                {hasUnsavedConnectionChanges && (
+                  <p className="text-xs text-amber-600">
+                    {t("sections.routing.modelDiscovery.saveBeforeSync")}
+                  </p>
+                )}
 
                 <div className="space-y-2">
                   <div className="text-xs font-medium text-foreground/80">
