@@ -351,14 +351,14 @@ describe("ProxyResponseHandler - Gemini stream passthrough timeouts", () => {
         } catch {
           // ignore
         }
-      }, 150);
+      }, 400);
     });
 
     const clientAbortController = new AbortController();
     try {
       const provider = createProvider({
         url: baseUrl,
-        firstByteTimeoutStreamingMs: 100,
+        firstByteTimeoutStreamingMs: 250,
         streamingIdleTimeoutMs: 0,
       });
       const session = createSession({
@@ -384,14 +384,15 @@ describe("ProxyResponseHandler - Gemini stream passthrough timeouts", () => {
       const clientResponse = await ProxyResponseHandler.dispatch(session, upstreamResponse);
       const fullText = await Promise.race([
         clientResponse.text(),
-        new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 1500)),
+        new Promise<"timeout">((resolve) => setTimeout(() => resolve("timeout"), 2500)),
       ]);
       if (fullText === "timeout") {
         clientAbortController.abort(new Error("test_timeout"));
         throw new Error("读取透传响应超时（可能仍会卡死）");
       }
 
-      // 第二块数据在 150ms 发送，若首字节超时未被清除，则 100ms 左右就会被中断拿不到第二块
+      // 第二块数据在 400ms 发送，若首字节超时未被清除，则 250ms 左右就会被中断拿不到第二块。
+      // 放宽时间窗以降低全量并发测试时的调度抖动影响。
       expect(fullText).toContain('"x":2');
     } finally {
       clientAbortController.abort(new Error("test_cleanup"));

@@ -19,6 +19,7 @@ import {
 } from "@/components/ui/table";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import type { GeneratorResult, UserBreakdownResult } from "@/lib/data-generator/types";
+import { loadBrowserJsPdf } from "@/lib/utils/load-browser-jspdf";
 
 export function DataGeneratorPage() {
   const t = useTranslations("internal.dataGenerator");
@@ -109,7 +110,7 @@ export function DataGeneratorPage() {
 
   const handleExportPDF = async () => {
     const html2canvas = (await import("html2canvas")).default;
-    const { jsPDF } = await import("jspdf");
+    const { jsPDF } = await loadBrowserJsPdf();
 
     const element = document.getElementById("export-content");
     if (!element) return;
