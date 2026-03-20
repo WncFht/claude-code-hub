@@ -6,6 +6,7 @@ export interface ConsoleModuleDefinition {
   id: ConsoleModuleId;
   labelKey: string;
   iconName: string;
+  defaultHref: string;
 }
 
 export interface ConsoleRouteDefinition {
@@ -15,15 +16,49 @@ export interface ConsoleRouteDefinition {
   labelKey: string;
   visibleForRoles: ConsoleRole[];
   matchKind: ConsoleMatchKind;
+  secondaryTabId?: string;
   fullBleed?: boolean;
 }
 
+export interface ConsoleModuleTabDefinition {
+  id: string;
+  moduleId: ConsoleModuleId;
+  href: string;
+  labelKey: string;
+  visibleForRoles: ConsoleRole[];
+}
+
 export const CONSOLE_MODULES: ConsoleModuleDefinition[] = [
-  { id: "overview", labelKey: "console.modules.overview", iconName: "layout-dashboard" },
-  { id: "traffic", labelKey: "console.modules.traffic", iconName: "activity" },
-  { id: "providers", labelKey: "console.modules.providers", iconName: "database" },
-  { id: "policy", labelKey: "console.modules.policy", iconName: "shield" },
-  { id: "system", labelKey: "console.modules.system", iconName: "settings-2" },
+  {
+    id: "overview",
+    labelKey: "console.modules.overview",
+    iconName: "layout-dashboard",
+    defaultHref: "/dashboard",
+  },
+  {
+    id: "traffic",
+    labelKey: "console.modules.traffic",
+    iconName: "activity",
+    defaultHref: "/dashboard/logs",
+  },
+  {
+    id: "providers",
+    labelKey: "console.modules.providers",
+    iconName: "database",
+    defaultHref: "/dashboard/providers",
+  },
+  {
+    id: "policy",
+    labelKey: "console.modules.policy",
+    iconName: "shield",
+    defaultHref: "/settings/sensitive-words",
+  },
+  {
+    id: "system",
+    labelKey: "console.modules.system",
+    iconName: "settings-2",
+    defaultHref: "/settings/config",
+  },
 ];
 
 export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
@@ -34,6 +69,7 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.dashboard",
     visibleForRoles: ["admin", "user"],
     matchKind: "exact",
+    secondaryTabId: "home",
   },
   {
     id: "overview-leaderboard",
@@ -42,6 +78,7 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.leaderboard",
     visibleForRoles: ["admin", "user"],
     matchKind: "prefix",
+    secondaryTabId: "leaderboard",
   },
   {
     id: "overview-availability",
@@ -50,6 +87,7 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.availability",
     visibleForRoles: ["admin"],
     matchKind: "prefix",
+    secondaryTabId: "availability",
   },
   {
     id: "traffic-logs",
@@ -58,14 +96,34 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.logs",
     visibleForRoles: ["admin", "user"],
     matchKind: "prefix",
+    secondaryTabId: "logs",
+  },
+  {
+    id: "traffic-users",
+    moduleId: "traffic",
+    href: "/dashboard/users",
+    labelKey: "console.routes.users",
+    visibleForRoles: ["admin", "user"],
+    matchKind: "prefix",
+    secondaryTabId: "users",
+  },
+  {
+    id: "traffic-sessions",
+    moduleId: "traffic",
+    href: "/dashboard/sessions",
+    labelKey: "console.routes.sessions",
+    visibleForRoles: ["admin"],
+    matchKind: "exact",
+    secondaryTabId: "sessions",
   },
   {
     id: "traffic-session-messages",
     moduleId: "traffic",
     href: "/dashboard/sessions",
     labelKey: "console.routes.sessions",
-    visibleForRoles: ["admin", "user"],
+    visibleForRoles: ["admin"],
     matchKind: "session-messages",
+    secondaryTabId: "sessions",
     fullBleed: true,
   },
   {
@@ -75,6 +133,7 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.quotas",
     visibleForRoles: ["admin"],
     matchKind: "prefix",
+    secondaryTabId: "quotas",
   },
   {
     id: "traffic-my-quota",
@@ -83,14 +142,7 @@ export const CONSOLE_ROUTES: ConsoleRouteDefinition[] = [
     labelKey: "console.routes.myQuota",
     visibleForRoles: ["user"],
     matchKind: "prefix",
-  },
-  {
-    id: "traffic-users",
-    moduleId: "traffic",
-    href: "/dashboard/users",
-    labelKey: "console.routes.users",
-    visibleForRoles: ["admin", "user"],
-    matchKind: "prefix",
+    secondaryTabId: "my-quota",
   },
   {
     id: "providers-dashboard",
@@ -224,6 +276,37 @@ export function getVisibleConsoleRoutes({
 
     return route.visibleForRoles.includes(role);
   });
+}
+
+export function getVisibleConsoleModuleTabs({
+  moduleId,
+  role,
+}: {
+  moduleId: ConsoleModuleId;
+  role: ConsoleRole;
+}) {
+  const tabs = new Map<string, ConsoleModuleTabDefinition>();
+
+  for (const route of CONSOLE_ROUTES) {
+    if (
+      route.moduleId !== moduleId ||
+      !route.secondaryTabId ||
+      !route.visibleForRoles.includes(role) ||
+      tabs.has(route.secondaryTabId)
+    ) {
+      continue;
+    }
+
+    tabs.set(route.secondaryTabId, {
+      id: route.secondaryTabId,
+      moduleId: route.moduleId,
+      href: route.href,
+      labelKey: route.labelKey,
+      visibleForRoles: route.visibleForRoles,
+    });
+  }
+
+  return [...tabs.values()];
 }
 
 export function getVisibleConsoleModules(role: ConsoleRole) {
