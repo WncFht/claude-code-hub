@@ -12,6 +12,7 @@ import type {
   AnthropicAdaptiveThinkingConfig,
   CreateProviderData,
   Provider,
+  ProviderModelDiscoveryStatus,
   UpdateProviderData,
 } from "@/types/provider";
 import { toProvider } from "./_shared/transformers";
@@ -186,6 +187,10 @@ export async function createProvider(providerData: CreateProviderData): Promise<
     preserveClientIp: providerData.preserve_client_ip ?? false,
     modelRedirects: providerData.model_redirects,
     allowedModels: providerData.allowed_models,
+    discoveredModels: providerData.discovered_models ?? null,
+    modelDiscoveryStatus: providerData.model_discovery_status ?? null,
+    lastModelSyncAt: providerData.last_model_sync_at ?? null,
+    lastModelSyncError: providerData.last_model_sync_error ?? null,
     allowedClients: providerData.allowed_clients ?? [],
     blockedClients: providerData.blocked_clients ?? [],
     activeTimeStart: providerData.active_time_start ?? null,
@@ -271,6 +276,10 @@ export async function createProvider(providerData: CreateProviderData): Promise<
         preserveClientIp: providers.preserveClientIp,
         modelRedirects: providers.modelRedirects,
         allowedModels: providers.allowedModels,
+        discoveredModels: providers.discoveredModels,
+        modelDiscoveryStatus: providers.modelDiscoveryStatus,
+        lastModelSyncAt: providers.lastModelSyncAt,
+        lastModelSyncError: providers.lastModelSyncError,
         allowedClients: providers.allowedClients,
         blockedClients: providers.blockedClients,
         activeTimeStart: providers.activeTimeStart,
@@ -356,6 +365,10 @@ export async function findProviderList(
       preserveClientIp: providers.preserveClientIp,
       modelRedirects: providers.modelRedirects,
       allowedModels: providers.allowedModels,
+      discoveredModels: providers.discoveredModels,
+      modelDiscoveryStatus: providers.modelDiscoveryStatus,
+      lastModelSyncAt: providers.lastModelSyncAt,
+      lastModelSyncError: providers.lastModelSyncError,
       allowedClients: providers.allowedClients,
       blockedClients: providers.blockedClients,
       activeTimeStart: providers.activeTimeStart,
@@ -441,6 +454,10 @@ export async function findAllProvidersFresh(): Promise<Provider[]> {
       preserveClientIp: providers.preserveClientIp,
       modelRedirects: providers.modelRedirects,
       allowedModels: providers.allowedModels,
+      discoveredModels: providers.discoveredModels,
+      modelDiscoveryStatus: providers.modelDiscoveryStatus,
+      lastModelSyncAt: providers.lastModelSyncAt,
+      lastModelSyncError: providers.lastModelSyncError,
       allowedClients: providers.allowedClients,
       blockedClients: providers.blockedClients,
       activeTimeStart: providers.activeTimeStart,
@@ -530,6 +547,10 @@ export async function findProviderById(id: number): Promise<Provider | null> {
       preserveClientIp: providers.preserveClientIp,
       modelRedirects: providers.modelRedirects,
       allowedModels: providers.allowedModels,
+      discoveredModels: providers.discoveredModels,
+      modelDiscoveryStatus: providers.modelDiscoveryStatus,
+      lastModelSyncAt: providers.lastModelSyncAt,
+      lastModelSyncError: providers.lastModelSyncError,
       allowedClients: providers.allowedClients,
       blockedClients: providers.blockedClients,
       activeTimeStart: providers.activeTimeStart,
@@ -613,6 +634,14 @@ export async function updateProvider(
   if (providerData.model_redirects !== undefined)
     dbData.modelRedirects = providerData.model_redirects;
   if (providerData.allowed_models !== undefined) dbData.allowedModels = providerData.allowed_models;
+  if (providerData.discovered_models !== undefined)
+    dbData.discoveredModels = providerData.discovered_models;
+  if (providerData.model_discovery_status !== undefined)
+    dbData.modelDiscoveryStatus = providerData.model_discovery_status;
+  if (providerData.last_model_sync_at !== undefined)
+    dbData.lastModelSyncAt = providerData.last_model_sync_at;
+  if (providerData.last_model_sync_error !== undefined)
+    dbData.lastModelSyncError = providerData.last_model_sync_error;
   if (providerData.allowed_clients !== undefined)
     dbData.allowedClients = providerData.allowed_clients ?? [];
   if (providerData.blocked_clients !== undefined)
@@ -768,6 +797,10 @@ export async function updateProvider(
         preserveClientIp: providers.preserveClientIp,
         modelRedirects: providers.modelRedirects,
         allowedModels: providers.allowedModels,
+        discoveredModels: providers.discoveredModels,
+        modelDiscoveryStatus: providers.modelDiscoveryStatus,
+        lastModelSyncAt: providers.lastModelSyncAt,
+        lastModelSyncError: providers.lastModelSyncError,
         allowedClients: providers.allowedClients,
         blockedClients: providers.blockedClients,
         activeTimeStart: providers.activeTimeStart,
@@ -1022,6 +1055,10 @@ export interface BatchProviderUpdates {
   groupTag?: string | null;
   modelRedirects?: Record<string, string> | null;
   allowedModels?: string[] | null;
+  discoveredModels?: string[] | null;
+  modelDiscoveryStatus?: ProviderModelDiscoveryStatus | null;
+  lastModelSyncAt?: Date | null;
+  lastModelSyncError?: string | null;
   allowedClients?: string[] | null;
   blockedClients?: string[] | null;
   anthropicThinkingBudgetPreference?: string | null;
@@ -1098,6 +1135,18 @@ export async function updateProvidersBatch(
   }
   if (updates.allowedModels !== undefined) {
     setClauses.allowedModels = updates.allowedModels;
+  }
+  if (updates.discoveredModels !== undefined) {
+    setClauses.discoveredModels = updates.discoveredModels;
+  }
+  if (updates.modelDiscoveryStatus !== undefined) {
+    setClauses.modelDiscoveryStatus = updates.modelDiscoveryStatus;
+  }
+  if (updates.lastModelSyncAt !== undefined) {
+    setClauses.lastModelSyncAt = updates.lastModelSyncAt;
+  }
+  if (updates.lastModelSyncError !== undefined) {
+    setClauses.lastModelSyncError = updates.lastModelSyncError;
   }
   if (updates.allowedClients !== undefined) {
     setClauses.allowedClients = updates.allowedClients;

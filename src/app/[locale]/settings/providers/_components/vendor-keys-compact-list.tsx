@@ -1,6 +1,5 @@
 "use client";
 
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { CheckCircle, Copy, Edit2, Loader2, Plus, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
@@ -43,6 +42,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
+import { VisuallyHidden } from "@/components/ui/visually-hidden";
 import { PROVIDER_LIMITS } from "@/lib/constants/provider.constants";
 import { PROVIDER_BATCH_PATCH_ERROR_CODES } from "@/lib/provider-batch-patch-error-codes";
 import { getProviderTypeConfig, getProviderTypeTranslationKey } from "@/lib/provider-type-utils";

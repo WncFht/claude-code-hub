@@ -53,6 +53,29 @@
       "selectedOnly": "仅允许选中的 {count} 个模型。其他模型的请求不会调度到此供应商。",
       "moreModels": "+{count} 更多"
     },
+    "modelDiscovery": {
+      "title": "上游模型快照",
+      "desc": "持久化记录供应商上游探测到的模型，并与当前路由白名单进行对比。",
+      "saveBeforeSync": "请先保存 endpoint、密钥、代理或 provider 类型的改动，再同步上游快照。",
+      "syncButton": "同步上游模型",
+      "syncSuccess": "已同步 {count} 个上游模型",
+      "syncFailed": "同步上游模型失败",
+      "status": {
+        "neverSynced": "还没有上游快照",
+        "success": "快照已是最新",
+        "error": "最近一次同步失败"
+      },
+      "lastSynced": "最近同步：",
+      "snapshotModels": "上游发现的模型",
+      "empty": "还没有上游快照。",
+      "allowAllNote": "当前路由允许全部模型，因此这里只展示上游快照。",
+      "groups": {
+        "matched": "白名单已命中",
+        "whitelistOnly": "仅白名单中存在",
+        "discoveredOnly": "仅上游中存在",
+        "none": "无"
+      }
+    },
     "clientRestrictions": {
       "toggleLabel": "启用客户端限制",
       "toggleDesc": "默认不限制客户端。启用后可配置白名单/黑名单。",

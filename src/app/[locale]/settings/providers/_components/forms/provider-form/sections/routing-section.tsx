@@ -1,12 +1,15 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { Info, Layers, Route, Scale } from "lucide-react";
+import { Info, Layers, RefreshCw, Route, Scale } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
+import { syncProviderModels } from "@/actions/providers";
 import { ClientRestrictionsEditor } from "@/components/form/client-restrictions-editor";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
   Select,
@@ -20,8 +23,10 @@ import { TagInput } from "@/components/ui/tag-input";
 import { getProviderTypeConfig } from "@/lib/provider-type-utils";
 import type { ProviderType } from "@/types/provider";
 import { MixedValueIndicator } from "../../../batch-edit/mixed-value-indicator";
+import { invalidateProviderQueries } from "../../../invalidate-provider-queries";
 import { ModelMultiSelect } from "../../../model-multi-select";
 import { ModelRedirectEditor } from "../../../model-redirect-editor";
+import { buildProviderModelVisibility } from "../../../provider-model-visibility";
 import { FieldGroup, SectionCard, SmartInputWrapper, ToggleRow } from "../components/section-card";
 import { useProviderForm } from "../provider-form-context";
 
@@ -33,9 +38,26 @@ interface RoutingSectionProps {
   };
 }
 
+function ModelChipList({ models, emptyLabel }: { models: string[]; emptyLabel: string }) {
+  if (models.length === 0) {
+    return <p className="text-xs text-muted-foreground">{emptyLabel}</p>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {models.map((model) => (
+        <Badge key={model} variant="outline" className="font-mono text-xs">
+          {model}
+        </Badge>
+      ))}
+    </div>
+  );
+}
+
 export function RoutingSection({ subSectionRefs }: RoutingSectionProps) {
   const t = useTranslations("settings.providers.form");
   const tUI = useTranslations("ui.tagInput");
+  const queryClient = useQueryClient();
   const {
     state,
     dispatch,
@@ -47,6 +69,7 @@ export function RoutingSection({ subSectionRefs }: RoutingSectionProps) {
   } = useProviderForm();
   const isEdit = mode === "edit";
   const isBatch = mode === "batch";
+  const [syncPending, startSyncTransition] = useTransition();
 
   const renderProviderTypeLabel = (type: ProviderType) => {
     switch (type) {
@@ -79,11 +102,56 @@ export function RoutingSection({ subSectionRefs }: RoutingSectionProps) {
   const [clientRestrictionsEnabled, setClientRestrictionsEnabled] = useState(
     () => hasAnyClientRestrictions
   );
+  const [modelSnapshot, setModelSnapshot] = useState(() => ({
+    discoveredModels: provider?.discoveredModels ?? null,
+    modelDiscoveryStatus: provider?.modelDiscoveryStatus ?? null,
+    lastModelSyncAt: provider?.lastModelSyncAt ?? null,
+    lastModelSyncError: provider?.lastModelSyncError ?? null,
+  }));
 
   useEffect(() => {
     if (!hasAnyClientRestrictions) return;
     setClientRestrictionsEnabled(true);
   }, [hasAnyClientRestrictions]);
+
+  useEffect(() => {
+    setModelSnapshot({
+      discoveredModels: provider?.discoveredModels ?? null,
+      modelDiscoveryStatus: provider?.modelDiscoveryStatus ?? null,
+      lastModelSyncAt: provider?.lastModelSyncAt ?? null,
+      lastModelSyncError: provider?.lastModelSyncError ?? null,
+    });
+  }, [
+    provider?.discoveredModels,
+    provider?.lastModelSyncAt,
+    provider?.lastModelSyncError,
+    provider?.modelDiscoveryStatus,
+  ]);
+
+  const doInvalidate = () => invalidateProviderQueries(queryClient);
+  const canSyncModelSnapshot = isEdit && provider?.id != null;
+  const hasUnsavedConnectionChanges =
+    isEdit &&
+    provider != null &&
+    (state.basic.url.trim() !== provider.url.trim() ||
+      state.basic.key.trim().length > 0 ||
+      state.routing.providerType !== provider.providerType ||
+      state.network.proxyUrl.trim() !== (provider.proxyUrl ?? "").trim() ||
+      state.network.proxyFallbackToDirect !== (provider.proxyFallbackToDirect ?? false));
+  const modelVisibility = useMemo(
+    () =>
+      buildProviderModelVisibility({
+        discoveredModels: modelSnapshot.discoveredModels,
+        allowedModels: state.routing.allowedModels,
+      }),
+    [modelSnapshot.discoveredModels, state.routing.allowedModels]
+  );
+  const modelSnapshotStatusKey =
+    modelSnapshot.modelDiscoveryStatus === "error"
+      ? "status.error"
+      : modelSnapshot.modelDiscoveryStatus === "success"
+        ? "status.success"
+        : "status.neverSynced";
 
   const handleClientRestrictionsEnabledChange = (enabled: boolean) => {
     setClientRestrictionsEnabled(enabled);
@@ -91,6 +159,41 @@ export function RoutingSection({ subSectionRefs }: RoutingSectionProps) {
       dispatch({ type: "SET_ALLOWED_CLIENTS", payload: [] });
       dispatch({ type: "SET_BLOCKED_CLIENTS", payload: [] });
     }
+  };
+
+  const handleSyncModelSnapshot = () => {
+    if (!provider?.id) return;
+
+    startSyncTransition(async () => {
+      const result = await syncProviderModels(provider.id);
+
+      if (!result.ok) {
+        toast.error(result.error || t("sections.routing.modelDiscovery.syncFailed"));
+        return;
+      }
+
+      setModelSnapshot({
+        discoveredModels: result.data.discoveredModels,
+        modelDiscoveryStatus: result.data.status,
+        lastModelSyncAt: result.data.lastModelSyncAt,
+        lastModelSyncError: result.data.lastModelSyncError,
+      });
+
+      await doInvalidate();
+
+      if (result.data.status === "success") {
+        toast.success(
+          t("sections.routing.modelDiscovery.syncSuccess", {
+            count: result.data.discoveredModels?.length ?? 0,
+          })
+        );
+        return;
+      }
+
+      toast.error(
+        result.data.lastModelSyncError || t("sections.routing.modelDiscovery.syncFailed")
+      );
+    });
   };
 
   return (
@@ -246,6 +349,101 @@ export function RoutingSection({ subSectionRefs }: RoutingSectionProps) {
               </p>
             </div>
           </FieldGroup>
+
+          {isEdit && provider && (
+            <FieldGroup label={t("sections.routing.modelDiscovery.title")}>
+              <div className="space-y-3 rounded-md border bg-muted/20 p-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="space-y-1">
+                    <p className="text-sm text-muted-foreground">
+                      {t("sections.routing.modelDiscovery.desc")}
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {t(`sections.routing.modelDiscovery.${modelSnapshotStatusKey}`)}
+                    </p>
+                    {modelSnapshot.lastModelSyncAt && (
+                      <p className="text-xs text-muted-foreground">
+                        {t("sections.routing.modelDiscovery.lastSynced")}{" "}
+                        <time dateTime={modelSnapshot.lastModelSyncAt}>
+                          {modelSnapshot.lastModelSyncAt}
+                        </time>
+                      </p>
+                    )}
+                    {modelSnapshot.lastModelSyncError && (
+                      <p className="text-xs text-red-600">{modelSnapshot.lastModelSyncError}</p>
+                    )}
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleSyncModelSnapshot}
+                    disabled={!canSyncModelSnapshot || syncPending || hasUnsavedConnectionChanges}
+                    className="gap-2 self-start"
+                  >
+                    <RefreshCw className={syncPending ? "h-4 w-4 animate-spin" : "h-4 w-4"} />
+                    {t("sections.routing.modelDiscovery.syncButton")}
+                  </Button>
+                </div>
+                {hasUnsavedConnectionChanges && (
+                  <p className="text-xs text-amber-600">
+                    {t("sections.routing.modelDiscovery.saveBeforeSync")}
+                  </p>
+                )}
+
+                <div className="space-y-2">
+                  <div className="text-xs font-medium text-foreground/80">
+                    {t("sections.routing.modelDiscovery.snapshotModels")}
+                  </div>
+                  {modelVisibility.discoveredModels.length === 0 ? (
+                    <p className="text-xs text-muted-foreground">
+                      {t("sections.routing.modelDiscovery.empty")}
+                    </p>
+                  ) : (
+                    <ModelChipList
+                      models={modelVisibility.discoveredModels}
+                      emptyLabel={t("sections.routing.modelDiscovery.groups.none")}
+                    />
+                  )}
+                </div>
+
+                {modelVisibility.allowAllModels ? (
+                  <p className="text-xs text-muted-foreground">
+                    {t("sections.routing.modelDiscovery.allowAllNote")}
+                  </p>
+                ) : (
+                  <div className="grid gap-3 lg:grid-cols-3">
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-foreground/80">
+                        {t("sections.routing.modelDiscovery.groups.matched")}
+                      </div>
+                      <ModelChipList
+                        models={modelVisibility.matchedModels}
+                        emptyLabel={t("sections.routing.modelDiscovery.groups.none")}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-foreground/80">
+                        {t("sections.routing.modelDiscovery.groups.whitelistOnly")}
+                      </div>
+                      <ModelChipList
+                        models={modelVisibility.whitelistOnlyModels}
+                        emptyLabel={t("sections.routing.modelDiscovery.groups.none")}
+                      />
+                    </div>
+                    <div className="space-y-2">
+                      <div className="text-xs font-medium text-foreground/80">
+                        {t("sections.routing.modelDiscovery.groups.discoveredOnly")}
+                      </div>
+                      <ModelChipList
+                        models={modelVisibility.discoveredOnlyModels}
+                        emptyLabel={t("sections.routing.modelDiscovery.groups.none")}
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+            </FieldGroup>
+          )}
 
           <ToggleRow
             icon={Info}

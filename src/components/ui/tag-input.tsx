@@ -1,11 +1,11 @@
 "use client";
 
-import * as Portal from "@radix-ui/react-portal";
 import { X } from "lucide-react";
 import * as React from "react";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
 import { cn } from "@/lib/utils";
 import { Badge } from "./badge";
+import { PortalRoot } from "./portal";
 
 export type TagInputSuggestion =
   | string
@@ -490,7 +490,7 @@ export function TagInput({
       )}
       {/* 建议下拉列表 - 使用 Radix Portal 确保在 Dialog 中正确渲染 */}
       {showSuggestions && filteredSuggestions.length > 0 && dropdownPosition && (
-        <Portal.Root container={portalContainer ?? undefined}>
+        <PortalRoot container={portalContainer ?? undefined}>
           <div
             ref={dropdownRef}
             className={cn(
@@ -521,7 +521,7 @@ export function TagInput({
               </button>
             ))}
           </div>
-        </Portal.Root>
+        </PortalRoot>
       )}
     </div>
   );

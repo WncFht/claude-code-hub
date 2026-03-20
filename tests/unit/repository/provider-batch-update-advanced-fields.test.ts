@@ -111,6 +111,29 @@ describe("provider repository - updateProvidersBatch advanced fields", () => {
     );
   });
 
+  test("updates model discovery snapshot fields for multiple providers", async () => {
+    const { updateProvidersBatch, updateSetPayloads } = await arrange(updatedRows);
+    const lastModelSyncAt = new Date("2026-03-20T08:00:00.000Z");
+
+    const result = await updateProvidersBatch([11, 22], {
+      discoveredModels: ["claude-opus-4-1", "claude-sonnet-4-5"],
+      modelDiscoveryStatus: "success",
+      lastModelSyncAt,
+      lastModelSyncError: null,
+    });
+
+    expect(result).toBe(2);
+    expect(updateSetPayloads[0]).toEqual(
+      expect.objectContaining({
+        updatedAt: expect.any(Date),
+        discoveredModels: ["claude-opus-4-1", "claude-sonnet-4-5"],
+        modelDiscoveryStatus: "success",
+        lastModelSyncAt,
+        lastModelSyncError: null,
+      })
+    );
+  });
+
   test("updates anthropicThinkingBudgetPreference for multiple providers", async () => {
     const { updateProvidersBatch, updateSetPayloads } = await arrange(updatedRows);
 

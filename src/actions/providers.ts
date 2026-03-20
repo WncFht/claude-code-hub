@@ -84,6 +84,7 @@ import type {
   ProviderBatchPatch,
   ProviderBatchPatchField,
   ProviderDisplay,
+  ProviderModelDiscoveryStatus,
   ProviderPatchOperation,
   ProviderStatisticsMap,
   ProviderType,
@@ -109,6 +110,14 @@ type AutoSortResult = {
     groupCount: number;
   };
   applied: boolean;
+};
+
+type ProviderModelSyncResult = {
+  providerId: number;
+  status: ProviderModelDiscoveryStatus;
+  discoveredModels: string[] | null;
+  lastModelSyncAt: string | null;
+  lastModelSyncError: string | null;
 };
 
 const API_TEST_TIMEOUT_LIMITS = {
@@ -270,9 +279,13 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
       // 安全处理 createdAt 和 updatedAt
       let createdAtStr: string;
       let updatedAtStr: string;
+      let lastModelSyncAtStr: string | null = null;
       try {
         createdAtStr = provider.createdAt.toISOString().split("T")[0];
         updatedAtStr = provider.updatedAt.toISOString().split("T")[0];
+        lastModelSyncAtStr = provider.lastModelSyncAt
+          ? provider.lastModelSyncAt.toISOString()
+          : null;
       } catch (error) {
         logger.trace("getProviders:date_conversion_error", {
           providerId: provider.id,
@@ -300,6 +313,10 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         activeTimeStart: provider.activeTimeStart,
         activeTimeEnd: provider.activeTimeEnd,
         allowedModels: provider.allowedModels,
+        discoveredModels: provider.discoveredModels ?? null,
+        modelDiscoveryStatus: provider.modelDiscoveryStatus ?? null,
+        lastModelSyncAt: lastModelSyncAtStr,
+        lastModelSyncError: provider.lastModelSyncError ?? null,
         allowedClients: provider.allowedClients,
         blockedClients: provider.blockedClients,
         mcpPassthroughType: provider.mcpPassthroughType,
@@ -4519,6 +4536,80 @@ type AnthropicModelsResponse = {
 
 const UPSTREAM_FETCH_TIMEOUT_MS = 10000;
 
+const RELATED_ENDPOINT_SUFFIXES = [
+  "/chat/completions",
+  "/responses",
+  "/messages",
+  "/embeddings",
+  "/models",
+] as const;
+
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function joinEndpointPath(prefix: string, suffix: string): string {
+  const combined = `${prefix}${suffix}`.replace(/\/{2,}/g, "/");
+  return combined.startsWith("/") ? combined : `/${combined}`;
+}
+
+function normalizeBaseUrlForRelatedEndpoint(baseUrl: string, requestPath: string): string {
+  const targetEndpoint = RELATED_ENDPOINT_SUFFIXES.find((endpoint) => {
+    const endpointRegex = new RegExp(
+      `^/(?:(?<version>v\\d+[a-z0-9]*))?${escapeRegex(endpoint)}(?:/.*)?$`,
+      "i"
+    );
+    return endpointRegex.test(requestPath);
+  });
+
+  if (!targetEndpoint) {
+    return baseUrl;
+  }
+
+  const url = new URL(baseUrl);
+  const basePath = url.pathname.replace(/\/$/, "");
+
+  for (const endpoint of RELATED_ENDPOINT_SUFFIXES) {
+    const versionedMatch = basePath.match(
+      new RegExp(`^(?<prefix>.*?)/(?<version>v\\d+[a-z0-9]*)${escapeRegex(endpoint)}(?:/.*)?$`, "i")
+    );
+
+    if (versionedMatch?.groups?.version) {
+      url.pathname = joinEndpointPath(
+        versionedMatch.groups.prefix ?? "",
+        `/${versionedMatch.groups.version}${targetEndpoint}`
+      );
+      url.search = "";
+      url.hash = "";
+      return url.toString();
+    }
+
+    const bareMatch = basePath.match(
+      new RegExp(`^(?<prefix>.*?)${escapeRegex(endpoint)}(?:/.*)?$`, "i")
+    );
+
+    if (bareMatch) {
+      url.pathname = joinEndpointPath(bareMatch.groups?.prefix ?? "", targetEndpoint);
+      url.search = "";
+      url.hash = "";
+      return url.toString();
+    }
+  }
+
+  return baseUrl;
+}
+
+function buildUpstreamModelsUrl(
+  baseUrl: string,
+  requestPath: string,
+  searchParams?: URLSearchParams
+): string {
+  const normalizedBaseUrl = normalizeBaseUrlForRelatedEndpoint(baseUrl, requestPath);
+  const requestUrl = new URL(`https://dummy.com${requestPath}`);
+  requestUrl.search = searchParams?.toString() ?? "";
+  return buildProxyUrl(normalizedBaseUrl, requestUrl);
+}
+
 // 通用 fetch 选项类型（undici 兼容）
 interface UndiciFetchOptions extends RequestInit {
   dispatcher?: unknown;
@@ -4651,7 +4742,7 @@ async function fetchOpenAIModels(
   normalizedUrl: string,
   timeoutMs: number
 ): Promise<FetchUpstreamModelsResult> {
-  const url = `${normalizedUrl}/v1/models`;
+  const url = buildUpstreamModelsUrl(normalizedUrl, "/v1/models");
 
   try {
     const response = await executeProxiedFetch(
@@ -4705,7 +4796,11 @@ async function fetchGeminiModels(
     logger.warn("fetchGeminiModels: auth process failed", { error: e });
   }
 
-  const url = `${normalizedUrl}/v1beta/models?pageSize=100`;
+  const url = buildUpstreamModelsUrl(
+    normalizedUrl,
+    "/v1beta/models",
+    new URLSearchParams({ pageSize: "100" })
+  );
   const headers: Record<string, string> = isJsonCreds
     ? { Authorization: `Bearer ${processedApiKey}` }
     : { "x-goog-api-key": processedApiKey };
@@ -4716,7 +4811,14 @@ async function fetchGeminiModels(
     // 如果 header 认证失败（401/403），尝试 URL 参数认证（不动此逻辑）
     if (!isJsonCreds && (response.status === 401 || response.status === 403)) {
       logger.debug("fetchGeminiModels: header auth failed, trying URL param auth");
-      const urlWithKey = `${normalizedUrl}/v1beta/models?pageSize=100&key=${encodeURIComponent(processedApiKey)}`;
+      const urlWithKey = buildUpstreamModelsUrl(
+        normalizedUrl,
+        "/v1beta/models",
+        new URLSearchParams({
+          pageSize: "100",
+          key: processedApiKey,
+        })
+      );
       response = await executeProxiedFetch(
         proxyConfig,
         urlWithKey,
@@ -4759,7 +4861,7 @@ async function fetchAnthropicModels(
   normalizedUrl: string,
   timeoutMs: number
 ): Promise<FetchUpstreamModelsResult> {
-  const url = `${normalizedUrl}/v1/models`;
+  const url = buildUpstreamModelsUrl(normalizedUrl, "/v1/models");
 
   // 复用认证逻辑：官方 API 用 x-api-key，代理用 Bearer token
   const authHeaders = resolveAnthropicAuthHeaders(data.apiKey, normalizedUrl);
@@ -4788,6 +4890,72 @@ async function fetchAnthropicModels(
     return buildSuccessResult(result.data.map((m) => m.id).sort(), "fetchAnthropicModels");
   } catch (error) {
     return handleFetchException(error, "fetchAnthropicModels");
+  }
+}
+
+export async function syncProviderModels(
+  providerId: number
+): Promise<ActionResult<ProviderModelSyncResult>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    const provider = await findProviderById(providerId);
+    if (!provider) {
+      return { ok: false, error: "供应商不存在" };
+    }
+
+    const syncAttemptedAt = new Date();
+    const upstreamResult = await fetchUpstreamModels({
+      providerUrl: provider.url,
+      apiKey: provider.key,
+      providerType: provider.providerType,
+      proxyUrl: provider.proxyUrl ?? undefined,
+      proxyFallbackToDirect: provider.proxyFallbackToDirect ?? false,
+    });
+
+    const nextStatus: ProviderModelDiscoveryStatus = upstreamResult.ok ? "success" : "error";
+    const nextDiscoveredModels = upstreamResult.ok
+      ? upstreamResult.data.models
+      : (provider.discoveredModels ?? null);
+    const nextSyncError = upstreamResult.ok ? null : upstreamResult.error;
+
+    const updated = await updateProvider(providerId, {
+      discovered_models: nextDiscoveredModels,
+      model_discovery_status: nextStatus,
+      last_model_sync_at: syncAttemptedAt,
+      last_model_sync_error: nextSyncError,
+    });
+
+    if (!updated) {
+      return { ok: false, error: "更新供应商模型快照失败" };
+    }
+
+    await broadcastProviderCacheInvalidation({ operation: "edit", providerId });
+
+    return {
+      ok: true,
+      data: {
+        providerId,
+        status: nextStatus,
+        discoveredModels: updated.discoveredModels ?? nextDiscoveredModels ?? null,
+        lastModelSyncAt: updated.lastModelSyncAt
+          ? updated.lastModelSyncAt.toISOString()
+          : syncAttemptedAt.toISOString(),
+        lastModelSyncError: updated.lastModelSyncError ?? nextSyncError ?? null,
+      },
+    };
+  } catch (error) {
+    logger.error("syncProviderModels error", {
+      providerId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "同步供应商模型快照失败",
+    };
   }
 }
 
