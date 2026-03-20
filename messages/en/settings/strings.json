@@ -4,6 +4,11 @@
     "title": "Governance rules",
     "description": "Manage text filters, request guards, error policies, and client rollout controls from one shared workspace."
   },
+  "system": {
+    "eyebrow": "System",
+    "title": "Platform controls",
+    "description": "Operate configuration, data maintenance, notifications, and runtime logging from one shared system workspace."
+  },
   "mcpPassthroughConfig": "MCP Passthrough Configuration",
   "mcpPassthroughConfigCustom": "Custom (Reserved)",
   "mcpPassthroughConfigGlm": "GLM",

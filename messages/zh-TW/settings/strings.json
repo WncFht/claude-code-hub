@@ -4,6 +4,11 @@
     "title": "治理規則",
     "description": "在同一個治理工作台中統一管理文字過濾、請求防護、錯誤策略與用戶端升級控制。"
   },
+  "system": {
+    "eyebrow": "System",
+    "title": "系統運維",
+    "description": "在同一個系統工作台中統一處理設定、資料維護、訊息通知與執行日誌。"
+  },
   "mcpPassthroughConfig": "MCP 透傳配置",
   "mcpPassthroughConfigCustom": "自定義 (預留)",
   "mcpPassthroughConfigGlm": "智譜 GLM",

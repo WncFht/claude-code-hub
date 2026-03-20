@@ -1,25 +1,10 @@
 "use client";
 
-import { Bell } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 
 export function NotificationsSkeleton() {
   return (
     <div className="space-y-6">
-      {/* Header skeleton */}
-      <div className="mb-6 md:mb-8">
-        <div className="flex items-start gap-4">
-          <div className="hidden sm:flex items-center justify-center w-12 h-12 rounded-xl bg-primary/10 border border-primary/20 shrink-0">
-            <Bell className="h-6 w-6 text-primary/30" />
-          </div>
-          <div className="space-y-2">
-            <Skeleton className="h-7 w-48" />
-            <Skeleton className="h-4 w-96" />
-          </div>
-        </div>
-      </div>
-
-      {/* Global settings skeleton */}
       <div className="rounded-xl border border-white/5 bg-card/30 p-5 md:p-6 backdrop-blur-sm">
         <div className="flex items-start gap-3 mb-5">
           <Skeleton className="h-9 w-9 rounded-lg" />
@@ -42,7 +27,6 @@ export function NotificationsSkeleton() {
         </div>
       </div>
 
-      {/* Webhook targets skeleton */}
       <div className="rounded-xl border border-white/5 bg-card/30 p-5 md:p-6 backdrop-blur-sm">
         <div className="flex items-start justify-between gap-3 mb-5">
           <div className="flex items-start gap-3">
@@ -59,7 +43,6 @@ export function NotificationsSkeleton() {
         </div>
       </div>
 
-      {/* Notification type cards skeleton */}
       <div className="grid gap-6">
         {[1, 2, 3, 4].map((i) => (
           <div

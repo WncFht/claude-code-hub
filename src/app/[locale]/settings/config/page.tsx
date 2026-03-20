@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { Section } from "@/components/section";
 import { getSystemSettings } from "@/repository/system-config";
-import { SettingsPageHeader } from "../_components/settings-page-header";
+import { SystemModulePage } from "../_components/system-module-page";
 import { AutoCleanupForm } from "./_components/auto-cleanup-form";
 import { SettingsConfigSkeleton } from "./_components/settings-config-skeleton";
 import { SystemSettingsForm } from "./_components/system-settings-form";
@@ -10,19 +10,12 @@ import { SystemSettingsForm } from "./_components/system-settings-form";
 export const dynamic = "force-dynamic";
 
 export default async function SettingsConfigPage() {
-  const t = await getTranslations("settings");
-
   return (
-    <>
-      <SettingsPageHeader
-        title={t("config.title")}
-        description={t("config.description")}
-        icon="settings"
-      />
+    <SystemModulePage role="admin" activeTab="config">
       <Suspense fallback={<SettingsConfigSkeleton />}>
         <SettingsConfigContent />
       </Suspense>
-    </>
+    </SystemModulePage>
   );
 }
 

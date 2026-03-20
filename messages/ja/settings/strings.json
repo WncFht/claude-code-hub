@@ -4,6 +4,11 @@
     "title": "ガバナンスルール",
     "description": "テキストフィルター、リクエスト制御、エラーポリシー、クライアント更新管理を一つの共有ワークスペースで扱います。"
   },
+  "system": {
+    "eyebrow": "System",
+    "title": "システム運用",
+    "description": "設定、データ保守、通知、実行ログを一つの共有システムワークスペースから運用します。"
+  },
   "mcpPassthroughConfig": "MCP パススルー設定",
   "mcpPassthroughConfigCustom": "カスタム (予約)",
   "mcpPassthroughConfigGlm": "GLM",

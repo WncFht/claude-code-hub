@@ -4,7 +4,7 @@ import { useTranslations } from "next-intl";
 import { toast } from "sonner";
 import { Section } from "@/components/section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
-import { SettingsPageHeader } from "../_components/settings-page-header";
+import { SystemModulePage } from "../_components/system-module-page";
 import { GlobalSettingsCard } from "./_components/global-settings-card";
 import { NotificationTypeCard } from "./_components/notification-type-card";
 import { NotificationsSkeleton } from "./_components/notifications-skeleton";
@@ -36,54 +36,54 @@ export default function NotificationsPage() {
   };
 
   if (isLoading || !settings) {
-    return <NotificationsSkeleton />;
+    return (
+      <SystemModulePage role="admin" activeTab="notifications">
+        <NotificationsSkeleton />
+      </SystemModulePage>
+    );
   }
 
   return (
-    <div className="space-y-6">
-      <SettingsPageHeader
-        title={t("notifications.title")}
-        description={t("notifications.description")}
-        icon="bell"
-      />
+    <SystemModulePage role="admin" activeTab="notifications">
+      <div className="space-y-6">
+        {loadError ? (
+          <Alert variant="destructive">
+            <AlertTitle>{t("notifications.form.loadError")}</AlertTitle>
+            <AlertDescription>{loadError}</AlertDescription>
+          </Alert>
+        ) : null}
 
-      {loadError ? (
-        <Alert variant="destructive">
-          <AlertTitle>{t("notifications.form.loadError")}</AlertTitle>
-          <AlertDescription>{loadError}</AlertDescription>
-        </Alert>
-      ) : null}
+        <GlobalSettingsCard
+          enabled={settings.enabled}
+          onEnabledChange={async (enabled) => {
+            await handleUpdateSettings({ enabled });
+          }}
+        />
 
-      <GlobalSettingsCard
-        enabled={settings.enabled}
-        onEnabledChange={async (enabled) => {
-          await handleUpdateSettings({ enabled });
-        }}
-      />
+        <WebhookTargetsSection
+          targets={targets}
+          onCreate={createTarget}
+          onUpdate={updateTarget}
+          onDelete={deleteTarget}
+          onTest={testTarget}
+        />
 
-      <WebhookTargetsSection
-        targets={targets}
-        onCreate={createTarget}
-        onUpdate={updateTarget}
-        onDelete={deleteTarget}
-        onTest={testTarget}
-      />
-
-      <Section title={t("notifications.bindings.title")} icon="bell" noPadding>
-        <div className="grid gap-4 p-5 md:p-6 pt-0">
-          {NOTIFICATION_TYPES.map((type) => (
-            <NotificationTypeCard
-              key={type}
-              type={type}
-              settings={settings}
-              targets={targets}
-              bindings={bindingsByType[type]}
-              onUpdateSettings={handleUpdateSettings}
-              onSaveBindings={saveBindings}
-            />
-          ))}
-        </div>
-      </Section>
-    </div>
+        <Section title={t("notifications.bindings.title")} icon="bell" noPadding>
+          <div className="grid gap-4 p-5 md:p-6 pt-0">
+            {NOTIFICATION_TYPES.map((type) => (
+              <NotificationTypeCard
+                key={type}
+                type={type}
+                settings={settings}
+                targets={targets}
+                bindings={bindingsByType[type]}
+                onUpdateSettings={handleUpdateSettings}
+                onSaveBindings={saveBindings}
+              />
+            ))}
+          </div>
+        </Section>
+      </div>
+    </SystemModulePage>
   );
 }
