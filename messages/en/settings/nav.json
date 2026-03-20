@@ -1,15 +1,15 @@
 {
   "apiDocs": "API Docs",
-  "clientVersions": "Updates",
+  "clientVersions": "Client Versions",
   "config": "Config",
   "data": "Data",
   "docs": "Documentation",
-  "errorRules": "Errors",
+  "errorRules": "Error Rules",
   "feedback": "Feedback",
   "logs": "Logs",
   "notifications": "Notifications",
   "prices": "Pricing",
   "providers": "Providers",
-  "requestFilters": "Requests",
-  "sensitiveWords": "Filters"
+  "requestFilters": "Request Filters",
+  "sensitiveWords": "Sensitive Words"
 }

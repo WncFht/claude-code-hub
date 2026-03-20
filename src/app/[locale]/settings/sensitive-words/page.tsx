@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { getCacheStats, listSensitiveWords } from "@/actions/sensitive-words";
 import { Section } from "@/components/section";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SettingsPageHeader } from "../_components/settings-page-header";
+import { PolicyModulePage } from "../_components/policy-module-page";
 import { AddWordDialog } from "./_components/add-word-dialog";
 import { RefreshCacheButton } from "./_components/refresh-cache-button";
 import { SensitiveWordsTableSkeleton } from "./_components/sensitive-words-skeleton";
@@ -15,12 +15,7 @@ export default async function SensitiveWordsPage() {
   const t = await getTranslations("settings");
 
   return (
-    <>
-      <SettingsPageHeader
-        title={t("sensitiveWords.title")}
-        description={t("sensitiveWords.description")}
-        icon="shield-alert"
-      />
+    <PolicyModulePage role="admin" activeTab="sensitive-words">
       <Section
         title={t("sensitiveWords.section.title")}
         description={t("sensitiveWords.section.description")}
@@ -40,7 +35,7 @@ export default async function SensitiveWordsPage() {
           <SensitiveWordsTableContent />
         </Suspense>
       </Section>
-    </>
+    </PolicyModulePage>
   );
 }
 

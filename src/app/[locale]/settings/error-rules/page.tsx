@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { getCacheStats, listErrorRules } from "@/actions/error-rules";
 import { Section } from "@/components/section";
 import { Skeleton } from "@/components/ui/skeleton";
-import { SettingsPageHeader } from "../_components/settings-page-header";
+import { PolicyModulePage } from "../_components/policy-module-page";
 import { AddRuleDialog } from "./_components/add-rule-dialog";
 import { ErrorRuleTester } from "./_components/error-rule-tester";
 import { ErrorRulesTableSkeleton } from "./_components/error-rules-skeleton";
@@ -16,12 +16,7 @@ export default async function ErrorRulesPage() {
   const t = await getTranslations("settings");
 
   return (
-    <>
-      <SettingsPageHeader
-        title={t("errorRules.title")}
-        description={t("errorRules.description")}
-        icon="alert-triangle"
-      />
+    <PolicyModulePage role="admin" activeTab="error-rules">
       <div className="space-y-6">
         <Section
           title={t("errorRules.tester.title")}
@@ -51,7 +46,7 @@ export default async function ErrorRulesPage() {
           </Suspense>
         </Section>
       </div>
-    </>
+    </PolicyModulePage>
   );
 }
 

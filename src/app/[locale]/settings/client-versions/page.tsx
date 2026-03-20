@@ -4,7 +4,7 @@ import { fetchClientVersionStats } from "@/actions/client-versions";
 import { fetchSystemSettings } from "@/actions/system-config";
 import { redirect } from "@/i18n/routing";
 import { getSession } from "@/lib/auth";
-import { SettingsPageHeader } from "../_components/settings-page-header";
+import { PolicyModulePage } from "../_components/policy-module-page";
 import { SettingsSection } from "../_components/ui/settings-ui";
 import { ClientVersionStatsTable } from "./_components/client-version-stats-table";
 import { ClientVersionToggle } from "./_components/client-version-toggle";
@@ -29,36 +29,31 @@ export default async function ClientVersionsPage({
   }
 
   return (
-    <div className="space-y-6">
-      <SettingsPageHeader
-        title={t("clientVersions.title")}
-        description={t("clientVersions.description")}
-        icon="smartphone"
-      />
-      {/* Settings Toggle Section */}
-      <SettingsSection
-        title={t("clientVersions.section.settings.title")}
-        description={t("clientVersions.section.settings.description")}
-        icon="smartphone"
-        iconColor="text-[#E25706]"
-      >
-        <Suspense fallback={<ClientVersionsSettingsSkeleton />}>
-          <ClientVersionsSettingsContent />
-        </Suspense>
-      </SettingsSection>
+    <PolicyModulePage role="admin" activeTab="client-versions">
+      <div className="space-y-6">
+        <SettingsSection
+          title={t("clientVersions.section.settings.title")}
+          description={t("clientVersions.section.settings.description")}
+          icon="smartphone"
+          iconColor="text-[#E25706]"
+        >
+          <Suspense fallback={<ClientVersionsSettingsSkeleton />}>
+            <ClientVersionsSettingsContent />
+          </Suspense>
+        </SettingsSection>
 
-      {/* Version Distribution Section */}
-      <SettingsSection
-        title={t("clientVersions.section.distribution.title")}
-        description={t("clientVersions.section.distribution.description")}
-        icon="smartphone"
-        iconColor="text-[#E25706]"
-      >
-        <Suspense fallback={<ClientVersionsTableSkeleton />}>
-          <ClientVersionsStatsContent />
-        </Suspense>
-      </SettingsSection>
-    </div>
+        <SettingsSection
+          title={t("clientVersions.section.distribution.title")}
+          description={t("clientVersions.section.distribution.description")}
+          icon="smartphone"
+          iconColor="text-[#E25706]"
+        >
+          <Suspense fallback={<ClientVersionsTableSkeleton />}>
+            <ClientVersionsStatsContent />
+          </Suspense>
+        </SettingsSection>
+      </div>
+    </PolicyModulePage>
   );
 }
 

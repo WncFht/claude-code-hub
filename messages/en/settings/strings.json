@@ -1,4 +1,9 @@
 {
+  "policy": {
+    "eyebrow": "Policy",
+    "title": "Governance rules",
+    "description": "Manage text filters, request guards, error policies, and client rollout controls from one shared workspace."
+  },
   "mcpPassthroughConfig": "MCP Passthrough Configuration",
   "mcpPassthroughConfigCustom": "Custom (Reserved)",
   "mcpPassthroughConfigGlm": "GLM",

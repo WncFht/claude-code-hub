@@ -1,4 +1,9 @@
 {
+  "policy": {
+    "eyebrow": "Policy",
+    "title": "Правила управления",
+    "description": "Управляйте фильтрами текста, защитой запросов, правилами ошибок и контролем обновлений клиентов из одного общего пространства."
+  },
   "mcpPassthroughConfig": "Конфигурация сквозной передачи MCP",
   "mcpPassthroughConfigCustom": "Пользовательский (Зарезервировано)",
   "mcpPassthroughConfigGlm": "GLM",

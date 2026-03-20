@@ -1,4 +1,9 @@
 {
+  "policy": {
+    "eyebrow": "Policy",
+    "title": "ガバナンスルール",
+    "description": "テキストフィルター、リクエスト制御、エラーポリシー、クライアント更新管理を一つの共有ワークスペースで扱います。"
+  },
   "mcpPassthroughConfig": "MCP パススルー設定",
   "mcpPassthroughConfigCustom": "カスタム (予約)",
   "mcpPassthroughConfigGlm": "GLM",

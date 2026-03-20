@@ -1,15 +1,15 @@
 {
   "apiDocs": "API док.",
-  "clientVersions": "Обновления",
+  "clientVersions": "Версии клиентов",
   "config": "Конфиг",
   "data": "Данные",
   "docs": "Документация",
-  "errorRules": "Ошибки",
+  "errorRules": "Правила ошибок",
   "feedback": "Отзывы",
   "logs": "Логи",
   "notifications": "Уведомления",
   "prices": "Цены",
   "providers": "Поставщики",
-  "requestFilters": "Запросы",
-  "sensitiveWords": "Фильтры"
+  "requestFilters": "Фильтры запросов",
+  "sensitiveWords": "Чувствительные слова"
 }

@@ -1,4 +1,9 @@
 {
+  "policy": {
+    "eyebrow": "Policy",
+    "title": "治理规则",
+    "description": "在同一个治理工作台中统一管理文本过滤、请求防护、错误策略和客户端升级控制。"
+  },
   "mcpPassthroughConfig": "MCP 透传配置",
   "mcpPassthroughConfigNone": "不启用",
   "mcpPassthroughConfigMinimax": "Minimax",
