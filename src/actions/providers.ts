@@ -84,6 +84,7 @@ import type {
   ProviderBatchPatch,
   ProviderBatchPatchField,
   ProviderDisplay,
+  ProviderModelDiscoveryStatus,
   ProviderPatchOperation,
   ProviderStatisticsMap,
   ProviderType,
@@ -109,6 +110,14 @@ type AutoSortResult = {
     groupCount: number;
   };
   applied: boolean;
+};
+
+type ProviderModelSyncResult = {
+  providerId: number;
+  status: ProviderModelDiscoveryStatus;
+  discoveredModels: string[] | null;
+  lastModelSyncAt: string | null;
+  lastModelSyncError: string | null;
 };
 
 const API_TEST_TIMEOUT_LIMITS = {
@@ -270,9 +279,13 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
       // 安全处理 createdAt 和 updatedAt
       let createdAtStr: string;
       let updatedAtStr: string;
+      let lastModelSyncAtStr: string | null = null;
       try {
         createdAtStr = provider.createdAt.toISOString().split("T")[0];
         updatedAtStr = provider.updatedAt.toISOString().split("T")[0];
+        lastModelSyncAtStr = provider.lastModelSyncAt
+          ? provider.lastModelSyncAt.toISOString()
+          : null;
       } catch (error) {
         logger.trace("getProviders:date_conversion_error", {
           providerId: provider.id,
@@ -300,6 +313,10 @@ export async function getProviders(): Promise<ProviderDisplay[]> {
         activeTimeStart: provider.activeTimeStart,
         activeTimeEnd: provider.activeTimeEnd,
         allowedModels: provider.allowedModels,
+        discoveredModels: provider.discoveredModels ?? null,
+        modelDiscoveryStatus: provider.modelDiscoveryStatus ?? null,
+        lastModelSyncAt: lastModelSyncAtStr,
+        lastModelSyncError: provider.lastModelSyncError ?? null,
         allowedClients: provider.allowedClients,
         blockedClients: provider.blockedClients,
         mcpPassthroughType: provider.mcpPassthroughType,
@@ -4788,6 +4805,72 @@ async function fetchAnthropicModels(
     return buildSuccessResult(result.data.map((m) => m.id).sort(), "fetchAnthropicModels");
   } catch (error) {
     return handleFetchException(error, "fetchAnthropicModels");
+  }
+}
+
+export async function syncProviderModels(
+  providerId: number
+): Promise<ActionResult<ProviderModelSyncResult>> {
+  try {
+    const session = await getSession();
+    if (!session || session.user.role !== "admin") {
+      return { ok: false, error: "无权限执行此操作" };
+    }
+
+    const provider = await findProviderById(providerId);
+    if (!provider) {
+      return { ok: false, error: "供应商不存在" };
+    }
+
+    const syncAttemptedAt = new Date();
+    const upstreamResult = await fetchUpstreamModels({
+      providerUrl: provider.url,
+      apiKey: provider.key,
+      providerType: provider.providerType,
+      proxyUrl: provider.proxyUrl ?? undefined,
+      proxyFallbackToDirect: provider.proxyFallbackToDirect ?? false,
+    });
+
+    const nextStatus: ProviderModelDiscoveryStatus = upstreamResult.ok ? "success" : "error";
+    const nextDiscoveredModels = upstreamResult.ok
+      ? upstreamResult.data.models
+      : (provider.discoveredModels ?? null);
+    const nextSyncError = upstreamResult.ok ? null : upstreamResult.error;
+
+    const updated = await updateProvider(providerId, {
+      discovered_models: nextDiscoveredModels,
+      model_discovery_status: nextStatus,
+      last_model_sync_at: syncAttemptedAt,
+      last_model_sync_error: nextSyncError,
+    });
+
+    if (!updated) {
+      return { ok: false, error: "更新供应商模型快照失败" };
+    }
+
+    await broadcastProviderCacheInvalidation({ operation: "edit", providerId });
+
+    return {
+      ok: true,
+      data: {
+        providerId,
+        status: nextStatus,
+        discoveredModels: updated.discoveredModels ?? nextDiscoveredModels ?? null,
+        lastModelSyncAt: updated.lastModelSyncAt
+          ? updated.lastModelSyncAt.toISOString()
+          : syncAttemptedAt.toISOString(),
+        lastModelSyncError: updated.lastModelSyncError ?? nextSyncError ?? null,
+      },
+    };
+  } catch (error) {
+    logger.error("syncProviderModels error", {
+      providerId,
+      error: error instanceof Error ? error.message : String(error),
+    });
+    return {
+      ok: false,
+      error: error instanceof Error ? error.message : "同步供应商模型快照失败",
+    };
   }
 }
 

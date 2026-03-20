@@ -10,6 +10,8 @@ export type ProviderType =
   | "gemini-cli"
   | "openai-compatible";
 
+export type ProviderModelDiscoveryStatus = "success" | "error";
+
 // Codex（Responses API）请求参数覆写偏好
 // - "inherit": 遵循客户端请求（默认）
 // - 其他值: 强制覆写请求体字段
@@ -310,6 +312,10 @@ export interface Provider {
   // - 非 Anthropic 提供商：声明列表（提供商声称支持的模型，可选）
   // - null 或空数组：Anthropic 允许所有 claude 模型，非 Anthropic 允许任意模型
   allowedModels: string[] | null;
+  discoveredModels?: string[] | null;
+  modelDiscoveryStatus?: ProviderModelDiscoveryStatus | null;
+  lastModelSyncAt?: Date | null;
+  lastModelSyncError?: string | null;
   allowedClients: string[]; // Allowed client patterns (empty = no restriction)
   blockedClients: string[]; // Blocked client patterns (blacklist, checked before allowedClients)
 
@@ -421,6 +427,10 @@ export interface ProviderDisplay {
   activeTimeEnd: string | null;
   // 模型列表（双重语义）
   allowedModels: string[] | null;
+  discoveredModels?: string[] | null;
+  modelDiscoveryStatus?: ProviderModelDiscoveryStatus | null;
+  lastModelSyncAt?: string | null;
+  lastModelSyncError?: string | null;
   allowedClients: string[]; // Allowed client patterns (empty = no restriction)
   blockedClients: string[]; // Blocked client patterns (blacklist, checked before allowedClients)
   // MCP 透传类型
@@ -515,6 +525,10 @@ export interface CreateProviderData {
   active_time_start?: string | null;
   active_time_end?: string | null;
   allowed_models?: string[] | null;
+  discovered_models?: string[] | null;
+  model_discovery_status?: ProviderModelDiscoveryStatus | null;
+  last_model_sync_at?: Date | null;
+  last_model_sync_error?: string | null;
   allowed_clients?: string[] | null;
   blocked_clients?: string[] | null;
   mcp_passthrough_type?: McpPassthroughType;
@@ -594,6 +608,10 @@ export interface UpdateProviderData {
   active_time_start?: string | null;
   active_time_end?: string | null;
   allowed_models?: string[] | null;
+  discovered_models?: string[] | null;
+  model_discovery_status?: ProviderModelDiscoveryStatus | null;
+  last_model_sync_at?: Date | null;
+  last_model_sync_error?: string | null;
   allowed_clients?: string[] | null;
   blocked_clients?: string[] | null;
   mcp_passthrough_type?: McpPassthroughType;

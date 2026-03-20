@@ -16,7 +16,7 @@ import {
 import { relations, sql } from 'drizzle-orm';
 import type { SpecialSetting } from '@/types/special-settings';
 import type { ResponseFixerConfig } from '@/types/system-config';
-import type { ProviderType } from "@/types/provider";
+import type { ProviderModelDiscoveryStatus, ProviderType } from "@/types/provider";
 import type { FilterOperation } from "@/lib/request-filter-types";
 
 // Enums
@@ -200,6 +200,11 @@ export const providers = pgTable('providers', {
   // - 非 Anthropic 提供商：声明列表（提供商声称支持的模型，可选）
   // - null 或空数组：Anthropic 允许所有 claude 模型，非 Anthropic 允许任意模型
   allowedModels: jsonb('allowed_models').$type<string[] | null>().default(null),
+  discoveredModels: jsonb('discovered_models').$type<string[] | null>().default(null),
+  modelDiscoveryStatus: varchar('model_discovery_status', { length: 20 })
+    .$type<ProviderModelDiscoveryStatus | null>(),
+  lastModelSyncAt: timestamp('last_model_sync_at', { withTimezone: true }),
+  lastModelSyncError: text('last_model_sync_error'),
 
   // Client restrictions for this provider
   // allowedClients: empty = no restriction; non-empty = only listed patterns allowed
