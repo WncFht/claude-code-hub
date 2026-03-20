@@ -410,7 +410,7 @@ export function RoutingSection({ subSectionRefs }: RoutingSectionProps) {
                   <p className="text-xs text-muted-foreground">
                     {t("sections.routing.modelDiscovery.allowAllNote")}
                   </p>
-                ) : (
+                ) : modelVisibility.hasDiscoveredSnapshot ? (
                   <div className="grid gap-3 lg:grid-cols-3">
                     <div className="space-y-2">
                       <div className="text-xs font-medium text-foreground/80">
@@ -440,7 +440,7 @@ export function RoutingSection({ subSectionRefs }: RoutingSectionProps) {
                       />
                     </div>
                   </div>
-                )}
+                ) : null}
               </div>
             </FieldGroup>
           )}

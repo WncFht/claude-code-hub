@@ -30,6 +30,20 @@ export function buildProviderModelVisibility({
   const normalizedDiscoveredModels = normalizeProviderModelList(discoveredModels);
   const normalizedAllowedModels = normalizeProviderModelList(allowedModels);
   const allowAllModels = normalizedAllowedModels.length === 0;
+  const hasDiscoveredSnapshot = discoveredModels != null;
+
+  if (!hasDiscoveredSnapshot) {
+    return {
+      discoveredModels: normalizedDiscoveredModels,
+      allowedModels: normalizedAllowedModels,
+      allowAllModels,
+      hasDiscoveredSnapshot: false,
+      matchedModels: [],
+      whitelistOnlyModels: [],
+      discoveredOnlyModels: [],
+    };
+  }
+
   const discoveredSet = new Set(normalizedDiscoveredModels);
   const allowedSet = new Set(normalizedAllowedModels);
 
@@ -37,7 +51,7 @@ export function buildProviderModelVisibility({
     discoveredModels: normalizedDiscoveredModels,
     allowedModels: normalizedAllowedModels,
     allowAllModels,
-    hasDiscoveredSnapshot: discoveredModels != null,
+    hasDiscoveredSnapshot,
     matchedModels: allowAllModels
       ? []
       : normalizedAllowedModels.filter((model) => discoveredSet.has(model)),

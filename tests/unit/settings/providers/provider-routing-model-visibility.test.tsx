@@ -348,6 +348,34 @@ describe("RoutingSection model visibility", () => {
     unmount();
   });
 
+  it("does not mark whitelist models as missing when no discovery snapshot exists yet", () => {
+    setMockForm({
+      state: createMockState({ allowedModels: ["gpt-5.4", "gpt-5.3-codex"] }),
+      provider: makeProvider({
+        discoveredModels: null,
+        modelDiscoveryStatus: null,
+        lastModelSyncAt: null,
+        lastModelSyncError: null,
+      }),
+      mode: "edit",
+    });
+
+    const { container, unmount } = render(<RoutingSection />);
+    const discoverySection = Array.from(container.querySelectorAll("section")).find(
+      (section) =>
+        section.firstElementChild?.textContent === "sections.routing.modelDiscovery.title"
+    );
+
+    expect(discoverySection?.textContent).toContain("sections.routing.modelDiscovery.empty");
+    expect(discoverySection?.textContent).not.toContain(
+      "sections.routing.modelDiscovery.groups.whitelistOnly"
+    );
+    expect(discoverySection?.textContent).not.toContain("gpt-5.4");
+    expect(discoverySection?.textContent).not.toContain("gpt-5.3-codex");
+
+    unmount();
+  });
+
   it("renders last sync error details when the snapshot is stale", () => {
     setMockForm({
       state: createMockState({ allowedModels: ["claude-match"] }),

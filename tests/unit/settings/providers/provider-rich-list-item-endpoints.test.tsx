@@ -332,6 +332,31 @@ describe("ProviderRichListItem Endpoint Display", () => {
     unmount();
   });
 
+  test("does not render whitelist mismatch when no upstream snapshot exists yet", async () => {
+    const provider = makeProviderDisplay({
+      discoveredModels: null,
+      modelDiscoveryStatus: null,
+      lastModelSyncAt: null,
+      allowedModels: ["gpt-5.4", "gpt-5.3-codex"],
+    });
+
+    const { unmount } = renderWithProviders(
+      <ProviderRichListItem
+        provider={provider}
+        currentUser={ADMIN_USER}
+        enableMultiProviderTypes={true}
+      />
+    );
+
+    await flushTicks(5);
+
+    expect(document.body.textContent).toContain("No snapshot");
+    expect(document.body.textContent).toContain("Whitelist 2");
+    expect(document.body.textContent).not.toContain("2 not discovered");
+
+    unmount();
+  });
+
   test("wraps the mobile model summary in a responsive hidden container", async () => {
     const provider = makeProviderDisplay({
       discoveredModels: ["claude-haiku-4-5", "claude-sonnet-4-5"],
