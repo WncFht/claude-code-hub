@@ -5,11 +5,7 @@ import { Link } from "@/i18n/routing";
 import { type ConsoleRole, getVisibleConsoleModuleTabs } from "@/lib/console/module-registry";
 import { cn } from "@/lib/utils";
 
-type PolicyModuleTabId =
-  | "sensitive-words"
-  | "error-rules"
-  | "request-filters"
-  | "client-versions";
+type PolicyModuleTabId = "sensitive-words" | "error-rules" | "request-filters" | "client-versions";
 
 interface PolicyModulePageProps {
   role: ConsoleRole;
@@ -17,11 +13,7 @@ interface PolicyModulePageProps {
   children: ReactNode;
 }
 
-export async function PolicyModulePage({
-  role,
-  activeTab,
-  children,
-}: PolicyModulePageProps) {
+export async function PolicyModulePage({ role, activeTab, children }: PolicyModulePageProps) {
   const t = await getTranslations("settings");
   const tabs = getVisibleConsoleModuleTabs({
     moduleId: "policy",

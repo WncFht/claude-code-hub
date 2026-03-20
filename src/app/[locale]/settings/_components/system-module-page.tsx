@@ -15,11 +15,7 @@ interface SystemModulePageProps {
   children: ReactNode;
 }
 
-export function SystemModulePage({
-  role,
-  activeTab,
-  children,
-}: SystemModulePageProps) {
+export function SystemModulePage({ role, activeTab, children }: SystemModulePageProps) {
   const t = useTranslations("settings");
   const tabs = getVisibleConsoleModuleTabs({
     moduleId: "system",
