@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
+import type { ReactNode } from "react";
 import { PageHero } from "@/components/page-hero";
 import { Link } from "@/i18n/routing";
 import { cn } from "@/lib/utils";

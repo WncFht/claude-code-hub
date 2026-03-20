@@ -1,12 +1,12 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { usePathname } from "@/i18n/routing";
 import { ConsoleShell } from "@/components/console/console-shell";
+import { usePathname } from "@/i18n/routing";
 import {
-  resolveConsoleRoute,
   type ConsoleModuleId,
   type ConsoleRole,
+  resolveConsoleRoute,
 } from "@/lib/console/module-registry";
 
 interface DashboardMainProps {

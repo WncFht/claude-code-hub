@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import {
-  getVisibleConsoleModules,
-  getVisibleConsoleRoutes,
   type ConsoleModuleId,
   type ConsoleRole,
   type ConsoleRouteDefinition,
+  getVisibleConsoleModules,
+  getVisibleConsoleRoutes,
 } from "@/lib/console/module-registry";
 import { ConsoleNav } from "./console-nav";
 import { ConsoleStage } from "./console-stage";
@@ -47,7 +47,10 @@ export function ConsoleShell({
   });
 
   return (
-    <div data-slot="console-shell" className="min-h-[var(--cch-viewport-height,100vh)] bg-background">
+    <div
+      data-slot="console-shell"
+      className="min-h-[var(--cch-viewport-height,100vh)] bg-background"
+    >
       {header ? <div data-slot="console-header">{header}</div> : null}
 
       <div className="space-y-6">

@@ -1,5 +1,5 @@
-import type { ConsoleModuleId } from "@/lib/console/module-registry";
 import { Link } from "@/i18n/routing";
+import type { ConsoleModuleId } from "@/lib/console/module-registry";
 import { cn } from "@/lib/utils";
 
 export interface ConsoleNavItem {

@@ -1,5 +1,5 @@
-import type { ReactNode } from "react";
 import { getTranslations } from "next-intl/server";
+import type { ReactNode } from "react";
 import { redirect } from "@/i18n/routing";
 
 import { getSession } from "@/lib/auth";

@@ -38,35 +38,23 @@ vi.mock("next-intl/server", () => ({
   getTranslations: vi.fn(async () => (key: string) => key),
 }));
 
-vi.mock(
-  "@/app/[locale]/settings/providers/_components/provider-manager-loader",
-  () => ({
-    ProviderManagerLoader: ({ embedded }: { embedded?: boolean }) => (
-      <div data-testid="provider-manager-loader" data-embedded={embedded ? "true" : "false"} />
-    ),
-  })
-);
+vi.mock("@/app/[locale]/settings/providers/_components/provider-manager-loader", () => ({
+  ProviderManagerLoader: ({ embedded }: { embedded?: boolean }) => (
+    <div data-testid="provider-manager-loader" data-embedded={embedded ? "true" : "false"} />
+  ),
+}));
 
-vi.mock(
-  "@/app/[locale]/settings/providers/_components/auto-sort-priority-dialog",
-  () => ({
-    AutoSortPriorityDialog: () => <button type="button">auto-sort</button>,
-  })
-);
+vi.mock("@/app/[locale]/settings/providers/_components/auto-sort-priority-dialog", () => ({
+  AutoSortPriorityDialog: () => <button type="button">auto-sort</button>,
+}));
 
-vi.mock(
-  "@/app/[locale]/settings/providers/_components/recluster-vendors-dialog",
-  () => ({
-    ReclusterVendorsDialog: () => <button type="button">recluster</button>,
-  })
-);
+vi.mock("@/app/[locale]/settings/providers/_components/recluster-vendors-dialog", () => ({
+  ReclusterVendorsDialog: () => <button type="button">recluster</button>,
+}));
 
-vi.mock(
-  "@/app/[locale]/settings/providers/_components/scheduling-rules-dialog",
-  () => ({
-    SchedulingRulesDialog: () => <button type="button">schedule</button>,
-  })
-);
+vi.mock("@/app/[locale]/settings/providers/_components/scheduling-rules-dialog", () => ({
+  SchedulingRulesDialog: () => <button type="button">schedule</button>,
+}));
 
 vi.mock("@/components/ui/button", () => ({
   Button: ({ children }: { children: ReactNode }) => <div>{children}</div>,
@@ -122,7 +110,8 @@ describe("Providers module pages", () => {
 
     authMocks.getSession.mockResolvedValue(makeSession("admin"));
 
-    const DashboardProvidersPage = (await import("@/app/[locale]/dashboard/providers/page")).default;
+    const DashboardProvidersPage = (await import("@/app/[locale]/dashboard/providers/page"))
+      .default;
     const SettingsProvidersPage = (await import("@/app/[locale]/settings/providers/page")).default;
 
     const dashboardHtml = renderToStaticMarkup(

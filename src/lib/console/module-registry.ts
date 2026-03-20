@@ -227,6 +227,8 @@ export function getVisibleConsoleRoutes({
 }
 
 export function getVisibleConsoleModules(role: ConsoleRole) {
-  const visibleModuleIds = new Set(getVisibleConsoleRoutes({ role }).map((route) => route.moduleId));
+  const visibleModuleIds = new Set(
+    getVisibleConsoleRoutes({ role }).map((route) => route.moduleId)
+  );
   return CONSOLE_MODULES.filter((module) => visibleModuleIds.has(module.id));
 }
