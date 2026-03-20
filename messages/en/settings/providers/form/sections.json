@@ -307,6 +307,28 @@
       "selectedOnly": "Only the selected {count} models are allowed. Other models will not be routed to this provider.",
       "title": "Model Allowlist"
     },
+    "modelDiscovery": {
+      "title": "Upstream Model Snapshot",
+      "desc": "Persist the provider's upstream-discovered models and compare them with the routing allowlist.",
+      "syncButton": "Sync Upstream Models",
+      "syncSuccess": "Synced {count} upstream models",
+      "syncFailed": "Failed to sync upstream models",
+      "status": {
+        "neverSynced": "No upstream snapshot yet",
+        "success": "Snapshot is up to date",
+        "error": "Last sync failed"
+      },
+      "lastSynced": "Last synced:",
+      "snapshotModels": "Discovered upstream models",
+      "empty": "No upstream snapshot yet.",
+      "allowAllNote": "Routing currently allows all models, so only the upstream snapshot is shown.",
+      "groups": {
+        "matched": "Matched by allowlist",
+        "whitelistOnly": "Allowlist only",
+        "discoveredOnly": "Upstream only",
+        "none": "None"
+      }
+    },
     "clientRestrictions": {
       "toggleLabel": "Enable Client Restrictions",
       "toggleDesc": "Clients are not restricted by default. Enable to configure allowlist/blocklist rules.",

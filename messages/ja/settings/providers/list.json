@@ -43,5 +43,13 @@
   "actionDelete": "削除",
   "selectProvider": "{name} を選択",
   "schedule": "スケジュール",
-  "proxyEnabled": "プロキシ有効"
+  "proxyEnabled": "プロキシ有効",
+  "modelSummary": {
+    "upstream": "上流 {count}",
+    "allowAll": "すべて許可",
+    "whitelist": "許可リスト {count}",
+    "whitelistOnly": "{count} 件が上流未検出",
+    "neverSynced": "スナップショットなし",
+    "syncFailed": "モデル同期失敗"
+  }
 }

@@ -43,5 +43,13 @@
   "actionDelete": "Delete",
   "selectProvider": "Select {name}",
   "schedule": "Schedule",
-  "proxyEnabled": "Proxy enabled"
+  "proxyEnabled": "Proxy enabled",
+  "modelSummary": {
+    "upstream": "Upstream {count}",
+    "allowAll": "Allow all",
+    "whitelist": "Whitelist {count}",
+    "whitelistOnly": "{count} not discovered",
+    "neverSynced": "No snapshot",
+    "syncFailed": "Model sync failed"
+  }
 }

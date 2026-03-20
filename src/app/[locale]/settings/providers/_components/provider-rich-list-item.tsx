@@ -1,5 +1,4 @@
 "use client";
-import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { useQueryClient } from "@tanstack/react-query";
 import {
   AlertTriangle,
@@ -16,7 +15,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useTranslations } from "next-intl";
-import { memo, useCallback, useEffect, useState, useTransition } from "react";
+import { memo, useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import { toast } from "sonner";
 import {
   editProvider,
@@ -57,6 +56,7 @@ import {
 import { Skeleton } from "@/components/ui/skeleton";
 import { Switch } from "@/components/ui/switch";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
+import { VisuallyHidden } from "@/components/ui/visually-hidden";
 import {
   PROVIDER_GROUP,
   PROVIDER_LIMITS,
@@ -77,6 +77,7 @@ import { InlineEditPopover } from "./inline-edit-popover";
 import { invalidateProviderQueries } from "./invalidate-provider-queries";
 import { PriorityEditPopover } from "./priority-edit-popover";
 import { ProviderEndpointHover } from "./provider-endpoint-hover";
+import { buildProviderModelVisibility } from "./provider-model-visibility";
 
 interface ProviderRichListItemProps {
   provider: ProviderDisplay;
@@ -110,6 +111,61 @@ interface ProviderRichListItemProps {
   allGroups?: string[];
   userGroups?: string[];
   isAdmin?: boolean;
+}
+
+function ProviderModelSummary({
+  hasDiscoveredSnapshot,
+  discoveredCount,
+  allowAllModels,
+  whitelistCount,
+  whitelistOnlyCount,
+  modelDiscoveryStatus,
+  tList,
+}: {
+  hasDiscoveredSnapshot: boolean;
+  discoveredCount: number;
+  allowAllModels: boolean;
+  whitelistCount: number;
+  whitelistOnlyCount: number;
+  modelDiscoveryStatus: ProviderDisplay["modelDiscoveryStatus"];
+  tList: ReturnType<typeof useTranslations>;
+}) {
+  return (
+    <div className="flex flex-wrap items-center gap-1.5">
+      {modelDiscoveryStatus === "error" ? (
+        <Badge variant="destructive" className="text-xs">
+          {tList("modelSummary.syncFailed")}
+        </Badge>
+      ) : hasDiscoveredSnapshot ? (
+        <Badge variant="secondary" className="text-xs">
+          {tList("modelSummary.upstream", { count: discoveredCount })}
+        </Badge>
+      ) : (
+        <Badge variant="outline" className="text-xs">
+          {tList("modelSummary.neverSynced")}
+        </Badge>
+      )}
+
+      {allowAllModels ? (
+        <Badge variant="outline" className="text-xs">
+          {tList("modelSummary.allowAll")}
+        </Badge>
+      ) : (
+        <Badge variant="outline" className="text-xs">
+          {tList("modelSummary.whitelist", { count: whitelistCount })}
+        </Badge>
+      )}
+
+      {!allowAllModels && whitelistOnlyCount > 0 && (
+        <Badge
+          variant="outline"
+          className="border-amber-300 bg-amber-50 text-xs text-amber-700 dark:border-amber-700 dark:bg-amber-900/30 dark:text-amber-300"
+        >
+          {tList("modelSummary.whitelistOnly", { count: whitelistOnlyCount })}
+        </Badge>
+      )}
+    </div>
+  );
 }
 
 function ProviderRichListItemInner({
@@ -497,6 +553,14 @@ function ProviderRichListItemInner({
 
   const hasKeyCircuitOpen = healthStatus?.circuitState === "open";
   const hasEndpointCircuitOpen = endpointCircuitInfo?.some((ep) => ep.circuitState === "open");
+  const modelVisibility = useMemo(
+    () =>
+      buildProviderModelVisibility({
+        discoveredModels: provider.discoveredModels,
+        allowedModels: provider.allowedModels,
+      }),
+    [provider.allowedModels, provider.discoveredModels]
+  );
   const accentColor = hasKeyCircuitOpen
     ? "border-l-red-500"
     : hasEndpointCircuitOpen
@@ -607,6 +671,16 @@ function ProviderRichListItemInner({
         </div>
 
         {/* Mobile: metrics row */}
+        <ProviderModelSummary
+          hasDiscoveredSnapshot={modelVisibility.hasDiscoveredSnapshot}
+          discoveredCount={modelVisibility.discoveredModels.length}
+          allowAllModels={modelVisibility.allowAllModels}
+          whitelistCount={modelVisibility.allowedModels.length}
+          whitelistOnlyCount={modelVisibility.whitelistOnlyModels.length}
+          modelDiscoveryStatus={provider.modelDiscoveryStatus ?? null}
+          tList={tList}
+        />
+
         <div className="flex items-center gap-3 text-sm md:hidden">
           <div className="flex items-center gap-1">
             <span className="text-xs text-muted-foreground">{tList("priority")}:</span>
@@ -877,6 +951,17 @@ function ProviderRichListItemInner({
                 ).toString(),
               })}
             </span>
+          </div>
+          <div className="mt-2">
+            <ProviderModelSummary
+              hasDiscoveredSnapshot={modelVisibility.hasDiscoveredSnapshot}
+              discoveredCount={modelVisibility.discoveredModels.length}
+              allowAllModels={modelVisibility.allowAllModels}
+              whitelistCount={modelVisibility.allowedModels.length}
+              whitelistOnlyCount={modelVisibility.whitelistOnlyModels.length}
+              modelDiscoveryStatus={provider.modelDiscoveryStatus ?? null}
+              tList={tList}
+            />
           </div>
         </div>
 

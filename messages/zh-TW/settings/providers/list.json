@@ -43,5 +43,13 @@
   "actionDelete": "刪除",
   "selectProvider": "選擇 {name}",
   "schedule": "排程",
-  "proxyEnabled": "已啟用代理"
+  "proxyEnabled": "已啟用代理",
+  "modelSummary": {
+    "upstream": "上游 {count}",
+    "allowAll": "允許全部",
+    "whitelist": "白名單 {count}",
+    "whitelistOnly": "{count} 個未在上游發現",
+    "neverSynced": "暫無快照",
+    "syncFailed": "模型同步失敗"
+  }
 }

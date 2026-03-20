@@ -12,6 +12,10 @@ import type { ProviderDisplay } from "@/types/provider";
 import type { User } from "@/types/user";
 import enMessages from "../../../../messages/en";
 
+vi.mock("@radix-ui/react-visually-hidden", () => ({
+  VisuallyHidden: ({ children }: { children: ReactNode }) => <>{children}</>,
+}));
+
 // Mock dependencies
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ refresh: vi.fn() }),
@@ -99,6 +103,12 @@ function makeProviderDisplay(overrides: Partial<ProviderDisplay> = {}): Provider
     preserveClientIp: false,
     modelRedirects: null,
     allowedModels: null,
+    allowedClients: [],
+    blockedClients: [],
+    discoveredModels: null,
+    modelDiscoveryStatus: null,
+    lastModelSyncAt: null,
+    lastModelSyncError: null,
     mcpPassthroughType: "none",
     mcpPassthroughUrl: null,
     limit5hUsd: null,
@@ -126,8 +136,12 @@ function makeProviderDisplay(overrides: Partial<ProviderDisplay> = {}): Provider
     codexReasoningSummaryPreference: null,
     codexTextVerbosityPreference: null,
     codexParallelToolCallsPreference: null,
+    codexServiceTierPreference: null,
     anthropicMaxTokensPreference: null,
     anthropicThinkingBudgetPreference: null,
+    anthropicAdaptiveThinking: null,
+    geminiGoogleSearchPreference: null,
+    swapCacheTtlBilling: false,
     tpm: null,
     rpm: null,
     rpd: null,
@@ -266,6 +280,54 @@ describe("ProviderRichListItem Endpoint Display", () => {
     expect(document.body.textContent).toContain("First byte: 0s");
     expect(document.body.textContent).toContain("Stream interval: 0s");
     expect(document.body.textContent).toContain("Non-streaming: 0s");
+
+    unmount();
+  });
+
+  test("renders upstream model summary and allow-all state", async () => {
+    const provider = makeProviderDisplay({
+      discoveredModels: ["claude-haiku-4-5", "claude-sonnet-4-5"],
+      modelDiscoveryStatus: "success",
+      lastModelSyncAt: "2026-03-20T00:00:00.000Z",
+      allowedModels: null,
+    });
+
+    const { unmount } = renderWithProviders(
+      <ProviderRichListItem
+        provider={provider}
+        currentUser={ADMIN_USER}
+        enableMultiProviderTypes={true}
+      />
+    );
+
+    await flushTicks(5);
+
+    expect(document.body.textContent).toContain("Upstream 2");
+    expect(document.body.textContent).toContain("Allow all");
+
+    unmount();
+  });
+
+  test("renders whitelist mismatch warning when configured models are missing upstream", async () => {
+    const provider = makeProviderDisplay({
+      discoveredModels: ["claude-sonnet-4-5"],
+      modelDiscoveryStatus: "success",
+      lastModelSyncAt: "2026-03-20T00:00:00.000Z",
+      allowedModels: ["claude-sonnet-4-5", "claude-opus-4-1"],
+    });
+
+    const { unmount } = renderWithProviders(
+      <ProviderRichListItem
+        provider={provider}
+        currentUser={ADMIN_USER}
+        enableMultiProviderTypes={true}
+      />
+    );
+
+    await flushTicks(5);
+
+    expect(document.body.textContent).toContain("Whitelist 2");
+    expect(document.body.textContent).toContain("1 not discovered");
 
     unmount();
   });

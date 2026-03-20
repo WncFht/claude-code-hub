@@ -43,5 +43,13 @@
   "actionDelete": "Удалить",
   "selectProvider": "Выбрать {name}",
   "schedule": "Расписание",
-  "proxyEnabled": "Прокси включен"
+  "proxyEnabled": "Прокси включен",
+  "modelSummary": {
+    "upstream": "Апстрим {count}",
+    "allowAll": "Разрешить все",
+    "whitelist": "Список {count}",
+    "whitelistOnly": "{count} не найдено у апстрима",
+    "neverSynced": "Нет снимка",
+    "syncFailed": "Синхронизация моделей не удалась"
+  }
 }

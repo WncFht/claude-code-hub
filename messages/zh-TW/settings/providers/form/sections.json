@@ -308,6 +308,28 @@
       "selectedOnly": "僅允許所選的 {count} 個模型。其他模型將不會被路由到此供應商。",
       "title": "模型允許清單"
     },
+    "modelDiscovery": {
+      "title": "上游模型快照",
+      "desc": "持久化記錄供應商上游探測到的模型，並與目前路由白名單進行對比。",
+      "syncButton": "同步上游模型",
+      "syncSuccess": "已同步 {count} 個上游模型",
+      "syncFailed": "同步上游模型失敗",
+      "status": {
+        "neverSynced": "還沒有上游快照",
+        "success": "快照已是最新",
+        "error": "最近一次同步失敗"
+      },
+      "lastSynced": "最近同步：",
+      "snapshotModels": "上游發現的模型",
+      "empty": "還沒有上游快照。",
+      "allowAllNote": "目前路由允許全部模型，因此這裡只展示上游快照。",
+      "groups": {
+        "matched": "白名單已命中",
+        "whitelistOnly": "僅白名單中存在",
+        "discoveredOnly": "僅上游中存在",
+        "none": "無"
+      }
+    },
     "clientRestrictions": {
       "toggleLabel": "啟用用戶端限制",
       "toggleDesc": "預設不限制用戶端。啟用後可設定白名單/黑名單。",
