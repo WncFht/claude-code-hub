@@ -95,8 +95,8 @@ export function DashboardNav({ items }: DashboardNavProps) {
       return (
         <div
           className={cn(
-            "inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-sm font-medium transition-all",
-            "bg-primary/5 text-foreground shadow-[0_1px_0_0_rgba(0,0,0,0.03)]"
+            "inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition-all",
+            "border border-primary/20 bg-primary/10 text-foreground shadow-[0_10px_30px_-22px_rgba(69,115,92,0.45)]"
           )}
         >
           {item.label}
@@ -111,9 +111,10 @@ export function DashboardNav({ items }: DashboardNavProps) {
             <Link
               href="/settings/config"
               className={cn(
-                "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium transition-all",
-                "text-muted-foreground hover:text-foreground",
-                isActive && "bg-primary/5 text-foreground shadow-[0_1px_0_0_rgba(0,0,0,0.03)]"
+                "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-all",
+                "border border-transparent text-muted-foreground hover:border-border/70 hover:bg-background/80 hover:text-foreground",
+                isActive &&
+                  "border-primary/20 bg-primary/10 text-foreground shadow-[0_10px_30px_-22px_rgba(69,115,92,0.45)]"
               )}
             >
               {item.label}
@@ -123,7 +124,7 @@ export function DashboardNav({ items }: DashboardNavProps) {
 
           <DropdownMenuContent
             align="start"
-            className="w-56"
+            className="w-56 rounded-2xl border-border/70 bg-card/95 p-2 shadow-[0_24px_80px_-52px_rgba(15,23,42,0.35)] backdrop-blur-xl"
             sideOffset={4}
             onPointerEnter={handleMouseEnter}
             onPointerLeave={handleMouseLeave}
@@ -164,7 +165,10 @@ export function DashboardNav({ items }: DashboardNavProps) {
   };
 
   return (
-    <nav className="hidden items-center gap-1 overflow-x-auto rounded-full border border-border/80 bg-background/80 px-1 py-1 backdrop-blur scrollbar-hide supports-[backdrop-filter]:bg-background/60 md:flex">
+    <nav
+      data-slot="dashboard-nav"
+      className="hidden items-center gap-1 overflow-x-auto rounded-full border border-border/70 bg-background/75 p-1.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)] backdrop-blur-xl scrollbar-hide supports-[backdrop-filter]:bg-background/60 md:flex"
+    >
       {items.map((item) => {
         const isActive = getIsActive(item.href);
 
@@ -173,8 +177,9 @@ export function DashboardNav({ items }: DashboardNavProps) {
         }
 
         const className = cn(
-          "whitespace-nowrap rounded-full px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all hover:text-foreground",
-          isActive && "bg-primary/5 text-foreground shadow-[0_1px_0_0_rgba(0,0,0,0.03)]"
+          "whitespace-nowrap rounded-full border border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/70 hover:bg-background/80 hover:text-foreground",
+          isActive &&
+            "border-primary/20 bg-primary/10 text-foreground shadow-[0_10px_30px_-22px_rgba(69,115,92,0.45)]"
         );
 
         if (item.external) {

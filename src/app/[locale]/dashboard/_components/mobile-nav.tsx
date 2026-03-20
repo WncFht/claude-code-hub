@@ -32,13 +32,16 @@ export function MobileNav({ items }: MobileNavProps) {
         <Button
           variant="ghost"
           size="icon"
-          className="md:hidden"
+          className="rounded-full border border-border/70 bg-background/80 shadow-[inset_0_1px_0_rgba(255,255,255,0.55)] md:hidden"
           aria-label="Toggle navigation menu"
         >
           <Menu className="size-5" />
         </Button>
       </SheetTrigger>
-      <SheetContent side="left" className="w-72">
+      <SheetContent
+        side="left"
+        className="w-72 border-border/70 bg-[linear-gradient(180deg,rgba(255,252,244,0.98),rgba(247,243,233,0.96))] px-4 dark:bg-[linear-gradient(180deg,rgba(24,31,35,0.98),rgba(20,25,30,0.98))]"
+      >
         <VisuallyHidden>
           <SheetTitle>{t("mobileMenuTitle")}</SheetTitle>
         </VisuallyHidden>
@@ -55,10 +58,10 @@ export function MobileNav({ items }: MobileNavProps) {
                   rel="noopener noreferrer"
                   onClick={() => setOpen(false)}
                   className={cn(
-                    "rounded-lg px-4 py-3 text-sm font-medium transition-colors",
+                    "rounded-2xl border px-4 py-3 text-sm font-medium transition-colors",
                     isActive
-                      ? "bg-primary/10 text-foreground"
-                      : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                      ? "border-primary/20 bg-primary/10 text-foreground shadow-[0_16px_34px_-24px_rgba(69,115,92,0.45)]"
+                      : "border-transparent text-muted-foreground hover:border-border/70 hover:bg-background/75 hover:text-foreground"
                   )}
                 >
                   {item.label}
@@ -72,10 +75,10 @@ export function MobileNav({ items }: MobileNavProps) {
                 href={item.href}
                 onClick={() => setOpen(false)}
                 className={cn(
-                  "rounded-lg px-4 py-3 text-sm font-medium transition-colors",
+                  "rounded-2xl border px-4 py-3 text-sm font-medium transition-colors",
                   isActive
-                    ? "bg-primary/10 text-foreground"
-                    : "text-muted-foreground hover:bg-accent hover:text-foreground"
+                    ? "border-primary/20 bg-primary/10 text-foreground shadow-[0_16px_34px_-24px_rgba(69,115,92,0.45)]"
+                    : "border-transparent text-muted-foreground hover:border-border/70 hover:bg-background/75 hover:text-foreground"
                 )}
               >
                 {item.label}
