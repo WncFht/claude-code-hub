@@ -2,7 +2,7 @@ import { getTranslations } from "next-intl/server";
 import { Suspense } from "react";
 import { getModelPrices, getModelPricesPaginated } from "@/actions/model-prices";
 import { Section } from "@/components/section";
-import { SettingsPageHeader } from "../_components/settings-page-header";
+import { ProvidersModulePage } from "../providers/_components/providers-module-page";
 import { ModelPriceDrawer } from "./_components/model-price-drawer";
 import { PriceList } from "./_components/price-list";
 import { PricesSkeleton } from "./_components/prices-skeleton";
@@ -24,19 +24,16 @@ interface SettingsPricesPageProps {
 }
 
 export default async function SettingsPricesPage({ searchParams }: SettingsPricesPageProps) {
-  const t = await getTranslations("settings");
-
   return (
-    <>
-      <SettingsPageHeader
-        title={t("prices.title")}
-        description={t("prices.description")}
-        icon="dollar-sign"
-      />
+    <ProvidersModulePage
+      activeTab="pricing"
+      inventoryHref="/settings/providers"
+      pricingHref="/settings/prices"
+    >
       <Suspense fallback={<PricesSkeleton />}>
         <SettingsPricesContent searchParams={searchParams} />
       </Suspense>
-    </>
+    </ProvidersModulePage>
   );
 }
 

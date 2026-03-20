@@ -65,6 +65,7 @@ interface ProviderManagerProps {
   loading?: boolean;
   refreshing?: boolean;
   addDialogSlot?: ReactNode;
+  embedded?: boolean;
 }
 
 export function ProviderManager({
@@ -79,6 +80,7 @@ export function ProviderManager({
   loading = false,
   refreshing = false,
   addDialogSlot,
+  embedded = false,
 }: ProviderManagerProps) {
   const t = useTranslations("settings.providers.search");
   const tStrings = useTranslations("settings.providers");
@@ -402,15 +404,17 @@ export function ProviderManager({
 
   return (
     <div className="space-y-5">
-      <PageHero
-        eyebrow={tStrings("operator.eyebrow")}
-        title={tStrings("operator.title")}
-        description={tStrings("operator.description")}
-        metrics={heroMetrics}
-        actions={
-          addDialogSlot ? <div className="flex items-center gap-2">{addDialogSlot}</div> : null
-        }
-      />
+      {!embedded ? (
+        <PageHero
+          eyebrow={tStrings("operator.eyebrow")}
+          title={tStrings("operator.title")}
+          description={tStrings("operator.description")}
+          metrics={heroMetrics}
+          actions={
+            addDialogSlot ? <div className="flex items-center gap-2">{addDialogSlot}</div> : null
+          }
+        />
+      ) : null}
 
       <div className="space-y-4 rounded-[1.75rem] border border-border/70 bg-card/85 p-4 shadow-[0_24px_80px_-54px_rgba(15,23,42,0.32)] backdrop-blur-xl md:p-5">
         <div className="flex flex-col gap-4 rounded-[1.35rem] border border-border/60 bg-background/75 p-4 shadow-[inset_0_1px_0_rgba(255,255,255,0.5)]">

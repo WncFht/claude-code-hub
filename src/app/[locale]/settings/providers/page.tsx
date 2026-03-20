@@ -3,9 +3,9 @@ import { getTranslations } from "next-intl/server";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
 import { getSession } from "@/lib/auth";
-import { SettingsPageHeader } from "../_components/settings-page-header";
 import { AutoSortPriorityDialog } from "./_components/auto-sort-priority-dialog";
 import { ProviderManagerLoader } from "./_components/provider-manager-loader";
+import { ProvidersModulePage } from "./_components/providers-module-page";
 import { ReclusterVendorsDialog } from "./_components/recluster-vendors-dialog";
 import { SchedulingRulesDialog } from "./_components/scheduling-rules-dialog";
 
@@ -16,28 +16,25 @@ export default async function SettingsProvidersPage() {
   const session = await getSession();
 
   return (
-    <>
-      <SettingsPageHeader
-        eyebrow={t("providers.operator.eyebrow")}
-        title={t("providers.title")}
-        description={t("providers.description")}
-        icon="database"
-        actions={
-          <>
-            <Button asChild variant="outline">
-              <Link href="/dashboard/leaderboard?scope=provider">
-                <BarChart3 className="h-4 w-4" />
-                {t("providers.section.leaderboard")}
-              </Link>
-            </Button>
-            <AutoSortPriorityDialog />
-            <ReclusterVendorsDialog />
-            <SchedulingRulesDialog />
-          </>
-        }
-      />
-
-      <ProviderManagerLoader currentUser={session?.user} />
-    </>
+    <ProvidersModulePage
+      activeTab="inventory"
+      inventoryHref="/settings/providers"
+      pricingHref="/settings/prices"
+      actions={
+        <>
+          <Button asChild variant="outline">
+            <Link href="/dashboard/leaderboard?scope=provider">
+              <BarChart3 className="h-4 w-4" />
+              {t("providers.section.leaderboard")}
+            </Link>
+          </Button>
+          <AutoSortPriorityDialog />
+          <ReclusterVendorsDialog />
+          <SchedulingRulesDialog />
+        </>
+      }
+    >
+      <ProviderManagerLoader currentUser={session?.user} embedded={true} />
+    </ProvidersModulePage>
   );
 }

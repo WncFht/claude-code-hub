@@ -34,11 +34,13 @@ async function fetchSystemSettings(): Promise<{ currencyDisplay: CurrencyCode }>
 interface ProviderManagerLoaderProps {
   currentUser?: User;
   enableMultiProviderTypes?: boolean;
+  embedded?: boolean;
 }
 
 function ProviderManagerLoaderContent({
   currentUser,
   enableMultiProviderTypes = true,
+  embedded = false,
 }: ProviderManagerLoaderProps) {
   const {
     data: providers = [],
@@ -99,6 +101,7 @@ function ProviderManagerLoaderContent({
       loading={loading}
       refreshing={refreshing}
       addDialogSlot={<AddProviderDialog enableMultiProviderTypes={enableMultiProviderTypes} />}
+      embedded={embedded}
     />
   );
 }

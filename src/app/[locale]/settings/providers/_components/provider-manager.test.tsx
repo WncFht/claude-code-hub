@@ -232,4 +232,25 @@ describe("ProviderManager operator view", () => {
 
     unmount();
   });
+
+  test("does not render a second top-level hero when embedded in the providers module page", () => {
+    const providers = [buildProvider({ id: 1 })];
+
+    const { container, unmount } = renderWithProviders(
+      <ProviderManager
+        providers={providers}
+        currentUser={ADMIN_USER}
+        healthStatus={{}}
+        enableMultiProviderTypes={true}
+        embedded={true}
+      />
+    );
+
+    expect(container.querySelector('[data-slot="page-hero"]')).toBeNull();
+    expect(container.querySelector('[data-testid="provider-list"]')?.textContent).toContain(
+      "List view 1"
+    );
+
+    unmount();
+  });
 });
