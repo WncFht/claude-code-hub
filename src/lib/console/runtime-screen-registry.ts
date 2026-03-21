@@ -36,6 +36,14 @@ const MIGRATED_SCREEN_LOADERS: Partial<
     import("../../components/console-app/screens/providers/providers-inventory-screen"),
   "providers-pricing": () =>
     import("../../components/console-app/screens/providers/providers-pricing-screen"),
+  "policy-sensitive-words": () =>
+    import("../../components/console-app/screens/policy/policy-sensitive-words-screen"),
+  "policy-error-rules": () =>
+    import("../../components/console-app/screens/policy/policy-error-rules-screen"),
+  "policy-request-filters": () =>
+    import("../../components/console-app/screens/policy/policy-request-filters-screen"),
+  "policy-client-versions": () =>
+    import("../../components/console-app/screens/policy/policy-client-versions-screen"),
   "system-config": () => import("../../components/console-app/screens/system/system-config-screen"),
   "system-data": () => import("../../components/console-app/screens/system/system-data-screen"),
   "system-notifications": () =>
