@@ -540,10 +540,10 @@ function ProviderRichListItemInner({
         ? "border-l-emerald-500"
         : "border-l-gray-300 dark:border-l-gray-600";
   const providerMorphContentClassName =
-    "max-w-full sm:max-w-5xl lg:max-w-6xl max-h-[var(--cch-viewport-height-90)] flex flex-col overflow-hidden rounded-[2rem] border border-primary/12 bg-card/95 p-0 gap-0 shadow-[0_36px_110px_-46px_rgba(4,12,8,0.72)]";
+    "max-w-full sm:max-w-5xl lg:max-w-6xl max-h-[var(--cch-viewport-height-90)] flex flex-col overflow-hidden rounded-[2rem] bg-transparent p-3 sm:p-4 shadow-[0_36px_110px_-46px_rgba(4,12,8,0.72)]";
 
   const editDialogBody = (
-    <div className="max-h-[var(--cch-viewport-height-90)] flex min-h-0 flex-col overflow-hidden border-primary/12 bg-card/95 p-0 gap-0">
+    <div className="max-h-[calc(var(--cch-viewport-height-90)-1.5rem)] flex min-h-0 flex-col overflow-hidden">
       <VisuallyHidden>
         <h2>{t("editProvider")}</h2>
       </VisuallyHidden>
@@ -563,7 +563,7 @@ function ProviderRichListItemInner({
   );
 
   const cloneDialogBody = (
-    <div className="max-h-[var(--cch-viewport-height-90)] flex min-h-0 flex-col overflow-hidden border-primary/12 bg-card/95 p-0 gap-0">
+    <div className="max-h-[calc(var(--cch-viewport-height-90)-1.5rem)] flex min-h-0 flex-col overflow-hidden">
       <VisuallyHidden>
         <h2>{t("clone")}</h2>
       </VisuallyHidden>

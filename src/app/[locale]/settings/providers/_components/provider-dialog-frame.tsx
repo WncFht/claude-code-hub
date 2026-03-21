@@ -21,47 +21,27 @@ export function ProviderDialogFrame({
   return (
     <div
       data-slot="provider-dialog-frame"
-      className={cn("relative flex min-h-0 flex-1 flex-col overflow-hidden", className)}
+      className={cn(
+        "relative flex min-h-0 flex-1 flex-col overflow-hidden rounded-[1.7rem] border border-white/6 bg-[linear-gradient(180deg,rgba(34,49,39,0.94),rgba(37,48,41,0.9))] shadow-[inset_0_1px_0_rgba(255,255,255,0.04)]",
+        className
+      )}
     >
-      <div
-        aria-hidden="true"
-        data-slot="provider-dialog-glow"
-        className="pointer-events-none absolute inset-x-0 top-0 h-40 bg-[radial-gradient(circle_at_top,rgba(92,158,118,0.28),transparent_72%)]"
-      />
-      <div
-        aria-hidden="true"
-        className="pointer-events-none absolute inset-0 opacity-[0.08] [background-image:linear-gradient(rgba(69,115,92,0.16)_1px,transparent_1px),linear-gradient(90deg,rgba(69,115,92,0.12)_1px,transparent_1px)] [background-position:center_center] [background-size:32px_32px]"
-      />
-      <div
-        data-slot="provider-dialog-chrome"
-        className="relative z-10 flex items-center justify-between border-b border-white/45 px-6 py-4 dark:border-white/10"
-      >
-        <div aria-hidden="true" className="flex items-center gap-2">
-          <span className="h-2.5 w-2.5 rounded-full bg-primary/90 shadow-[0_0_16px_rgba(92,158,118,0.58)]" />
-          <span className="h-2.5 w-2.5 rounded-full bg-primary/45" />
-          <span className="h-2.5 w-2.5 rounded-full bg-border/90" />
+      {onClose ? (
+        <div className="flex justify-end px-5 pt-5 pb-2 sm:px-6 sm:pt-6">
+          <motion.button
+            type="button"
+            data-slot="provider-dialog-close"
+            aria-label={closeLabel}
+            className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-white/10 bg-black/12 text-muted-foreground shadow-[0_16px_36px_-28px_rgba(15,23,42,0.42)] transition-colors hover:border-primary/25 hover:bg-primary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
+            whileHover={{ scale: 1.04 }}
+            whileTap={{ scale: 0.96 }}
+            transition={{ type: "spring", stiffness: 320, damping: 24 }}
+            onClick={onClose}
+          >
+            <X className="h-4 w-4" />
+          </motion.button>
         </div>
-        <div className="flex items-center gap-3">
-          <div
-            aria-hidden="true"
-            className="hidden h-px w-28 bg-gradient-to-r from-primary/45 via-primary/12 to-transparent sm:block"
-          />
-          {onClose ? (
-            <motion.button
-              type="button"
-              data-slot="provider-dialog-close"
-              aria-label={closeLabel}
-              className="inline-flex h-9 w-9 items-center justify-center rounded-full border border-border/70 bg-background/78 text-muted-foreground shadow-[0_16px_36px_-28px_rgba(15,23,42,0.42)] transition-colors hover:border-primary/25 hover:bg-primary/10 hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/35"
-              whileHover={{ scale: 1.04 }}
-              whileTap={{ scale: 0.96 }}
-              transition={{ type: "spring", stiffness: 320, damping: 24 }}
-              onClick={onClose}
-            >
-              <X className="h-4 w-4" />
-            </motion.button>
-          ) : null}
-        </div>
-      </div>
+      ) : null}
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">{children}</div>
     </div>
   );
