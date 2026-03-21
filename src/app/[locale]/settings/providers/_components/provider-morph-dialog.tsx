@@ -149,15 +149,6 @@ export function ProviderMorphDialog({
                       aria-modal="true"
                       tabIndex={-1}
                       className={cn("w-full overflow-hidden", contentClassName)}
-                      initial={{ borderRadius: 24 }}
-                      animate={{ borderRadius: 32 }}
-                      exit={{ borderRadius: 24 }}
-                      transition={{
-                        type: "spring",
-                        stiffness: 80,
-                        damping: 18,
-                        mass: 1.2,
-                      }}
                       onClick={(event) => event.stopPropagation()}
                     >
                       {children}

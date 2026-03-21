@@ -28,14 +28,15 @@ describe("ProviderDialogFrame", () => {
     expect(html).toContain("Close provider dialog");
   });
 
-  test("uses a vertical-only entry motion without scale blur", () => {
+  test("does not declare a second entry animation on top of the morph dialog", () => {
     const html = renderToStaticMarkup(
       <ProviderDialogFrame>
         <div>Provider form body</div>
       </ProviderDialogFrame>
     );
 
-    expect(html).toContain("translateY(20px)");
+    expect(html).not.toContain("translateY(");
     expect(html).not.toContain("scale(");
+    expect(html).not.toContain("opacity:0");
   });
 });

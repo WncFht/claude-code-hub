@@ -9,7 +9,11 @@ export default function SystemLogsScreen() {
 
   return (
     <div data-slot="console-screen" data-screen-id="system-logs">
-      <ConsoleScreenStage screenId="system-logs" data-slot="system-logs-screen" className="space-y-4">
+      <ConsoleScreenStage
+        screenId="system-logs"
+        data-slot="system-logs-screen"
+        className="space-y-4"
+      >
         <section data-slot="section" data-title={t("logs.section.title")}>
           <LogLevelForm />
         </section>

@@ -21,7 +21,11 @@ export default function SystemDataScreen() {
 
   return (
     <div data-slot="console-screen" data-screen-id="system-data">
-      <ConsoleScreenStage screenId="system-data" data-slot="system-data-screen" className="space-y-4">
+      <ConsoleScreenStage
+        screenId="system-data"
+        data-slot="system-data-screen"
+        className="space-y-4"
+      >
         <section data-slot="section" data-title={t("data.section.status.title")}>
           <DatabaseStatusDisplay />
         </section>

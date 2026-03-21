@@ -6,8 +6,8 @@ import { useMemo } from "react";
 import { ActiveSessionsSkeleton } from "@/app/[locale]/dashboard/logs/_components/active-sessions-skeleton";
 import { UsageLogsSkeleton } from "@/app/[locale]/dashboard/logs/_components/usage-logs-skeleton";
 import { UsageLogsViewVirtualized } from "@/app/[locale]/dashboard/logs/_components/usage-logs-view-virtualized";
-import { ActiveSessionsList } from "@/components/customs/active-sessions-list";
 import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
+import { ActiveSessionsList } from "@/components/customs/active-sessions-list";
 import { getConsoleDashboardContextQueryOptions } from "../../console-screen-query-options";
 
 function buildSearchParamsRecord(searchParams: URLSearchParams) {

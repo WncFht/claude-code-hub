@@ -109,9 +109,7 @@ describe("ConsoleShell motion profile", () => {
     expect(html).toContain(
       'data-motion-transition="{&quot;duration&quot;:0.5,&quot;ease&quot;:[0.16,1,0.3,1],&quot;delay&quot;:0.1}"'
     );
-    expect(html).toContain(
-      'data-motion-initial="{&quot;opacity&quot;:0,&quot;y&quot;:16}"'
-    );
+    expect(html).toContain('data-motion-initial="{&quot;opacity&quot;:0,&quot;y&quot;:16}"');
     expect(html).toContain(
       'data-motion-initial="{&quot;opacity&quot;:0,&quot;y&quot;:18,&quot;scale&quot;:0.98}"'
     );

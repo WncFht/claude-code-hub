@@ -1,6 +1,6 @@
 "use client";
 
-import { AnimatePresence, motion, type HTMLMotionProps } from "framer-motion";
+import { AnimatePresence, type HTMLMotionProps, motion } from "framer-motion";
 import { Children, isValidElement, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 

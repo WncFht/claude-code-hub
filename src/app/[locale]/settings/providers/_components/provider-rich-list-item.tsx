@@ -200,42 +200,6 @@ function ProviderRichListItemInner({
   const [openEdit, setOpenEdit] = useState(false);
   const [openClone, setOpenClone] = useState(false);
   const [showKeyDialog, setShowKeyDialog] = useState(false);
-
-  // Defer heavy ProviderForm mount so dialog animation doesn't compete with React work
-  const [editFormReady, setEditFormReady] = useState(false);
-  const [cloneFormReady, setCloneFormReady] = useState(false);
-
-  useEffect(() => {
-    if (openEdit) {
-      let cancelled = false;
-      const id = requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (!cancelled) setEditFormReady(true);
-        });
-      });
-      return () => {
-        cancelled = true;
-        cancelAnimationFrame(id);
-      };
-    }
-    setEditFormReady(false);
-  }, [openEdit]);
-
-  useEffect(() => {
-    if (openClone) {
-      let cancelled = false;
-      const id = requestAnimationFrame(() => {
-        requestAnimationFrame(() => {
-          if (!cancelled) setCloneFormReady(true);
-        });
-      });
-      return () => {
-        cancelled = true;
-        cancelAnimationFrame(id);
-      };
-    }
-    setCloneFormReady(false);
-  }, [openClone]);
   const [mobileDeleteDialogOpen, setMobileDeleteDialogOpen] = useState(false);
   const [unmaskedKey, setUnmaskedKey] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -576,7 +540,7 @@ function ProviderRichListItemInner({
         ? "border-l-emerald-500"
         : "border-l-gray-300 dark:border-l-gray-600";
   const providerMorphContentClassName =
-    "max-w-full sm:max-w-5xl lg:max-w-6xl max-h-[var(--cch-viewport-height-90)] flex flex-col overflow-hidden border border-primary/12 bg-card/95 p-0 gap-0 shadow-[0_36px_110px_-46px_rgba(4,12,8,0.72)]";
+    "max-w-full sm:max-w-5xl lg:max-w-6xl max-h-[var(--cch-viewport-height-90)] flex flex-col overflow-hidden rounded-[2rem] border border-primary/12 bg-card/95 p-0 gap-0 shadow-[0_36px_110px_-46px_rgba(4,12,8,0.72)]";
 
   const editDialogBody = (
     <div className="max-h-[var(--cch-viewport-height-90)] flex min-h-0 flex-col overflow-hidden border-primary/12 bg-card/95 p-0 gap-0">
@@ -584,20 +548,16 @@ function ProviderRichListItemInner({
         <h2>{t("editProvider")}</h2>
       </VisuallyHidden>
       <ProviderDialogFrame onClose={() => setOpenEdit(false)} closeLabel={tCommon("close")}>
-        {editFormReady ? (
-          <FormErrorBoundary>
-            <ProviderForm
-              mode="edit"
-              provider={provider}
-              onSuccess={() => {
-                setOpenEdit(false);
-              }}
-              enableMultiProviderTypes={enableMultiProviderTypes}
-            />
-          </FormErrorBoundary>
-        ) : (
-          <DialogFormSkeleton />
-        )}
+        <FormErrorBoundary>
+          <ProviderForm
+            mode="edit"
+            provider={provider}
+            onSuccess={() => {
+              setOpenEdit(false);
+            }}
+            enableMultiProviderTypes={enableMultiProviderTypes}
+          />
+        </FormErrorBoundary>
       </ProviderDialogFrame>
     </div>
   );
@@ -608,20 +568,16 @@ function ProviderRichListItemInner({
         <h2>{t("clone")}</h2>
       </VisuallyHidden>
       <ProviderDialogFrame onClose={() => setOpenClone(false)} closeLabel={tCommon("close")}>
-        {cloneFormReady ? (
-          <FormErrorBoundary>
-            <ProviderForm
-              mode="create"
-              cloneProvider={provider}
-              onSuccess={() => {
-                setOpenClone(false);
-              }}
-              enableMultiProviderTypes={enableMultiProviderTypes}
-            />
-          </FormErrorBoundary>
-        ) : (
-          <DialogFormSkeleton />
-        )}
+        <FormErrorBoundary>
+          <ProviderForm
+            mode="create"
+            cloneProvider={provider}
+            onSuccess={() => {
+              setOpenClone(false);
+            }}
+            enableMultiProviderTypes={enableMultiProviderTypes}
+          />
+        </FormErrorBoundary>
       </ProviderDialogFrame>
     </div>
   );
@@ -818,6 +774,29 @@ function ProviderRichListItemInner({
               <Edit className="h-4 w-4" />
             </Button>
           ) : null}
+          {canEdit && !isDesktop && !onCloneProp ? (
+            <ProviderMorphDialog
+              open={openClone}
+              onOpenChange={setOpenClone}
+              closeLabel={tCommon("close")}
+              trigger={
+                <Button
+                  data-slot="provider-clone-trigger"
+                  variant="outline"
+                  className="min-h-[44px] min-w-[44px]"
+                >
+                  <Copy className="h-4 w-4" />
+                </Button>
+              }
+              contentClassName={providerMorphContentClassName}
+            >
+              {cloneDialogBody}
+            </ProviderMorphDialog>
+          ) : canEdit ? (
+            <Button variant="outline" className="min-h-[44px] min-w-[44px]" onClick={handleClone}>
+              <Copy className="h-4 w-4" />
+            </Button>
+          ) : null}
           {canEdit && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -830,10 +809,6 @@ function ProviderRichListItemInner({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={handleClone}>
-                  <Copy className="mr-2 h-4 w-4" />
-                  {tList("actionClone")}
-                </DropdownMenuItem>
                 {healthStatus?.circuitState === "open" && (
                   <DropdownMenuItem onClick={handleResetCircuit} disabled={resetPending}>
                     <RotateCcw className="mr-2 h-4 w-4 text-orange-600" />
@@ -1258,33 +1233,6 @@ function ProviderRichListItemInner({
         </div>
       </div>
 
-      {/* Clone Dialog */}
-      {!isDesktop && (
-        <Dialog open={openClone} onOpenChange={setOpenClone}>
-          <DialogContent className="max-w-6xl max-h-[var(--cch-viewport-height-90)] flex flex-col overflow-hidden border-primary/12 bg-card/95 p-0 gap-0">
-            <VisuallyHidden>
-              <DialogTitle>{t("clone")}</DialogTitle>
-            </VisuallyHidden>
-            <ProviderDialogFrame onClose={() => setOpenClone(false)} closeLabel={tCommon("close")}>
-              {cloneFormReady ? (
-                <FormErrorBoundary>
-                  <ProviderForm
-                    mode="create"
-                    cloneProvider={provider}
-                    onSuccess={() => {
-                      setOpenClone(false);
-                    }}
-                    enableMultiProviderTypes={enableMultiProviderTypes}
-                  />
-                </FormErrorBoundary>
-              ) : (
-                <DialogFormSkeleton />
-              )}
-            </ProviderDialogFrame>
-          </DialogContent>
-        </Dialog>
-      )}
-
       {/* API Key 展示 Dialog */}
       <Dialog open={showKeyDialog} onOpenChange={handleCloseDialog}>
         <DialogContent className="max-w-lg">
@@ -1341,28 +1289,3 @@ export const ProviderRichListItem = memo(ProviderRichListItemInner, (prev, next)
     prev.isAdmin === next.isAdmin
   );
 });
-
-/** Lightweight placeholder shown while ProviderForm mounts (keeps dialog animation smooth) */
-function DialogFormSkeleton() {
-  return (
-    <div className="flex flex-col h-[60vh] animate-pulse">
-      <div className="flex flex-1 min-h-0">
-        <div className="hidden lg:block w-48 shrink-0 border-r p-4 space-y-3">
-          {Array.from({ length: 6 }).map((_, i) => (
-            <Skeleton key={i} className="h-8 w-full" />
-          ))}
-        </div>
-        <div className="flex-1 p-6 space-y-6">
-          <Skeleton className="h-6 w-48" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-10 w-full" />
-          <Skeleton className="h-6 w-36 mt-4" />
-          <Skeleton className="h-10 w-full" />
-        </div>
-      </div>
-      <div className="shrink-0 px-6 py-4 border-t">
-        <Skeleton className="h-10 w-24 ml-auto" />
-      </div>
-    </div>
-  );
-}

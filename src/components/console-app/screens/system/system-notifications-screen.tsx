@@ -41,10 +41,7 @@ export default function SystemNotificationsScreen() {
   if (isLoading || !settings) {
     return (
       <div data-slot="console-screen" data-screen-id="system-notifications">
-        <ConsoleScreenStage
-          screenId="system-notifications"
-          data-slot="system-notifications-screen"
-        >
+        <ConsoleScreenStage screenId="system-notifications" data-slot="system-notifications-screen">
           <NotificationsSkeleton />
         </ConsoleScreenStage>
       </div>

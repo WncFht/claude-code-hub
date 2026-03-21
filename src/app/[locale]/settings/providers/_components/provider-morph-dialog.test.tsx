@@ -64,11 +64,15 @@ describe("ProviderMorphDialog", () => {
       trigger?.click();
     });
 
-    expect(document.body.querySelector('[data-slot="provider-morph-dialog-content"]')).toBeTruthy();
+    const dialogContent = document.body.querySelector(
+      '[data-slot="provider-morph-dialog-content"]'
+    ) as HTMLDivElement | null;
+    expect(dialogContent).toBeTruthy();
     expect(
       container.querySelector('[data-slot="provider-morph-dialog-trigger-placeholder"]')
     ).toBeTruthy();
     expect(document.body.textContent).toContain("Provider dialog body");
+    expect(dialogContent?.getAttribute("style") ?? "").not.toContain("border-radius");
 
     act(() => {
       root.unmount();

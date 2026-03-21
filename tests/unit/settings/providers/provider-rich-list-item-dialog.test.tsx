@@ -150,6 +150,22 @@ function installDesktopMediaQuery() {
   });
 }
 
+function installMobileMediaQuery() {
+  Object.defineProperty(window, "matchMedia", {
+    writable: true,
+    value: vi.fn().mockImplementation((query: string) => ({
+      matches: false,
+      media: query,
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })),
+  });
+}
+
 function installAnimationFrameMock() {
   vi.stubGlobal("requestAnimationFrame", ((callback: FrameRequestCallback) =>
     window.setTimeout(() => callback(0), 0)) as typeof requestAnimationFrame);
@@ -221,8 +237,6 @@ describe("ProviderRichListItem dialog triggers", () => {
       trigger?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    await flushTicks(6);
-
     expect(document.body.querySelector('[data-slot="provider-morph-dialog-content"]')).toBeTruthy();
     expect(document.body.textContent).toContain("Edit provider form");
 
@@ -249,6 +263,33 @@ describe("ProviderRichListItem dialog triggers", () => {
     });
 
     await flushTicks(6);
+
+    expect(document.body.querySelector('[data-slot="provider-morph-dialog-content"]')).toBeTruthy();
+    expect(document.body.textContent).toContain("Create provider form Claude 3.5 Sonnet");
+
+    unmount();
+  });
+
+  test("renders a morph clone trigger on mobile instead of falling back to a separate dialog path", async () => {
+    installMobileMediaQuery();
+
+    const provider = makeProviderDisplay();
+    const { unmount } = renderWithProviders(
+      <ProviderRichListItem
+        provider={provider}
+        currentUser={ADMIN_USER}
+        enableMultiProviderTypes={true}
+      />
+    );
+
+    await flushTicks(3);
+
+    const trigger = document.querySelector('[data-slot="provider-clone-trigger"]');
+    expect(trigger).toBeTruthy();
+
+    act(() => {
+      trigger?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
+    });
 
     expect(document.body.querySelector('[data-slot="provider-morph-dialog-content"]')).toBeTruthy();
     expect(document.body.textContent).toContain("Create provider form Claude 3.5 Sonnet");

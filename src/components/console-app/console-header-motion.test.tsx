@@ -53,9 +53,7 @@ describe("ConsoleHeader motion profile", () => {
     expect(html).toContain('data-slot="console-header-title-stack"');
     expect(html).toContain('data-current-path="/console/policy/request-filters"');
     expect(html).toContain('data-slot="console-header-route-meta"');
-    expect(html).toContain(
-      'data-motion-initial="{&quot;opacity&quot;:0,&quot;y&quot;:34}"'
-    );
+    expect(html).toContain('data-motion-initial="{&quot;opacity&quot;:0,&quot;y&quot;:34}"');
     expect(html).toContain('data-motion-animate="{&quot;opacity&quot;:1,&quot;y&quot;:0}"');
     expect(html).toContain('data-motion-exit="{&quot;opacity&quot;:0,&quot;y&quot;:-24}"');
     expect(html).toContain(

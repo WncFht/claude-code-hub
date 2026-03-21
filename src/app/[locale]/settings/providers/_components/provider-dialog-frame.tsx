@@ -19,11 +19,8 @@ export function ProviderDialogFrame({
   closeLabel,
 }: ProviderDialogFrameProps) {
   return (
-    <motion.div
+    <div
       data-slot="provider-dialog-frame"
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.38, ease: [0.16, 1, 0.3, 1] }}
       className={cn("relative flex min-h-0 flex-1 flex-col overflow-hidden", className)}
     >
       <div
@@ -66,6 +63,6 @@ export function ProviderDialogFrame({
         </div>
       </div>
       <div className="relative z-10 flex min-h-0 flex-1 flex-col">{children}</div>
-    </motion.div>
+    </div>
   );
 }
