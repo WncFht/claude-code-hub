@@ -53,7 +53,35 @@ vi.mock("@/actions/users", () => ({
       dailyQuota: null,
       providerGroup: "default",
       tags: [],
-      keys: [],
+      keys: [
+        {
+          id: 91,
+          name: "alpha-key",
+          maskedKey: "sk-****",
+          canCopy: false,
+          expiresAt: null,
+          status: "enabled" as const,
+          todayUsage: 0,
+          todayCallCount: 0,
+          todayTokens: 0,
+          lastUsedAt: null,
+          lastProviderName: null,
+          modelStats: [],
+          createdAt: new Date("2026-01-01T00:00:00.000Z"),
+          createdAtFormatted: "2026-01-01 00:00:00",
+          canLoginWebUi: true,
+          limit5hUsd: 10,
+          limitDailyUsd: 20,
+          dailyResetMode: "fixed" as const,
+          dailyResetTime: "00:00",
+          limitWeeklyUsd: null,
+          limitMonthlyUsd: null,
+          limitTotalUsd: null,
+          limitConcurrentSessions: 2,
+          costResetAt: null,
+          providerGroup: "default",
+        },
+      ],
       isEnabled: true,
       dailyResetMode: "fixed",
       dailyResetTime: "00:00",
@@ -183,6 +211,35 @@ vi.mock("@/actions/my-usage", () => ({
   })),
 }));
 
+vi.mock("@/actions/key-quota", () => ({
+  getKeyQuotaUsage: vi.fn(async () => ({
+    ok: true,
+    data: {
+      keyName: "alpha-key",
+      currencyCode: "USD",
+      items: [
+        { type: "limit5h", current: 1, limit: 10 },
+        { type: "limitDaily", current: 2, limit: 20, mode: "fixed", time: "00:00" },
+        { type: "limitWeekly", current: 3, limit: null },
+        { type: "limitMonthly", current: 4, limit: null },
+        { type: "limitTotal", current: 5, limit: null },
+        { type: "limitSessions", current: 0, limit: 2 },
+      ],
+    },
+  })),
+}));
+
+vi.mock("@/repository/user", () => ({
+  findUserById: vi.fn(async (id: number) =>
+    id === 7
+      ? {
+          id: 7,
+          name: "Operator",
+        }
+      : null
+  ),
+}));
+
 vi.mock("@/repository/statistics", () => ({
   sumUserTotalCostBatch: vi.fn(async () => new Map([[7, 0]])),
   sumKeyTotalCostBatchByIds: vi.fn(async () => new Map()),
@@ -278,6 +335,26 @@ vi.mock("@/app/[locale]/dashboard/leaderboard/_components/leaderboard-view", () 
 
 vi.mock("@/app/[locale]/dashboard/availability/_components/availability-dashboard", () => ({
   AvailabilityDashboard: () => <div data-slot="availability-dashboard" />,
+}));
+
+vi.mock("@/app/[locale]/dashboard/leaderboard/user/[userId]/_components/user-insights-view", () => ({
+  UserInsightsView: ({ userId, userName }: { userId: number; userName: string }) => (
+    <div
+      data-slot="user-insights-view"
+      data-user-id={String(userId)}
+      data-user-name={userName}
+    />
+  ),
+}));
+
+vi.mock("@/app/[locale]/dashboard/rate-limits/_components/rate-limit-dashboard", () => ({
+  RateLimitDashboard: () => <div data-slot="rate-limit-dashboard" />,
+}));
+
+vi.mock("@/app/[locale]/dashboard/quotas/keys/_components/keys-quota-manager", () => ({
+  KeysQuotaManager: ({ users }: { users: Array<{ id: number }> }) => (
+    <div data-slot="keys-quota-manager" data-count={String(users.length)} />
+  ),
 }));
 
 vi.mock("@/components/customs/active-sessions-list", () => ({
@@ -605,6 +682,47 @@ describe("overview and traffic console screens", () => {
         ?.getAttribute("data-quota-mode")
     ).toBe("self");
     expect(view.container.querySelector('[data-slot="quota-cards"]')).not.toBeNull();
+
+    await view.unmount();
+  });
+
+  test("loads remaining overview detail and traffic diagnostic screens from console routes", async () => {
+    authMocks.getSession.mockResolvedValue(makeSession("admin"));
+    routingState.pathname = "/console/overview/leaderboard/users/7";
+    const { ConsoleApp } = await import("@/components/console-app/console-app");
+
+    const view = await render(
+      <ConsoleApp bootstrap={makeBootstrap("/console/overview/leaderboard/users/7")} />
+    );
+    await waitForSelector(view.container, '[data-slot="user-insights-view"]');
+
+    expect(
+      view.container.querySelector('[data-slot="overview-user-insights-screen"]')
+    ).not.toBeNull();
+    expect(view.container.querySelector('[data-slot="user-insights-view"]')).not.toBeNull();
+    expect(
+      view.container
+        .querySelector('[data-slot="user-insights-view"]')
+        ?.getAttribute("data-user-id")
+    ).toBe("7");
+
+    routingState.pathname = "/console/traffic/rate-limits";
+    await view.rerender(<ConsoleApp bootstrap={makeBootstrap("/console/traffic/rate-limits")} />);
+    await waitForSelector(view.container, '[data-slot="rate-limit-dashboard"]');
+
+    expect(view.container.querySelector('[data-slot="traffic-rate-limits-screen"]')).not.toBeNull();
+    expect(view.container.querySelector('[data-slot="rate-limit-dashboard"]')).not.toBeNull();
+
+    routingState.pathname = "/console/traffic/quotas/keys";
+    await view.rerender(<ConsoleApp bootstrap={makeBootstrap("/console/traffic/quotas/keys")} />);
+    await waitForSelector(view.container, '[data-slot="keys-quota-manager"]');
+
+    expect(
+      view.container
+        .querySelector('[data-slot="traffic-quota-screen"]')
+        ?.getAttribute("data-quota-subview")
+    ).toBe("keys");
+    expect(view.container.querySelector('[data-slot="keys-quota-manager"]')).not.toBeNull();
 
     await view.unmount();
   });

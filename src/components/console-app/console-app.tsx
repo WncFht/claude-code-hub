@@ -33,10 +33,20 @@ function getRouteLabel(
   labelKind: ConsoleRuntimeLabelKind,
   labelKey: string,
   tConsoleRoutes: ReturnType<typeof useTranslations<"dashboard.console.routes">>,
-  tSettingsNav: ReturnType<typeof useTranslations<"settings.nav">>
+  tSettingsNav: ReturnType<typeof useTranslations<"settings.nav">>,
+  tRateLimits: ReturnType<typeof useTranslations<"dashboard.rateLimits">>,
+  tUserInsights: ReturnType<typeof useTranslations<"dashboard.leaderboard.userInsights">>
 ) {
   if (labelKind === "settings-nav") {
     return tSettingsNav(labelKey as never);
+  }
+
+  if (labelKind === "rate-limits") {
+    return tRateLimits(labelKey as never);
+  }
+
+  if (labelKind === "user-insights") {
+    return tUserInsights(labelKey as never);
   }
 
   return tConsoleRoutes(labelKey as never);
@@ -46,13 +56,17 @@ export function ConsoleApp({ bootstrap }: ConsoleAppProps) {
   const tModules = useTranslations("dashboard.console.modules");
   const tConsoleRoutes = useTranslations("dashboard.console.routes");
   const tSettingsNav = useTranslations("settings.nav");
+  const tRateLimits = useTranslations("dashboard.rateLimits");
+  const tUserInsights = useTranslations("dashboard.leaderboard.userInsights");
   const moduleLabels = getModuleLabels(tModules);
   const { currentPath, activeRoute } = useConsoleRoute(bootstrap);
   const activeScreenLabel = getRouteLabel(
     activeRoute.labelKind,
     activeRoute.labelKey,
     tConsoleRoutes,
-    tSettingsNav
+    tSettingsNav,
+    tRateLimits,
+    tUserInsights
   );
 
   const navigationItems = CONSOLE_MODULES.flatMap((module) => {
@@ -81,7 +95,14 @@ export function ConsoleApp({ bootstrap }: ConsoleAppProps) {
   }).map((route) => ({
     id: route.secondaryTabId ?? route.screenId,
     href: route.consolePath,
-    label: getRouteLabel(route.labelKind, route.labelKey, tConsoleRoutes, tSettingsNav),
+    label: getRouteLabel(
+      route.labelKind,
+      route.labelKey,
+      tConsoleRoutes,
+      tSettingsNav,
+      tRateLimits,
+      tUserInsights
+    ),
     active: route.secondaryTabId === activeRoute.secondaryTabId,
   }));
 

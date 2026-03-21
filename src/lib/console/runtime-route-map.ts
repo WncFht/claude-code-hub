@@ -5,11 +5,13 @@ export type ConsoleRuntimeMatchKind = "exact" | "prefix" | "session-messages";
 export type ConsoleScreenId =
   | "overview-home"
   | "overview-leaderboard"
+  | "overview-user-insights"
   | "overview-availability"
   | "traffic-logs"
   | "traffic-users"
   | "traffic-sessions"
   | "traffic-session-messages"
+  | "traffic-rate-limits"
   | "traffic-quotas"
   | "traffic-my-quota"
   | "providers-inventory"
@@ -23,7 +25,11 @@ export type ConsoleScreenId =
   | "system-notifications"
   | "system-logs";
 
-export type ConsoleRuntimeLabelKind = "console" | "settings-nav";
+export type ConsoleRuntimeLabelKind =
+  | "console"
+  | "settings-nav"
+  | "rate-limits"
+  | "user-insights";
 
 export interface ConsoleRuntimeRouteDefinition {
   screenId: ConsoleScreenId;
@@ -62,6 +68,18 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     secondaryTabId: "leaderboard",
     fullBleed: false,
     legacyPaths: ["/dashboard/leaderboard"],
+  },
+  {
+    screenId: "overview-user-insights",
+    moduleId: "overview",
+    consolePath: "/console/overview/leaderboard/users",
+    labelKind: "user-insights",
+    labelKey: "title",
+    visibleForRoles: ["admin"],
+    matchKind: "prefix",
+    secondaryTabId: "leaderboard",
+    fullBleed: false,
+    legacyPaths: ["/dashboard/leaderboard/user"],
   },
   {
     screenId: "overview-availability",
@@ -122,6 +140,18 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     secondaryTabId: "sessions",
     fullBleed: true,
     legacyPaths: ["/dashboard/sessions"],
+  },
+  {
+    screenId: "traffic-rate-limits",
+    moduleId: "traffic",
+    consolePath: "/console/traffic/rate-limits",
+    labelKind: "rate-limits",
+    labelKey: "title",
+    visibleForRoles: ["admin"],
+    matchKind: "exact",
+    secondaryTabId: "rate-limits",
+    fullBleed: false,
+    legacyPaths: ["/dashboard/rate-limits"],
   },
   {
     screenId: "traffic-quotas",

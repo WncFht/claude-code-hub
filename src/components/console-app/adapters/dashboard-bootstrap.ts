@@ -1,5 +1,6 @@
 "use server";
 
+import { getKeyQuotaUsage, type KeyQuotaUsageResult } from "@/actions/key-quota";
 import { getMyQuota, type MyUsageQuota } from "@/actions/my-usage";
 import { getProviderLimitUsageBatch, getProviders } from "@/actions/providers";
 import { getUserLimitUsage, getUsers } from "@/actions/users";
@@ -10,6 +11,7 @@ import type { CurrencyCode } from "@/lib/utils/currency";
 import { resolveSystemTimezone } from "@/lib/utils/timezone";
 import { sumKeyTotalCostBatchByIds, sumUserTotalCostBatch } from "@/repository/statistics";
 import { getSystemSettings } from "@/repository/system-config";
+import { findUserById } from "@/repository/user";
 import type { ProviderType } from "@/types/provider";
 import type { BillingModelSource } from "@/types/system-config";
 import type { User } from "@/types/user";
@@ -22,6 +24,11 @@ export interface ConsoleDashboardContext {
     currencyDisplay: CurrencyCode;
   };
   serverTimeZone: string;
+}
+
+export interface ConsoleLeaderboardUserContext {
+  userId: number;
+  userName: string;
 }
 
 interface ProviderQuotaSnapshot {
@@ -55,6 +62,36 @@ export type ConsoleTrafficQuotaData =
       quota: MyUsageQuota;
     };
 
+interface ConsoleKeyQuotaSnapshot {
+  cost5h: { current: number; limit: number | null; resetAt?: Date };
+  costDaily: { current: number; limit: number | null; resetAt?: Date };
+  costWeekly: { current: number; limit: number | null; resetAt?: Date };
+  costMonthly: { current: number; limit: number | null; resetAt?: Date };
+  concurrentSessions: { current: number; limit: number };
+}
+
+interface ConsoleTrafficKeyQuotaUser {
+  id: number;
+  name: string;
+  role: UserQuotaWithUsage["role"];
+  userQuota: UserQuotaWithUsage["quota"];
+  keys: Array<{
+    id: number;
+    name: string;
+    isEnabled: boolean;
+    expiresAt: string | null;
+    quota: ConsoleKeyQuotaSnapshot | null;
+    limitDailyUsd: number | null;
+    dailyResetTime: string;
+    dailyResetMode: "fixed" | "rolling";
+  }>;
+}
+
+export interface ConsoleTrafficKeyQuotaData {
+  currencyCode: CurrencyCode;
+  users: ConsoleTrafficKeyQuotaUser[];
+}
+
 export async function getConsoleDashboardContext(): Promise<ConsoleDashboardContext> {
   const session = await getSession();
 
@@ -75,6 +112,31 @@ export async function getConsoleDashboardContext(): Promise<ConsoleDashboardCont
       currencyDisplay: systemSettings.currencyDisplay,
     },
     serverTimeZone,
+  };
+}
+
+export async function getConsoleLeaderboardUserContext(
+  userId: number
+): Promise<ConsoleLeaderboardUserContext> {
+  const session = await getSession();
+
+  if (!session || session.user.role !== "admin") {
+    throw new Error("FORBIDDEN");
+  }
+
+  if (!Number.isInteger(userId) || userId <= 0) {
+    throw new Error("INVALID_USER_ID");
+  }
+
+  const user = await findUserById(userId);
+
+  if (!user) {
+    throw new Error("USER_NOT_FOUND");
+  }
+
+  return {
+    userId,
+    userName: user.name,
   };
 }
 
@@ -209,5 +271,119 @@ export async function getConsoleTrafficQuotaData(): Promise<ConsoleTrafficQuotaD
     currencyCode: systemSettings.currencyDisplay,
     users,
     providers,
+  };
+}
+
+function hasIndependentKeyQuota(key: UserQuotaWithUsage["keys"][number]) {
+  return Boolean(
+    key.limit5hUsd ||
+      key.limitDailyUsd ||
+      key.limitWeeklyUsd ||
+      key.limitMonthlyUsd ||
+      key.limitTotalUsd ||
+      key.limitConcurrentSessions > 0
+  );
+}
+
+function getKeyQuotaItem(
+  items: KeyQuotaUsageResult["items"],
+  type: KeyQuotaUsageResult["items"][number]["type"]
+) {
+  return items.find((item) => item.type === type) ?? null;
+}
+
+function toConsoleKeyQuotaSnapshot(
+  items: KeyQuotaUsageResult["items"]
+): ConsoleKeyQuotaSnapshot | null {
+  const cost5h = getKeyQuotaItem(items, "limit5h");
+  const costDaily = getKeyQuotaItem(items, "limitDaily");
+  const costWeekly = getKeyQuotaItem(items, "limitWeekly");
+  const costMonthly = getKeyQuotaItem(items, "limitMonthly");
+  const concurrentSessions = getKeyQuotaItem(items, "limitSessions");
+
+  if (!cost5h || !costDaily || !costWeekly || !costMonthly || !concurrentSessions) {
+    return null;
+  }
+
+  if (
+    cost5h.limit === null &&
+    costDaily.limit === null &&
+    costWeekly.limit === null &&
+    costMonthly.limit === null &&
+    concurrentSessions.limit === null
+  ) {
+    return null;
+  }
+
+  return {
+    cost5h: {
+      current: cost5h.current,
+      limit: cost5h.limit,
+    },
+    costDaily: {
+      current: costDaily.current,
+      limit: costDaily.limit,
+    },
+    costWeekly: {
+      current: costWeekly.current,
+      limit: costWeekly.limit,
+    },
+    costMonthly: {
+      current: costMonthly.current,
+      limit: costMonthly.limit,
+    },
+    concurrentSessions: {
+      current: concurrentSessions.current,
+      limit: concurrentSessions.limit ?? 0,
+    },
+  };
+}
+
+export async function getConsoleTrafficKeyQuotaData(): Promise<ConsoleTrafficKeyQuotaData> {
+  const [session, systemSettings] = await Promise.all([getSession(), getSystemSettings()]);
+
+  if (!session || session.user.role !== "admin") {
+    throw new Error("FORBIDDEN");
+  }
+
+  const users = await getUsersWithQuotas();
+  const keyQuotaEntries = await Promise.all(
+    users.flatMap((user) =>
+      user.keys.map(async (key) => {
+        if (!hasIndependentKeyQuota(key)) {
+          return [key.id, null] as const;
+        }
+
+        const quotaUsage = await getKeyQuotaUsage(key.id);
+        return [
+          key.id,
+          quotaUsage.ok ? toConsoleKeyQuotaSnapshot(quotaUsage.data.items) : null,
+        ] as const;
+      })
+    )
+  );
+
+  const keyQuotaMap = new Map<number, ConsoleKeyQuotaSnapshot | null>(keyQuotaEntries);
+
+  return {
+    currencyCode: systemSettings.currencyDisplay,
+    users: users
+      .map((user) => ({
+        id: user.id,
+        name: user.name,
+        role: user.role,
+        userQuota: user.quota,
+        keys: user.keys.map((key) => ({
+          id: key.id,
+          name: key.name,
+          isEnabled: key.status === "enabled",
+          expiresAt: key.expiresAt ?? null,
+          quota: keyQuotaMap.get(key.id) ?? null,
+          limitDailyUsd: key.limitDailyUsd,
+          dailyResetTime: key.dailyResetTime,
+          dailyResetMode: key.dailyResetMode,
+        })),
+      }))
+      .filter((user) => user.keys.length > 0),
   };
 }

@@ -74,6 +74,14 @@ const messages = {
         myQuota: "My Quota",
       },
     },
+    rateLimits: {
+      title: "Rate Limits",
+    },
+    leaderboard: {
+      userInsights: {
+        title: "User Insights",
+      },
+    },
   },
   settings: {
     nav: {

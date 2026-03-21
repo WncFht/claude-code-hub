@@ -42,6 +42,31 @@ describe("console runtime route map", () => {
     });
   });
 
+  test("maps remaining detail and diagnostic routes into the console runtime", () => {
+    expect(mapLegacyConsolePath("/dashboard/leaderboard/user/7")).toBe(
+      "/console/overview/leaderboard/users/7"
+    );
+    expect(resolveConsoleRuntimeRoute("/console/overview/leaderboard/users/7")).toMatchObject({
+      screenId: "overview-user-insights",
+      moduleId: "overview",
+      fullBleed: false,
+    });
+
+    expect(mapLegacyConsolePath("/dashboard/rate-limits")).toBe("/console/traffic/rate-limits");
+    expect(resolveConsoleRuntimeRoute("/console/traffic/rate-limits")).toMatchObject({
+      screenId: "traffic-rate-limits",
+      moduleId: "traffic",
+      fullBleed: false,
+    });
+
+    expect(mapLegacyConsolePath("/dashboard/quotas/keys")).toBe("/console/traffic/quotas/keys");
+    expect(resolveConsoleRuntimeRoute("/console/traffic/quotas/keys")).toMatchObject({
+      screenId: "traffic-quotas",
+      moduleId: "traffic",
+      fullBleed: false,
+    });
+  });
+
   test("builds role-aware bootstrap payloads and normalizes invalid paths", () => {
     expect(getDefaultConsolePath("admin")).toBe("/console/overview");
     expect(getDefaultConsolePath("user")).toBe("/console/overview");

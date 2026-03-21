@@ -19,6 +19,8 @@ const MIGRATED_SCREEN_LOADERS: Partial<
     import("../../components/console-app/screens/overview/overview-home-screen"),
   "overview-leaderboard": () =>
     import("../../components/console-app/screens/overview/overview-leaderboard-screen"),
+  "overview-user-insights": () =>
+    import("../../components/console-app/screens/overview/overview-user-insights-screen"),
   "overview-availability": () =>
     import("../../components/console-app/screens/overview/overview-availability-screen"),
   "traffic-logs": () => import("../../components/console-app/screens/traffic/traffic-logs-screen"),
@@ -28,6 +30,8 @@ const MIGRATED_SCREEN_LOADERS: Partial<
     import("../../components/console-app/screens/traffic/traffic-sessions-screen"),
   "traffic-session-messages": () =>
     import("../../components/console-app/screens/traffic/traffic-session-messages-screen"),
+  "traffic-rate-limits": () =>
+    import("../../components/console-app/screens/traffic/traffic-rate-limits-screen"),
   "traffic-quotas": () =>
     import("../../components/console-app/screens/traffic/traffic-quota-screen"),
   "traffic-my-quota": () =>
