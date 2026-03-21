@@ -12,6 +12,21 @@ import {
   type ConsoleScreenId,
 } from "./runtime-route-map";
 
+const MIGRATED_SCREEN_LOADERS: Partial<
+  Record<ConsoleScreenId, () => Promise<{ default: ComponentType<ConsoleRuntimeScreenProps> }>>
+> = {
+  "providers-inventory": () =>
+    import("../../components/console-app/screens/providers/providers-inventory-screen"),
+  "providers-pricing": () =>
+    import("../../components/console-app/screens/providers/providers-pricing-screen"),
+  "system-config": () =>
+    import("../../components/console-app/screens/system/system-config-screen"),
+  "system-data": () => import("../../components/console-app/screens/system/system-data-screen"),
+  "system-notifications": () =>
+    import("../../components/console-app/screens/system/system-notifications-screen"),
+  "system-logs": () => import("../../components/console-app/screens/system/system-logs-screen"),
+};
+
 function createPlaceholderScreen(
   screenId: ConsoleScreenId
 ): ComponentType<ConsoleRuntimeScreenProps> {
@@ -32,9 +47,12 @@ const ROUTE_BY_SCREEN_ID = new Map<ConsoleScreenId, ConsoleRuntimeRouteDefinitio
 const SCREEN_REGISTRY = Object.fromEntries(
   CONSOLE_RUNTIME_ROUTES.map((route) => [
     route.screenId,
-    createLazyScreen(async () => ({
-      default: createPlaceholderScreen(route.screenId),
-    })),
+    createLazyScreen(
+      MIGRATED_SCREEN_LOADERS[route.screenId] ??
+        (async () => ({
+          default: createPlaceholderScreen(route.screenId),
+        }))
+    ),
   ])
 ) as Record<ConsoleScreenId, ConsoleLazyScreen>;
 

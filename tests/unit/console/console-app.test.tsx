@@ -30,6 +30,29 @@ vi.mock("@/i18n/routing", () => ({
   usePathname: () => routingState.pathname,
 }));
 
+vi.mock("@/lib/console/runtime-screen-registry", () => ({
+  getConsoleRuntimeScreen: (_screenId: string) => ({
+    Component: ({ route }: { route: { screenId: string; moduleId: string } }) => (
+      <section
+        data-slot="console-screen"
+        data-screen-id={route.screenId}
+        data-module-id={route.moduleId}
+      />
+    ),
+    load: async () => ({
+      default: ({ route }: { route: { screenId: string; moduleId: string } }) => (
+        <section
+          data-slot="console-screen"
+          data-screen-id={route.screenId}
+          data-module-id={route.moduleId}
+        />
+      ),
+    }),
+    preload: async () => undefined,
+  }),
+  preloadConsoleRuntimeScreen: async (_screenId: string) => undefined,
+}));
+
 const messages = {
   dashboard: {
     console: {

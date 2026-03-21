@@ -66,6 +66,10 @@ interface ProviderManagerProps {
   refreshing?: boolean;
   addDialogSlot?: ReactNode;
   embedded?: boolean;
+  sortBy?: SortKey;
+  onSortByChange?: (value: SortKey) => void;
+  viewMode?: "list" | "vendor";
+  onViewModeChange?: (value: "list" | "vendor") => void;
 }
 
 export function ProviderManager({
@@ -81,16 +85,24 @@ export function ProviderManager({
   refreshing = false,
   addDialogSlot,
   embedded = false,
+  sortBy,
+  onSortByChange,
+  viewMode,
+  onViewModeChange,
 }: ProviderManagerProps) {
   const t = useTranslations("settings.providers.search");
   const tStrings = useTranslations("settings.providers");
   const tFilter = useTranslations("settings.providers.filter");
   const tCommon = useTranslations("settings.common");
   const [typeFilter, setTypeFilter] = useState<ProviderType | "all">("all");
-  const [sortBy, setSortBy] = useState<SortKey>("priority");
+  const [uncontrolledSortBy, setUncontrolledSortBy] = useState<SortKey>("priority");
   const [searchTerm, setSearchTerm] = useState("");
-  const [viewMode, setViewMode] = useState<"list" | "vendor">("list");
+  const [uncontrolledViewMode, setUncontrolledViewMode] = useState<"list" | "vendor">("list");
   const debouncedSearchTerm = useDebounce(searchTerm, 500);
+  const resolvedSortBy = sortBy ?? uncontrolledSortBy;
+  const handleSortByChange = onSortByChange ?? setUncontrolledSortBy;
+  const resolvedViewMode = viewMode ?? uncontrolledViewMode;
+  const handleViewModeChange = onViewModeChange ?? setUncontrolledViewMode;
 
   // Status and group filters
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
@@ -132,9 +144,9 @@ export function ProviderManager({
     if (statusFilter !== "all") count++;
     if (groupFilter.length > 0) count++;
     if (circuitBrokenFilter) count++;
-    if (sortBy !== "priority") count++;
+    if (resolvedSortBy !== "priority") count++;
     return count;
-  }, [typeFilter, statusFilter, groupFilter, circuitBrokenFilter, sortBy]);
+  }, [typeFilter, statusFilter, groupFilter, circuitBrokenFilter, resolvedSortBy]);
 
   // Auto-reset circuit broken filter when no providers are broken
   useEffect(() => {
@@ -272,7 +284,7 @@ export function ProviderManager({
 
     // 排序
     return [...result].sort((a, b) => {
-      switch (sortBy) {
+      switch (resolvedSortBy) {
         case "name":
           return a.name.localeCompare(b.name);
         case "priority":
@@ -303,7 +315,7 @@ export function ProviderManager({
     providers,
     debouncedSearchTerm,
     typeFilter,
-    sortBy,
+    resolvedSortBy,
     statusFilter,
     groupFilter,
     circuitBrokenFilter,
@@ -513,7 +525,11 @@ export function ProviderManager({
                     <SelectItem value="inactive">{tFilter("status.inactive")}</SelectItem>
                   </SelectContent>
                 </Select>
-                <ProviderSortDropdown value={sortBy} onChange={setSortBy} disabled={loading} />
+                <ProviderSortDropdown
+                  value={resolvedSortBy}
+                  onChange={handleSortByChange}
+                  disabled={loading}
+                />
                 {allGroups.length > 0 && (
                   <div className="flex flex-wrap gap-2 items-center">
                     <span className="text-sm text-muted-foreground">{tFilter("groups.label")}</span>
@@ -573,7 +589,7 @@ export function ProviderManager({
                     setStatusFilter("all");
                     setGroupFilter([]);
                     setCircuitBrokenFilter(false);
-                    setSortBy("priority");
+                    handleSortByChange("priority");
                   }}
                   className="self-end"
                 >
@@ -589,20 +605,20 @@ export function ProviderManager({
               {/* View Mode Toggle */}
               <div className="flex items-center border rounded-md bg-muted/50 p-1">
                 <Button
-                  variant={viewMode === "list" ? "secondary" : "ghost"}
+                  variant={resolvedViewMode === "list" ? "secondary" : "ghost"}
                   size="sm"
                   className="h-7 px-2 gap-1.5 text-xs"
-                  onClick={() => setViewMode("list")}
+                  onClick={() => handleViewModeChange("list")}
                   title={tStrings("viewModeList")}
                 >
                   <LayoutList className="h-3.5 w-3.5" />
                   <span className="hidden sm:inline">{tStrings("viewModeList")}</span>
                 </Button>
                 <Button
-                  variant={viewMode === "vendor" ? "secondary" : "ghost"}
+                  variant={resolvedViewMode === "vendor" ? "secondary" : "ghost"}
                   size="sm"
                   className="h-7 px-2 gap-1.5 text-xs"
-                  onClick={() => setViewMode("vendor")}
+                  onClick={() => handleViewModeChange("vendor")}
                   title={tStrings("viewModeVendor")}
                 >
                   <LayoutGrid className="h-3.5 w-3.5" />
@@ -627,7 +643,11 @@ export function ProviderManager({
                 </SelectContent>
               </Select>
 
-              <ProviderSortDropdown value={sortBy} onChange={setSortBy} disabled={loading} />
+              <ProviderSortDropdown
+                value={resolvedSortBy}
+                onChange={handleSortByChange}
+                disabled={loading}
+              />
               <div className="relative flex-1">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
                 <Input
@@ -727,7 +747,7 @@ export function ProviderManager({
           <div className="space-y-3">
             {refreshing ? <InlineLoading label={tCommon("loading")} /> : null}
 
-            {viewMode === "list" ? (
+            {resolvedViewMode === "list" ? (
               <ProviderList
                 providers={filteredProviders}
                 currentUser={currentUser}
