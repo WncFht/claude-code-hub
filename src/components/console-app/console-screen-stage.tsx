@@ -1,9 +1,9 @@
 "use client";
 
-import type { HTMLAttributes, ReactNode } from "react";
+import type { ComponentProps, ReactNode } from "react";
 import { PageStage } from "@/components/page-stage";
 
-interface ConsoleScreenStageProps extends HTMLAttributes<HTMLDivElement> {
+interface ConsoleScreenStageProps extends Omit<ComponentProps<typeof PageStage>, "activeKey"> {
   screenId: string;
   children: ReactNode;
 }
