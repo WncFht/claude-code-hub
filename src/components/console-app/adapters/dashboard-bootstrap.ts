@@ -92,6 +92,14 @@ export interface ConsoleTrafficKeyQuotaData {
   users: ConsoleTrafficKeyQuotaUser[];
 }
 
+type ConsoleQuotaKeyWithExpiry = UserQuotaWithUsage["keys"][number] & {
+  expiresAt: string | null;
+};
+
+type ConsoleQuotaUserWithExpiry = Omit<UserQuotaWithUsage, "keys"> & {
+  keys: ConsoleQuotaKeyWithExpiry[];
+};
+
 export async function getConsoleDashboardContext(): Promise<ConsoleDashboardContext> {
   const session = await getSession();
 
@@ -140,7 +148,7 @@ export async function getConsoleLeaderboardUserContext(
   };
 }
 
-async function getUsersWithQuotas(): Promise<UserQuotaWithUsage[]> {
+async function getUsersWithQuotas(): Promise<ConsoleQuotaUserWithExpiry[]> {
   const users = await getUsers();
   const allUserIds = users.map((user) => user.id);
   const allKeyIds = users.flatMap((user) => user.keys.map((key) => key.id));
@@ -201,6 +209,7 @@ async function getUsersWithQuotas(): Promise<UserQuotaWithUsage[]> {
       keys: user.keys.map((key) => ({
         id: key.id,
         name: key.name,
+        expiresAt: key.expiresAt || null,
         status: key.status,
         todayUsage: key.todayUsage,
         totalUsage: keyCostMap.get(key.id) ?? 0,
@@ -274,7 +283,7 @@ export async function getConsoleTrafficQuotaData(): Promise<ConsoleTrafficQuotaD
   };
 }
 
-function hasIndependentKeyQuota(key: UserQuotaWithUsage["keys"][number]) {
+function hasIndependentKeyQuota(key: ConsoleQuotaUserWithExpiry["keys"][number]) {
   return Boolean(
     key.limit5hUsd ||
       key.limitDailyUsd ||

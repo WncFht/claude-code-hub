@@ -337,15 +337,14 @@ vi.mock("@/app/[locale]/dashboard/availability/_components/availability-dashboar
   AvailabilityDashboard: () => <div data-slot="availability-dashboard" />,
 }));
 
-vi.mock("@/app/[locale]/dashboard/leaderboard/user/[userId]/_components/user-insights-view", () => ({
-  UserInsightsView: ({ userId, userName }: { userId: number; userName: string }) => (
-    <div
-      data-slot="user-insights-view"
-      data-user-id={String(userId)}
-      data-user-name={userName}
-    />
-  ),
-}));
+vi.mock(
+  "@/app/[locale]/dashboard/leaderboard/user/[userId]/_components/user-insights-view",
+  () => ({
+    UserInsightsView: ({ userId, userName }: { userId: number; userName: string }) => (
+      <div data-slot="user-insights-view" data-user-id={String(userId)} data-user-name={userName} />
+    ),
+  })
+);
 
 vi.mock("@/app/[locale]/dashboard/rate-limits/_components/rate-limit-dashboard", () => ({
   RateLimitDashboard: () => <div data-slot="rate-limit-dashboard" />,
@@ -701,9 +700,7 @@ describe("overview and traffic console screens", () => {
     ).not.toBeNull();
     expect(view.container.querySelector('[data-slot="user-insights-view"]')).not.toBeNull();
     expect(
-      view.container
-        .querySelector('[data-slot="user-insights-view"]')
-        ?.getAttribute("data-user-id")
+      view.container.querySelector('[data-slot="user-insights-view"]')?.getAttribute("data-user-id")
     ).toBe("7");
 
     routingState.pathname = "/console/traffic/rate-limits";

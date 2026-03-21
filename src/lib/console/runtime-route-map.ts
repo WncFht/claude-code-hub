@@ -25,11 +25,7 @@ export type ConsoleScreenId =
   | "system-notifications"
   | "system-logs";
 
-export type ConsoleRuntimeLabelKind =
-  | "console"
-  | "settings-nav"
-  | "rate-limits"
-  | "user-insights";
+export type ConsoleRuntimeLabelKind = "console" | "settings-nav" | "rate-limits" | "user-insights";
 
 export interface ConsoleRuntimeRouteDefinition {
   screenId: ConsoleScreenId;

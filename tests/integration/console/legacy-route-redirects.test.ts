@@ -83,9 +83,12 @@ vi.mock("@/app/[locale]/dashboard/rate-limits/_components/rate-limits-skeleton",
     createElement("div", { "data-slot": "rate-limits-content-skeleton" }),
 }));
 
-vi.mock("@/app/[locale]/dashboard/leaderboard/user/[userId]/_components/user-insights-view", () => ({
-  UserInsightsView: () => createElement("div", { "data-slot": "user-insights-view" }),
-}));
+vi.mock(
+  "@/app/[locale]/dashboard/leaderboard/user/[userId]/_components/user-insights-view",
+  () => ({
+    UserInsightsView: () => createElement("div", { "data-slot": "user-insights-view" }),
+  })
+);
 
 vi.mock("@/repository/user", () => ({
   findUserById: vi.fn(async () => ({
@@ -275,8 +278,9 @@ describe("legacy console route redirects", () => {
   test("redirects the remaining dashboard detail and diagnostic pages into console deep links", async () => {
     authMocks.getSession.mockResolvedValue(makeSession({ role: "admin" }));
 
-    const UserInsightsPage = (await import("@/app/[locale]/dashboard/leaderboard/user/[userId]/page"))
-      .default;
+    const UserInsightsPage = (
+      await import("@/app/[locale]/dashboard/leaderboard/user/[userId]/page")
+    ).default;
     await UserInsightsPage({
       params: makeAsyncParams({ locale: "en", userId: "7" }),
     });

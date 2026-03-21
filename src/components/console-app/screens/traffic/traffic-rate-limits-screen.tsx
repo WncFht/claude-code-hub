@@ -1,7 +1,7 @@
 "use client";
 
-import { Suspense } from "react";
 import { useTranslations } from "next-intl";
+import { Suspense } from "react";
 import { RateLimitDashboard } from "@/app/[locale]/dashboard/rate-limits/_components/rate-limit-dashboard";
 import { RateLimitsContentSkeleton } from "@/app/[locale]/dashboard/rate-limits/_components/rate-limits-skeleton";
 import { Section } from "@/components/section";

@@ -121,13 +121,14 @@ export default function TrafficQuotaScreen({ route }: ConsoleRuntimeScreenProps)
             {quotaSubview === "providers" && data?.mode === "admin" ? (
               <ProvidersQuotaManager providers={data.providers} currencyCode={data.currencyCode} />
             ) : quotaSubview === "keys" && keyQuotaData ? (
-              <KeysQuotaManager users={keyQuotaData.users} currencyCode={keyQuotaData.currencyCode} />
+              <KeysQuotaManager
+                users={keyQuotaData.users}
+                currencyCode={keyQuotaData.currencyCode}
+              />
+            ) : data?.mode === "admin" ? (
+              <UsersQuotaClient users={data.users} currencyCode={data.currencyCode} />
             ) : (
-              data?.mode === "admin" ? (
-                <UsersQuotaClient users={data.users} currencyCode={data.currencyCode} />
-              ) : (
-                <TrafficQuotaSkeleton />
-              )
+              <TrafficQuotaSkeleton />
             )}
           </>
         )}

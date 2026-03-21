@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { ConsoleStage } from "@/components/console/console-stage";
 import type { ConsoleRuntimeRouteDefinition } from "@/lib/console/runtime-route-map";
 import { ConsoleHeader } from "./console-header";
-import { ConsoleModuleTabs, type ConsoleModuleTabItem } from "./console-module-tabs";
+import { type ConsoleModuleTabItem, ConsoleModuleTabs } from "./console-module-tabs";
 import { ConsoleSidebar, type ConsoleSidebarItem } from "./console-sidebar";
 
 interface ConsoleShellProps {

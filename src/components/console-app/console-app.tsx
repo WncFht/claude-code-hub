@@ -3,10 +3,10 @@
 import { useTranslations } from "next-intl";
 import type { ConsoleBootstrapPayload } from "@/lib/console/console-bootstrap";
 import { CONSOLE_MODULES, type ConsoleModuleId } from "@/lib/console/module-registry";
-import { CONSOLE_RUNTIME_ROUTES } from "@/lib/console/runtime-route-map";
 import {
-  getVisibleConsoleRuntimeModuleTabs,
+  CONSOLE_RUNTIME_ROUTES,
   type ConsoleRuntimeLabelKind,
+  getVisibleConsoleRuntimeModuleTabs,
 } from "@/lib/console/runtime-route-map";
 import { ConsoleScreenLoader } from "./console-screen-loader";
 import { ConsoleShell } from "./console-shell";
