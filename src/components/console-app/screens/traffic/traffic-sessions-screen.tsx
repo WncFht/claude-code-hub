@@ -1,9 +1,9 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import SessionsLoading from "@/app/[locale]/dashboard/sessions/loading";
+import { AlertCircle } from "lucide-react";
 import { ActiveSessionsClient } from "@/app/[locale]/dashboard/sessions/_components/active-sessions-client";
+import SessionsLoading from "@/app/[locale]/dashboard/sessions/loading";
 import { Section } from "@/components/section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";

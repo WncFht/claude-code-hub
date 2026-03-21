@@ -1,8 +1,8 @@
 "use client";
 
-import { useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
+import { useMemo } from "react";
 import { ActiveSessionsSkeleton } from "@/app/[locale]/dashboard/logs/_components/active-sessions-skeleton";
 import { UsageLogsSkeleton } from "@/app/[locale]/dashboard/logs/_components/usage-logs-skeleton";
 import { UsageLogsViewVirtualized } from "@/app/[locale]/dashboard/logs/_components/usage-logs-view-virtualized";

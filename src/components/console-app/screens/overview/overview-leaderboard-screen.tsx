@@ -1,7 +1,7 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { AlertCircle } from "lucide-react";
 import { LeaderboardView } from "@/app/[locale]/dashboard/leaderboard/_components/leaderboard-view";
 import { Section } from "@/components/section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";

@@ -1,8 +1,8 @@
 "use client";
 
 import { useMemo } from "react";
-import { usePathname } from "@/i18n/routing";
 import { SessionMessagesClient } from "@/app/[locale]/dashboard/sessions/[sessionId]/messages/_components/session-messages-client";
+import { usePathname } from "@/i18n/routing";
 
 function resolveSessionId(pathname: string) {
   const normalizedPath = pathname.split("?")[0]?.split("#")[0] ?? "";

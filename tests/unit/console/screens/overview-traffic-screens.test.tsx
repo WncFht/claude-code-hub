@@ -214,7 +214,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => new URLSearchParams(routingState.search),
   useParams: () => {
     const parts = routingState.pathname.split("/").filter(Boolean);
-    const sessionIndex = parts.findIndex((part) => part === "sessions");
+    const sessionIndex = parts.indexOf("sessions");
     return {
       slug: parts.slice(2),
       sessionId:

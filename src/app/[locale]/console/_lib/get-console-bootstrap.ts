@@ -1,5 +1,8 @@
+import {
+  buildConsoleBootstrap,
+  type ConsoleBootstrapPayload,
+} from "@/lib/console/console-bootstrap";
 import type { ConsoleRole } from "@/lib/console/module-registry";
-import { buildConsoleBootstrap, type ConsoleBootstrapPayload } from "@/lib/console/console-bootstrap";
 import { getDefaultConsolePath } from "@/lib/console/runtime-route-map";
 
 export interface GetConsoleBootstrapInput {

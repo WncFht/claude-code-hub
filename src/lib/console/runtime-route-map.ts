@@ -218,24 +218,19 @@ function normalizePath(pathname: string) {
   return trimmed.endsWith("/") ? trimmed.slice(0, -1) : trimmed;
 }
 
-function matchesRuntimeRoute(
-  route: ConsoleRuntimeRouteDefinition,
-  normalizedPath: string
-) {
+function matchesRuntimeRoute(route: ConsoleRuntimeRouteDefinition, normalizedPath: string) {
   if (route.matchKind === "exact") {
     return normalizedPath === route.consolePath;
   }
 
   if (route.matchKind === "prefix") {
     return (
-      normalizedPath === route.consolePath ||
-      normalizedPath.startsWith(`${route.consolePath}/`)
+      normalizedPath === route.consolePath || normalizedPath.startsWith(`${route.consolePath}/`)
     );
   }
 
   return (
-    normalizedPath.includes("/console/traffic/sessions/") &&
-    normalizedPath.endsWith("/messages")
+    normalizedPath.includes("/console/traffic/sessions/") && normalizedPath.endsWith("/messages")
   );
 }
 

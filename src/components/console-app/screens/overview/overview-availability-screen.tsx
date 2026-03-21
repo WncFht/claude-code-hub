@@ -1,7 +1,7 @@
 "use client";
 
-import { AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
+import { AlertCircle } from "lucide-react";
 import { AvailabilityDashboard } from "@/app/[locale]/dashboard/availability/_components/availability-dashboard";
 import { AvailabilityDashboardSkeleton } from "@/app/[locale]/dashboard/availability/_components/availability-skeleton";
 import { Section } from "@/components/section";

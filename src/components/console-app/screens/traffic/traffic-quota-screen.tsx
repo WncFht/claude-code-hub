@@ -1,18 +1,18 @@
 "use client";
 
-import { useMemo } from "react";
-import { AlertCircle } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
-import { UsersQuotaClient } from "@/app/[locale]/dashboard/quotas/users/_components/users-quota-client";
+import { AlertCircle } from "lucide-react";
+import { useMemo } from "react";
 import { ProvidersQuotaManager } from "@/app/[locale]/dashboard/quotas/providers/_components/providers-quota-manager";
+import { UsersQuotaClient } from "@/app/[locale]/dashboard/quotas/users/_components/users-quota-client";
 import { QuotaCards } from "@/app/[locale]/my-usage/_components/quota-cards";
-import { Link, usePathname } from "@/i18n/routing";
 import { Section } from "@/components/section";
-import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getConsoleTrafficQuotaData } from "../../adapters/dashboard-bootstrap";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Link, usePathname } from "@/i18n/routing";
 import type { ConsoleRuntimeScreenProps } from "@/lib/console/lazy-screen";
+import { getConsoleTrafficQuotaData } from "../../adapters/dashboard-bootstrap";
 
 function resolveQuotaSubview(pathname: string) {
   return pathname.endsWith("/providers") ? "providers" : "users";

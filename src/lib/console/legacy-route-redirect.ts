@@ -56,10 +56,9 @@ export async function redirectLegacyConsoleRoute({
 
   const role = session.user.role === "admin" ? "admin" : "user";
   const route = resolveConsoleRuntimeRoute(requestedConsolePath);
-  const redirectPath =
-    route && route.visibleForRoles.includes(role)
-      ? requestedConsolePath
-      : getDefaultConsolePath(role);
+  const redirectPath = route?.visibleForRoles.includes(role)
+    ? requestedConsolePath
+    : getDefaultConsolePath(role);
 
   return redirect({
     href: appendSearchParams(redirectPath, searchParams),

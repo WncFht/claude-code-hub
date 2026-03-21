@@ -1,9 +1,9 @@
-import type { ConsoleRole } from "./module-registry";
 import { mapLegacyConsolePath } from "./legacy-route-map";
+import type { ConsoleRole } from "./module-registry";
 import {
+  type ConsoleRuntimeRouteDefinition,
   getDefaultConsolePath,
   resolveConsoleRuntimeRoute,
-  type ConsoleRuntimeRouteDefinition,
 } from "./runtime-route-map";
 
 export interface BuildConsoleBootstrapInput {

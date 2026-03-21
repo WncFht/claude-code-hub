@@ -39,7 +39,8 @@ vi.mock("@/components/section", () => ({
 }));
 
 vi.mock("@/app/[locale]/dashboard/_components/traffic-module-page", () => ({
-  TrafficModulePage: ({ children }: { children: ReactNode }) => createElement("div", null, children),
+  TrafficModulePage: ({ children }: { children: ReactNode }) =>
+    createElement("div", null, children),
 }));
 
 vi.mock("@/app/[locale]/settings/_components/system-module-page", () => ({
@@ -61,19 +62,16 @@ vi.mock("@/app/[locale]/dashboard/sessions/_components/active-sessions-client", 
 vi.mock(
   "@/app/[locale]/dashboard/sessions/[sessionId]/messages/_components/session-messages-client",
   () => ({
-    SessionMessagesClient: () =>
-      createElement("div", { "data-slot": "session-messages-client" }),
+    SessionMessagesClient: () => createElement("div", { "data-slot": "session-messages-client" }),
   })
 );
 
 vi.mock("@/app/[locale]/dashboard/quotas/providers/_components/providers-quota-manager", () => ({
-  ProvidersQuotaManager: () =>
-    createElement("div", { "data-slot": "providers-quota-manager" }),
+  ProvidersQuotaManager: () => createElement("div", { "data-slot": "providers-quota-manager" }),
 }));
 
 vi.mock("@/app/[locale]/dashboard/quotas/_components/providers-quota-skeleton", () => ({
-  ProvidersQuotaSkeleton: () =>
-    createElement("div", { "data-slot": "providers-quota-skeleton" }),
+  ProvidersQuotaSkeleton: () => createElement("div", { "data-slot": "providers-quota-skeleton" }),
 }));
 
 vi.mock("@/app/[locale]/settings/config/_components/system-settings-form", () => ({
@@ -85,21 +83,17 @@ vi.mock("@/app/[locale]/settings/config/_components/auto-cleanup-form", () => ({
 }));
 
 vi.mock("@/app/[locale]/settings/config/_components/settings-config-skeleton", () => ({
-  SettingsConfigSkeleton: () =>
-    createElement("div", { "data-slot": "settings-config-skeleton" }),
+  SettingsConfigSkeleton: () => createElement("div", { "data-slot": "settings-config-skeleton" }),
 }));
 
 vi.mock("@/app/[locale]/settings/client-versions/_components/client-version-toggle", () => ({
   ClientVersionToggle: () => createElement("div", { "data-slot": "client-version-toggle" }),
 }));
 
-vi.mock(
-  "@/app/[locale]/settings/client-versions/_components/client-version-stats-table",
-  () => ({
-    ClientVersionStatsTable: () =>
-      createElement("div", { "data-slot": "client-version-stats-table" }),
-  })
-);
+vi.mock("@/app/[locale]/settings/client-versions/_components/client-version-stats-table", () => ({
+  ClientVersionStatsTable: () =>
+    createElement("div", { "data-slot": "client-version-stats-table" }),
+}));
 
 vi.mock("@/app/[locale]/settings/client-versions/_components/client-versions-skeleton", () => ({
   ClientVersionsSettingsSkeleton: () =>
@@ -242,9 +236,8 @@ describe("legacy console route redirects", () => {
       params: makeAsyncParams({ locale: "en", sessionId: "session-42" }),
     });
 
-    const ProvidersQuotaPage = (
-      await import("@/app/[locale]/dashboard/quotas/providers/page")
-    ).default;
+    const ProvidersQuotaPage = (await import("@/app/[locale]/dashboard/quotas/providers/page"))
+      .default;
     await ProvidersQuotaPage({
       params: makeAsyncParams({ locale: "en" }),
     });
