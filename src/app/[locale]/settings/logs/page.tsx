@@ -1,23 +1,16 @@
-import { getTranslations } from "next-intl/server";
-import { Section } from "@/components/section";
-import { SystemModulePage } from "../_components/system-module-page";
-import { LogLevelForm } from "./_components/log-level-form";
+import { redirectLegacyConsoleRoute } from "@/lib/console/legacy-route-redirect";
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsLogsPage() {
-  const t = await getTranslations("settings");
+export default async function SettingsLogsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
 
-  return (
-    <SystemModulePage role="admin" activeTab="logs">
-      <Section
-        title={t("logs.section.title")}
-        description={t("logs.section.description")}
-        icon="file-text"
-        variant="default"
-      >
-        <LogLevelForm />
-      </Section>
-    </SystemModulePage>
-  );
+  return redirectLegacyConsoleRoute({
+    locale,
+    legacyPath: "/settings/logs",
+  });
 }

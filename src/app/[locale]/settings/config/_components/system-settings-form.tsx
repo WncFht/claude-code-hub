@@ -69,6 +69,8 @@ interface SystemSettingsFormProps {
     | "quotaLeasePercentMonthly"
     | "quotaLeaseCapUsd"
   >;
+  formId?: string;
+  hideSubmitButton?: boolean;
 }
 
 function clampQuotaDbRefreshIntervalSeconds(raw: string): number {
@@ -78,7 +80,11 @@ function clampQuotaDbRefreshIntervalSeconds(raw: string): number {
   return Math.min(300, Math.max(1, rounded));
 }
 
-export function SystemSettingsForm({ initialSettings }: SystemSettingsFormProps) {
+export function SystemSettingsForm({
+  initialSettings,
+  formId,
+  hideSubmitButton = false,
+}: SystemSettingsFormProps) {
   const router = useRouter();
   const t = useTranslations("settings.config.form");
   const tCommon = useTranslations("settings.common");
@@ -235,7 +241,7 @@ export function SystemSettingsForm({ initialSettings }: SystemSettingsFormProps)
     "bg-muted/50 border border-border rounded-lg focus:border-primary focus:ring-1 focus:ring-primary";
 
   return (
-    <form onSubmit={handleSubmit} className="space-y-5">
+    <form id={formId} onSubmit={handleSubmit} className="space-y-5">
       {/* Site Title Input */}
       <div className="space-y-2">
         <Label htmlFor="site-title" className="text-sm font-medium text-foreground">
@@ -872,11 +878,13 @@ export function SystemSettingsForm({ initialSettings }: SystemSettingsFormProps)
         </Collapsible>
       </div>
 
-      <div className="flex justify-end pt-2">
-        <Button type="submit" disabled={isPending}>
-          {isPending ? tCommon("saving") : t("saveSettings")}
-        </Button>
-      </div>
+      {hideSubmitButton ? null : (
+        <div className="flex justify-end pt-2">
+          <Button type="submit" disabled={isPending}>
+            {isPending ? tCommon("saving") : t("saveSettings")}
+          </Button>
+        </div>
+      )}
     </form>
   );
 }

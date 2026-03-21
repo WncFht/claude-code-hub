@@ -41,6 +41,7 @@ interface UsageLogsViewVirtualizedProps {
   billingModelSource?: BillingModelSource;
   serverTimeZone?: string;
   logsRefreshIntervalMs?: number;
+  basePath?: string;
 }
 
 async function fetchSystemSettings(): Promise<SystemSettings> {
@@ -69,6 +70,7 @@ function UsageLogsViewContent({
   billingModelSource = "original",
   serverTimeZone,
   logsRefreshIntervalMs,
+  basePath = "/dashboard/logs",
 }: UsageLogsViewVirtualizedProps) {
   const t = useTranslations("dashboard");
   const tc = useTranslations("customs");
@@ -243,7 +245,7 @@ function UsageLogsViewContent({
 
   const handleFilterChange = (newFilters: Omit<typeof filters, "page">) => {
     const query = buildLogsUrlQuery(newFilters);
-    router.push(`/dashboard/logs?${query.toString()}`);
+    router.push(`${basePath}?${query.toString()}`);
   };
 
   useEffect(() => {

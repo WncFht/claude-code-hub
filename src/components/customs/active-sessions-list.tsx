@@ -32,6 +32,10 @@ interface ActiveSessionsListProps {
   showTokensCost?: boolean;
   /** 自定义类名 */
   className?: string;
+  /** 查看全部跳转地址 */
+  viewAllHref?: string;
+  /** Session 详情地址生成器 */
+  sessionDetailHrefBuilder?: (sessionId: string) => string;
 }
 
 /**
@@ -47,6 +51,8 @@ export function ActiveSessionsList({
   maxHeight = "200px",
   showTokensCost = true,
   className = "",
+  viewAllHref = "/dashboard/sessions",
+  sessionDetailHrefBuilder,
 }: ActiveSessionsListProps) {
   const router = useRouter();
   const tu = useTranslations("ui");
@@ -75,7 +81,7 @@ export function ActiveSessionsList({
             </span>
           </div>
           <button
-            onClick={() => router.push("/dashboard/sessions")}
+            onClick={() => router.push(viewAllHref)}
             className="text-xs text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
           >
             {tc("activeSessions.viewAll")} →
@@ -107,6 +113,7 @@ export function ActiveSessionsList({
                 session={session}
                 currencyCode={currencyCode}
                 showTokensCost={showTokensCost}
+                detailHref={sessionDetailHrefBuilder?.(session.sessionId)}
               />
             ))}
           </div>

@@ -54,14 +54,22 @@ async function fetchSystemSettings(): Promise<{
   return response.json();
 }
 
-export function SessionMessagesClient() {
+interface SessionMessagesClientProps {
+  sessionId?: string;
+  backHref?: string;
+}
+
+export function SessionMessagesClient({
+  sessionId: sessionIdProp,
+  backHref,
+}: SessionMessagesClientProps = {}) {
   const t = useTranslations("dashboard.sessions");
 
   const params = useParams();
   const searchParams = useSearchParams();
   const router = useRouter();
   const pathname = usePathname();
-  const sessionId = params.sessionId as string;
+  const sessionId = sessionIdProp ?? (params.sessionId as string | undefined) ?? "";
 
   // URL state
   const seqParam = searchParams.get("seq");
@@ -342,7 +350,7 @@ export function SessionMessagesClient() {
                 variant="ghost"
                 size="sm"
                 className="h-8 -ml-2 text-muted-foreground"
-                onClick={() => router.back()}
+                onClick={() => (backHref ? router.push(backHref) : router.back())}
               >
                 <ArrowLeft className="h-4 w-4 mr-1" />
                 {t("actions.back")}

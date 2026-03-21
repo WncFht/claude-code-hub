@@ -45,12 +45,14 @@ export interface SessionListItemProps {
   session: ActiveSessionInfo;
   currencyCode?: CurrencyCode;
   showTokensCost?: boolean;
+  detailHref?: string;
 }
 
 export function SessionListItem({
   session,
   currencyCode = "USD",
   showTokensCost = true,
+  detailHref,
 }: SessionListItemProps) {
   const statusInfo = getStatusIcon(session.status, session.statusCode);
   const StatusIcon = statusInfo.icon;
@@ -61,7 +63,7 @@ export function SessionListItem({
 
   return (
     <Link
-      href={`/dashboard/sessions/${session.sessionId}/messages`}
+      href={detailHref ?? `/dashboard/sessions/${session.sessionId}/messages`}
       className="block hover:bg-muted/50 transition-colors rounded-md px-3 py-2 group"
     >
       <div className="flex items-center gap-2 text-sm">

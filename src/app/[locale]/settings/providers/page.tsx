@@ -1,40 +1,16 @@
-import { BarChart3 } from "lucide-react";
-import { getTranslations } from "next-intl/server";
-import { Button } from "@/components/ui/button";
-import { Link } from "@/i18n/routing";
-import { getSession } from "@/lib/auth";
-import { AutoSortPriorityDialog } from "./_components/auto-sort-priority-dialog";
-import { ProviderManagerLoader } from "./_components/provider-manager-loader";
-import { ProvidersModulePage } from "./_components/providers-module-page";
-import { ReclusterVendorsDialog } from "./_components/recluster-vendors-dialog";
-import { SchedulingRulesDialog } from "./_components/scheduling-rules-dialog";
+import { redirectLegacyConsoleRoute } from "@/lib/console/legacy-route-redirect";
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsProvidersPage() {
-  const t = await getTranslations("settings");
-  const session = await getSession();
+export default async function SettingsProvidersPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
 
-  return (
-    <ProvidersModulePage
-      activeTab="inventory"
-      inventoryHref="/settings/providers"
-      pricingHref="/settings/prices"
-      actions={
-        <>
-          <Button asChild variant="outline">
-            <Link href="/dashboard/leaderboard?scope=provider">
-              <BarChart3 className="h-4 w-4" />
-              {t("providers.section.leaderboard")}
-            </Link>
-          </Button>
-          <AutoSortPriorityDialog />
-          <ReclusterVendorsDialog />
-          <SchedulingRulesDialog />
-        </>
-      }
-    >
-      <ProviderManagerLoader currentUser={session?.user} embedded={true} />
-    </ProvidersModulePage>
-  );
+  return redirectLegacyConsoleRoute({
+    locale,
+    legacyPath: "/settings/providers",
+  });
 }

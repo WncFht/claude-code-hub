@@ -24,10 +24,14 @@ interface PaginatedSessionsData {
   hasMoreInactive: boolean;
 }
 
+interface ActiveSessionsClientProps {
+  sessionDetailHrefBuilder?: (sessionId: string) => string;
+}
+
 /**
  * 活跃 Session 实时监控页面
  */
-export function ActiveSessionsClient() {
+export function ActiveSessionsClient({ sessionDetailHrefBuilder }: ActiveSessionsClientProps = {}) {
   const router = useRouter();
   const t = useTranslations("dashboard.sessions");
 
@@ -145,6 +149,7 @@ export function ActiveSessionsClient() {
               isLoading={isLoading}
               currencyCode={currencyCode}
               onSessionTerminated={() => refetch()}
+              sessionDetailHrefBuilder={sessionDetailHrefBuilder}
             />
             <PaginationControls
               page={activePage}
@@ -163,6 +168,7 @@ export function ActiveSessionsClient() {
                 isLoading={isLoading}
                 inactive
                 currencyCode={currencyCode}
+                sessionDetailHrefBuilder={sessionDetailHrefBuilder}
               />
               <PaginationControls
                 page={inactivePage}

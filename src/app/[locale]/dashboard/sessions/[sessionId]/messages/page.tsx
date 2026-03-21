@@ -1,6 +1,4 @@
-import { redirect } from "@/i18n/routing";
-import { getSession } from "@/lib/auth";
-import { SessionMessagesClient } from "./_components/session-messages-client";
+import { redirectLegacyConsoleRoute } from "@/lib/console/legacy-route-redirect";
 
 export const dynamic = "force-dynamic";
 
@@ -9,13 +7,10 @@ export default async function SessionMessagesPage({
 }: {
   params: Promise<{ locale: string; sessionId: string }>;
 }) {
-  const { locale } = await params;
-  const session = await getSession();
+  const { locale, sessionId } = await params;
 
-  // 权限检查：仅 admin 用户可访问
-  if (!session || session.user.role !== "admin") {
-    return redirect({ href: session ? "/dashboard" : "/login", locale });
-  }
-
-  return <SessionMessagesClient />;
+  return redirectLegacyConsoleRoute({
+    locale,
+    legacyPath: `/dashboard/sessions/${sessionId}/messages`,
+  });
 }

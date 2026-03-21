@@ -11,6 +11,7 @@ import type { ProviderDisplay, ProviderStatisticsMap } from "@/types/provider";
 import type { User } from "@/types/user";
 import { AddProviderDialog } from "./add-provider-dialog";
 import { ProviderManager } from "./provider-manager";
+import type { SortKey } from "./provider-sort-dropdown";
 
 type ProviderHealthStatus = Record<
   number,
@@ -35,12 +36,20 @@ interface ProviderManagerLoaderProps {
   currentUser?: User;
   enableMultiProviderTypes?: boolean;
   embedded?: boolean;
+  sortBy?: SortKey;
+  onSortByChange?: (value: SortKey) => void;
+  viewMode?: "list" | "vendor";
+  onViewModeChange?: (value: "list" | "vendor") => void;
 }
 
 function ProviderManagerLoaderContent({
   currentUser,
   enableMultiProviderTypes = true,
   embedded = false,
+  sortBy,
+  onSortByChange,
+  viewMode,
+  onViewModeChange,
 }: ProviderManagerLoaderProps) {
   const {
     data: providers = [],
@@ -102,6 +111,10 @@ function ProviderManagerLoaderContent({
       refreshing={refreshing}
       addDialogSlot={<AddProviderDialog enableMultiProviderTypes={enableMultiProviderTypes} />}
       embedded={embedded}
+      sortBy={sortBy}
+      onSortByChange={onSortByChange}
+      viewMode={viewMode}
+      onViewModeChange={onViewModeChange}
     />
   );
 }

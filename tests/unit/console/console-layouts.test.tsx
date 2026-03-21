@@ -124,7 +124,7 @@ describe("console layouts", () => {
     }
   });
 
-  test("dashboard layout preserves current dashboard access and mounts the shared shell", async () => {
+  test("dashboard layout now acts as a passthrough wrapper for legacy redirects", async () => {
     routingMocks.usePathname.mockReturnValue("/dashboard");
     authMocks.getSession.mockResolvedValue(makeSession({ role: "user", canLoginWebUi: true }));
 
@@ -137,22 +137,23 @@ describe("console layouts", () => {
     );
 
     expect(routingMocks.redirect).not.toHaveBeenCalled();
-    expect(html).toContain('data-slot="console-shell"');
-    expect(html).toContain('data-testid="dashboard-header"');
     expect(html).toContain("Dashboard content");
   });
 
-  test("settings layout remains admin-only", async () => {
+  test("settings layout no longer performs auth redirects", async () => {
     routingMocks.usePathname.mockReturnValue("/settings/config");
     authMocks.getSession.mockResolvedValue(makeSession({ role: "user", canLoginWebUi: true }));
 
     const SettingsLayout = (await import("@/app/[locale]/settings/layout")).default;
-    await SettingsLayout({
-      children: <div>Settings content</div>,
-      params: makeAsyncParams("en"),
-    });
+    const html = renderToStaticMarkup(
+      await SettingsLayout({
+        children: <div>Settings content</div>,
+        params: makeAsyncParams("en"),
+      })
+    );
 
-    expect(routingMocks.redirect).toHaveBeenCalledWith({ href: "/dashboard", locale: "en" });
+    expect(routingMocks.redirect).not.toHaveBeenCalled();
+    expect(html).toContain("Settings content");
   });
 
   test("dashboard main keeps session message routes full bleed inside the shared stage", async () => {
@@ -174,7 +175,7 @@ describe("console layouts", () => {
     expect(html).toContain("overflow-hidden");
   });
 
-  test("settings layout keeps page transitions inside the shared shell contract", async () => {
+  test("settings layout simply returns children for legacy shim routes", async () => {
     routingMocks.usePathname.mockReturnValue("/settings/config");
     authMocks.getSession.mockResolvedValue(makeSession({ role: "admin", canLoginWebUi: true }));
 
@@ -186,7 +187,6 @@ describe("console layouts", () => {
       })
     );
 
-    expect(html).toContain('data-slot="console-shell"');
-    expect(html).toContain('data-slot="page-transition"');
+    expect(html).toContain("Settings content");
   });
 });
