@@ -31,6 +31,11 @@ vi.mock("@/i18n/routing", () => ({
     </a>
   ),
   redirect: routingMocks.redirect,
+  usePathname: () => undefined,
+}));
+
+vi.mock("next-intl", () => ({
+  useTranslations: () => (key: string) => key,
 }));
 
 function makeAsyncParams(locale: string, slug?: string[]) {

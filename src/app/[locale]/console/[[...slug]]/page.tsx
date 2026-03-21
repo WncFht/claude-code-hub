@@ -1,3 +1,4 @@
+import { ConsoleApp } from "@/components/console-app/console-app";
 import { redirect } from "@/i18n/routing";
 import { getSession } from "@/lib/auth";
 import { getConsoleBootstrap } from "../_lib/get-console-bootstrap";
@@ -34,14 +35,5 @@ export default async function ConsoleEntryPage({ params }: ConsoleEntryPageProps
     slug,
   });
 
-  return (
-    <div
-      data-slot="console-entry"
-      data-current-path={bootstrap.currentPath}
-      data-requested-path={bootstrap.requestedPath}
-      data-default-path={bootstrap.defaultPath}
-      data-screen-id={bootstrap.activeRoute.screenId}
-      data-module-id={bootstrap.activeRoute.moduleId}
-    />
-  );
+  return <ConsoleApp bootstrap={bootstrap} />;
 }
