@@ -103,6 +103,7 @@ export function ProviderManager({
   const handleSortByChange = onSortByChange ?? setUncontrolledSortBy;
   const resolvedViewMode = viewMode ?? uncontrolledViewMode;
   const handleViewModeChange = onViewModeChange ?? setUncontrolledViewMode;
+  const isListView = resolvedViewMode === "list";
 
   // Status and group filters
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "inactive">("all");
@@ -457,20 +458,22 @@ export function ProviderManager({
               </div>
             </div>
 
-            <ProviderBatchToolbar
-              isMultiSelectMode={isMultiSelectMode}
-              allSelected={allSelected}
-              selectedCount={selectedProviderIds.size}
-              totalCount={filteredProviders.length}
-              onEnterMode={handleEnterMultiSelectMode}
-              onExitMode={handleExitMultiSelectMode}
-              onSelectAll={handleSelectAll}
-              onInvertSelection={handleInvertSelection}
-              onOpenBatchEdit={handleOpenBatchEdit}
-              providers={filteredProviders}
-              onSelectByType={handleSelectByType}
-              onSelectByGroup={handleSelectByGroup}
-            />
+            {isListView ? (
+              <ProviderBatchToolbar
+                isMultiSelectMode={isMultiSelectMode}
+                allSelected={allSelected}
+                selectedCount={selectedProviderIds.size}
+                totalCount={filteredProviders.length}
+                onEnterMode={handleEnterMultiSelectMode}
+                onExitMode={handleExitMultiSelectMode}
+                onSelectAll={handleSelectAll}
+                onInvertSelection={handleInvertSelection}
+                onOpenBatchEdit={handleOpenBatchEdit}
+                providers={filteredProviders}
+                onSelectByType={handleSelectByType}
+                onSelectByGroup={handleSelectByGroup}
+              />
+            ) : null}
           </div>
         </div>
 
@@ -779,21 +782,25 @@ export function ProviderManager({
           </div>
         )}
 
-        <ProviderBatchActions
-          selectedCount={selectedProviderIds.size}
-          isVisible={isMultiSelectMode}
-          onAction={handleBatchAction}
-          onClose={handleExitMultiSelectMode}
-        />
+        {isListView ? (
+          <ProviderBatchActions
+            selectedCount={selectedProviderIds.size}
+            isVisible={isMultiSelectMode}
+            onAction={handleBatchAction}
+            onClose={handleExitMultiSelectMode}
+          />
+        ) : null}
 
-        <ProviderBatchDialog
-          open={batchDialogOpen}
-          mode={batchActionMode}
-          onOpenChange={setBatchDialogOpen}
-          selectedProviderIds={selectedProviderIds}
-          providers={filteredProviders}
-          onSuccess={handleBatchSuccess}
-        />
+        {isListView ? (
+          <ProviderBatchDialog
+            open={batchDialogOpen}
+            mode={batchActionMode}
+            onOpenChange={setBatchDialogOpen}
+            selectedProviderIds={selectedProviderIds}
+            providers={filteredProviders}
+            onSuccess={handleBatchSuccess}
+          />
+        ) : null}
       </div>
     </div>
   );

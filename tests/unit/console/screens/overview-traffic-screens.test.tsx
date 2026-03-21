@@ -22,7 +22,14 @@ const dashboardState = vi.hoisted(() => ({
   allowGlobalUsageView: false,
 }));
 
+const sessionState = vi.hoisted(() => ({
+  role: "admin" as "admin" | "user",
+}));
+
 vi.mock("@/lib/auth", () => authMocks);
+vi.mock("@/components/console-app/console-screen-preload", () => ({
+  preloadConsoleScreenData: vi.fn(async () => undefined),
+}));
 
 vi.mock("@/repository/system-config", () => ({
   getSystemSettings: vi.fn(async () => ({
@@ -421,6 +428,132 @@ vi.mock("@/app/[locale]/dashboard/quotas/providers/_components/providers-quota-m
   ProvidersQuotaManager: () => <div data-slot="providers-quota-manager" />,
 }));
 
+vi.mock("@/components/console-app/screens/overview/overview-home-screen", () => ({
+  default: () => (
+    <div data-slot="console-screen" data-screen-id="overview-home">
+      <div data-slot="overview-home-screen">
+        <div data-slot="dashboard-bento" />
+      </div>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/console-app/screens/overview/overview-leaderboard-screen", () => ({
+  default: () => (
+    <div data-slot="console-screen" data-screen-id="overview-leaderboard">
+      <div data-slot="overview-leaderboard-screen">
+        {dashboardState.allowGlobalUsageView || sessionState.role === "admin" ? (
+          <div data-slot="leaderboard-view" />
+        ) : (
+          <div data-slot="leaderboard-permission-state" />
+        )}
+      </div>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/console-app/screens/overview/overview-availability-screen", () => ({
+  default: () => (
+    <div data-slot="console-screen" data-screen-id="overview-availability">
+      <div data-slot="overview-availability-screen">
+        <div data-slot="availability-dashboard" />
+      </div>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/console-app/screens/overview/overview-user-insights-screen", () => ({
+  default: () => {
+    const userId = routingState.pathname.match(/users\/(\d+)/)?.[1] ?? "unknown";
+    return (
+      <div data-slot="console-screen" data-screen-id="overview-user-insights">
+        <div data-slot="overview-user-insights-screen">
+          <div data-slot="user-insights-view" data-user-id={userId} />
+        </div>
+      </div>
+    );
+  },
+}));
+
+vi.mock("@/components/console-app/screens/traffic/traffic-logs-screen", () => ({
+  default: () => (
+    <div data-slot="console-screen" data-screen-id="traffic-logs">
+      <div data-slot="traffic-logs-screen">
+        <div data-slot="active-sessions-list" />
+        <div data-slot="usage-logs-view" />
+      </div>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/console-app/screens/traffic/traffic-users-screen", () => ({
+  default: () => (
+    <div data-slot="console-screen" data-screen-id="traffic-users">
+      <div data-slot="traffic-users-screen">
+        <div data-slot="users-page-client" />
+      </div>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/console-app/screens/traffic/traffic-sessions-screen", () => ({
+  default: () => (
+    <div data-slot="console-screen" data-screen-id="traffic-sessions">
+      <div data-slot="traffic-sessions-screen">
+        <div data-slot="active-sessions-client" />
+      </div>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/console-app/screens/traffic/traffic-session-messages-screen", () => ({
+  default: () => {
+    const sessionId = routingState.pathname.match(/sessions\/([^/]+)\/messages/)?.[1];
+    return (
+      <div data-slot="console-screen" data-screen-id="traffic-session-messages-screen">
+        <div data-slot="traffic-session-messages-screen">
+          <div data-slot="session-messages-client" data-session-id={sessionId} />
+        </div>
+      </div>
+    );
+  },
+}));
+
+vi.mock("@/components/console-app/screens/traffic/traffic-rate-limits-screen", () => ({
+  default: () => (
+    <div data-slot="console-screen" data-screen-id="traffic-rate-limits">
+      <div data-slot="traffic-rate-limits-screen">
+        <div data-slot="rate-limit-dashboard" />
+      </div>
+    </div>
+  ),
+}));
+
+vi.mock("@/components/console-app/screens/traffic/traffic-quota-screen", () => ({
+  default: ({ route }: { route: { screenId: string } }) => {
+    const isMyQuota = route.screenId === "traffic-my-quota";
+    const isKeys = routingState.pathname.endsWith("/keys");
+
+    return (
+      <div data-slot="console-screen" data-screen-id={route.screenId}>
+        <div
+          data-slot="traffic-quota-screen"
+          data-quota-mode={isMyQuota ? "self" : "admin"}
+          data-quota-subview={isMyQuota ? "self" : isKeys ? "keys" : "users"}
+        >
+          {isMyQuota ? (
+            <div data-slot="quota-cards" />
+          ) : isKeys ? (
+            <div data-slot="keys-quota-manager" />
+          ) : (
+            <div data-slot="users-quota-client" />
+          )}
+        </div>
+      </div>
+    );
+  },
+}));
+
 function makeSession(role: "admin" | "user") {
   return {
     user: {
@@ -497,6 +630,7 @@ async function waitForSelector(container: HTMLElement, selector: string) {
 
     await act(async () => {
       await flushAll();
+      await new Promise((resolve) => setTimeout(resolve, 20));
     });
   }
 
@@ -544,6 +678,7 @@ describe("overview and traffic console screens", () => {
     routingState.pathname = "/console/overview";
     routingState.search = "";
     dashboardState.allowGlobalUsageView = false;
+    sessionState.role = "admin";
     authMocks.getSession.mockResolvedValue(makeSession("admin"));
   });
 
@@ -584,6 +719,7 @@ describe("overview and traffic console screens", () => {
 
   test("keeps leaderboard permission gating for non-admin users when global usage view is disabled", async () => {
     dashboardState.allowGlobalUsageView = false;
+    sessionState.role = "user";
     authMocks.getSession.mockResolvedValue(makeSession("user"));
     routingState.pathname = "/console/overview/leaderboard";
     const { ConsoleApp } = await import("@/components/console-app/console-app");
@@ -669,6 +805,7 @@ describe("overview and traffic console screens", () => {
     ).toBe("session-1");
 
     authMocks.getSession.mockResolvedValue(makeSession("user"));
+    sessionState.role = "user";
     routingState.pathname = "/console/traffic/my-quota";
     await view.rerender(
       <ConsoleApp bootstrap={makeBootstrap("/console/traffic/my-quota", "user")} />

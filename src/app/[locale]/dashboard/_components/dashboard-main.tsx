@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 import { ConsoleShell } from "@/components/console/console-shell";
+import { PageStage } from "@/components/page-stage";
 import { usePathname } from "@/i18n/routing";
 import {
   type ConsoleModuleId,
@@ -58,6 +59,8 @@ export function DashboardMain({
   }
 
   return (
-    <main className="mx-auto w-full max-w-7xl px-6 py-8 md:py-9 xl:px-8 xl:py-10">{children}</main>
+    <main className="mx-auto w-full max-w-7xl px-6 py-8 md:py-9 xl:px-8 xl:py-10">
+      <PageStage activeKey={normalizedPathname}>{children}</PageStage>
+    </main>
   );
 }

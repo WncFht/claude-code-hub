@@ -1,6 +1,8 @@
 "use client";
 
+import { useQueryClient } from "@tanstack/react-query";
 import { useTranslations } from "next-intl";
+import { useEffect, useRef } from "react";
 import type { ConsoleBootstrapPayload } from "@/lib/console/console-bootstrap";
 import { CONSOLE_MODULES, type ConsoleModuleId } from "@/lib/console/module-registry";
 import {
@@ -8,6 +10,7 @@ import {
   type ConsoleRuntimeLabelKind,
   getVisibleConsoleRuntimeModuleTabs,
 } from "@/lib/console/runtime-route-map";
+import { preloadConsoleRuntimeScreen } from "@/lib/console/runtime-screen-registry";
 import { ConsoleScreenLoader } from "./console-screen-loader";
 import { ConsoleShell } from "./console-shell";
 import { ConsoleToolbarHost, ConsoleToolbarProvider } from "./console-toolbar-host";
@@ -53,13 +56,15 @@ function getRouteLabel(
 }
 
 export function ConsoleApp({ bootstrap }: ConsoleAppProps) {
+  const queryClient = useQueryClient();
   const tModules = useTranslations("dashboard.console.modules");
   const tConsoleRoutes = useTranslations("dashboard.console.routes");
   const tSettingsNav = useTranslations("settings.nav");
   const tRateLimits = useTranslations("dashboard.rateLimits");
   const tUserInsights = useTranslations("dashboard.leaderboard.userInsights");
   const moduleLabels = getModuleLabels(tModules);
-  const { currentPath, activeRoute } = useConsoleRoute(bootstrap);
+  const { currentPath, activeRoute, direction } = useConsoleRoute(bootstrap);
+  const hasMountedRef = useRef(false);
   const activeScreenLabel = getRouteLabel(
     activeRoute.labelKind,
     activeRoute.labelKey,
@@ -68,6 +73,18 @@ export function ConsoleApp({ bootstrap }: ConsoleAppProps) {
     tRateLimits,
     tUserInsights
   );
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
+    void preloadConsoleRuntimeScreen(activeRoute.screenId, {
+      pathname: currentPath,
+      queryClient,
+    });
+  }, [activeRoute.screenId, currentPath, queryClient]);
 
   const navigationItems = CONSOLE_MODULES.flatMap((module) => {
     const route = CONSOLE_RUNTIME_ROUTES.find(
@@ -115,12 +132,15 @@ export function ConsoleApp({ bootstrap }: ConsoleAppProps) {
         data-default-path={bootstrap.defaultPath}
         data-screen-id={activeRoute.screenId}
         data-module-id={activeRoute.moduleId}
+        data-route-direction={String(direction)}
       >
         <ConsoleShell
+          siteTitle={bootstrap.siteTitle}
           currentPath={currentPath}
           activeModuleLabel={moduleLabels[activeRoute.moduleId]}
           activeScreenLabel={activeScreenLabel}
           activeRoute={activeRoute}
+          direction={direction}
           navigationItems={navigationItems}
           moduleTabs={moduleTabs}
           toolbar={<ConsoleToolbarHost activeScreenId={activeRoute.screenId} />}

@@ -9,7 +9,8 @@ import {
   ClientVersionsSettingsSkeleton,
   ClientVersionsTableSkeleton,
 } from "@/app/[locale]/settings/client-versions/_components/client-versions-skeleton";
-import { getConsoleClientVersionsData } from "../../adapters/policy-bootstrap";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
+import { getConsoleClientVersionsQueryOptions } from "../../console-screen-query-options";
 
 function ClientVersionsEmptyState() {
   const t = useTranslations("settings");
@@ -28,15 +29,13 @@ function ClientVersionsEmptyState() {
 export default function PolicyClientVersionsScreen() {
   const t = useTranslations("settings");
   const { data, isLoading } = useQuery({
-    queryKey: ["console-policy-client-versions"],
-    queryFn: getConsoleClientVersionsData,
+    ...getConsoleClientVersionsQueryOptions(),
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   return (
     <div data-slot="console-screen" data-screen-id="policy-client-versions">
-      <div data-slot="policy-client-versions-screen" className="space-y-4">
+      <ConsoleScreenStage screenId="policy-client-versions" className="space-y-4">
         <SettingsSection
           title={t("clientVersions.section.settings.title")}
           description={t("clientVersions.section.settings.description")}
@@ -70,7 +69,7 @@ export default function PolicyClientVersionsScreen() {
             )}
           </div>
         </SettingsSection>
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

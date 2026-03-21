@@ -2,6 +2,12 @@
 
 import { type ComponentType, createElement } from "react";
 import {
+  type ConsoleScreenPreloadOptions,
+  preloadConsoleScreenData,
+} from "@/components/console-app/console-screen-preload";
+import OverviewHomeScreen from "@/components/console-app/screens/overview/overview-home-screen";
+import ProvidersInventoryScreen from "@/components/console-app/screens/providers/providers-inventory-screen";
+import {
   type ConsoleLazyScreen,
   type ConsoleRuntimeScreenProps,
   createLazyScreen,
@@ -72,6 +78,13 @@ const ROUTE_BY_SCREEN_ID = new Map<ConsoleScreenId, ConsoleRuntimeRouteDefinitio
   CONSOLE_RUNTIME_ROUTES.map((route) => [route.screenId, route])
 );
 
+const INITIAL_SCREEN_COMPONENTS: Partial<
+  Record<ConsoleScreenId, ComponentType<ConsoleRuntimeScreenProps>>
+> = {
+  "overview-home": OverviewHomeScreen as ComponentType<ConsoleRuntimeScreenProps>,
+  "providers-inventory": ProvidersInventoryScreen,
+};
+
 const SCREEN_REGISTRY = Object.fromEntries(
   CONSOLE_RUNTIME_ROUTES.map((route) => [
     route.screenId,
@@ -88,8 +101,18 @@ export function getConsoleRuntimeScreen(screenId: ConsoleScreenId) {
   return SCREEN_REGISTRY[screenId];
 }
 
-export function preloadConsoleRuntimeScreen(screenId: ConsoleScreenId) {
-  return getConsoleRuntimeScreen(screenId).preload();
+export function getConsoleInitialRuntimeScreen(screenId: ConsoleScreenId) {
+  return INITIAL_SCREEN_COMPONENTS[screenId] ?? null;
+}
+
+export async function preloadConsoleRuntimeScreen(
+  screenId: ConsoleScreenId,
+  options?: ConsoleScreenPreloadOptions
+) {
+  await Promise.allSettled([
+    getConsoleRuntimeScreen(screenId).preload(),
+    preloadConsoleScreenData(screenId, options),
+  ]);
 }
 
 export function getConsoleRuntimeRoute(screenId: ConsoleScreenId) {

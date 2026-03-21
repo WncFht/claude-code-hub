@@ -3,7 +3,10 @@
 import { Suspense } from "react";
 import type { ConsoleBootstrapPayload } from "@/lib/console/console-bootstrap";
 import type { ConsoleRuntimeRouteDefinition } from "@/lib/console/runtime-route-map";
-import { getConsoleRuntimeScreen } from "@/lib/console/runtime-screen-registry";
+import {
+  getConsoleInitialRuntimeScreen,
+  getConsoleRuntimeScreen,
+} from "@/lib/console/runtime-screen-registry";
 
 interface ConsoleScreenLoaderProps {
   bootstrap: ConsoleBootstrapPayload;
@@ -11,6 +14,17 @@ interface ConsoleScreenLoaderProps {
 }
 
 export function ConsoleScreenLoader({ bootstrap, activeRoute }: ConsoleScreenLoaderProps) {
+  const initialScreen =
+    activeRoute.screenId === bootstrap.activeRoute.screenId
+      ? getConsoleInitialRuntimeScreen(activeRoute.screenId)
+      : null;
+
+  if (initialScreen) {
+    const InitialScreenComponent = initialScreen;
+
+    return <InitialScreenComponent bootstrap={bootstrap} route={activeRoute} />;
+  }
+
   const screen = getConsoleRuntimeScreen(activeRoute.screenId);
   const ScreenComponent = screen.Component;
 

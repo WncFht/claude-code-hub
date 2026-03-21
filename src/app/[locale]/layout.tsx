@@ -6,6 +6,7 @@ import { getMessages } from "next-intl/server";
 import { Footer } from "@/components/customs/footer";
 import { Toaster } from "@/components/ui/sonner";
 import { type Locale, locales } from "@/i18n/config";
+import { PRE_HYDRATION_SANITIZER_SCRIPT } from "@/lib/hydration/pre-hydration-sanitizer";
 import { logger } from "@/lib/logger";
 import { resolveSystemTimezone } from "@/lib/utils/timezone";
 import { getSystemSettings } from "@/repository/system-config";
@@ -77,7 +78,8 @@ export default async function RootLayout({
 
   return (
     <html lang={locale} suppressHydrationWarning>
-      <body className="antialiased">
+      <body className="antialiased" suppressHydrationWarning>
+        <script>{PRE_HYDRATION_SANITIZER_SCRIPT}</script>
         <NextIntlClientProvider messages={messages} timeZone={timeZone} now={now}>
           <AppProviders>
             <div className="flex min-h-[var(--cch-viewport-height,100vh)] flex-col bg-background text-foreground">

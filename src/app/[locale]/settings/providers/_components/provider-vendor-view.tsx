@@ -5,7 +5,7 @@ import { ExternalLink, InfoIcon, Loader2, Trash2 } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo, useState } from "react";
 import { toast } from "sonner";
-import { getProviderVendors, removeProviderVendor } from "@/actions/provider-endpoints";
+import { removeProviderVendor } from "@/actions/provider-endpoints";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -21,11 +21,13 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { resolveProviderFaviconUrl } from "@/lib/providers/favicon";
 import type { CurrencyCode } from "@/lib/utils/currency";
 import { getErrorMessage } from "@/lib/utils/error-messages";
 import type { ProviderDisplay, ProviderVendor } from "@/types/provider";
 import type { User } from "@/types/user";
 import { ProviderEndpointsSection } from "./provider-endpoints-table";
+import { getProviderVendorsQueryOptions } from "./provider-manager-data";
 
 import { VendorKeysCompactList } from "./vendor-keys-compact-list";
 
@@ -51,9 +53,7 @@ export function ProviderVendorView(props: ProviderVendorViewProps) {
   const tCommon = useTranslations("settings.common");
 
   const { data: vendors = [], isLoading: isVendorsLoading } = useQuery({
-    queryKey: ["provider-vendors"],
-    queryFn: getProviderVendors,
-    staleTime: 60_000,
+    ...getProviderVendorsQueryOptions(),
     refetchOnWindowFocus: false,
   });
 
@@ -147,13 +147,14 @@ function VendorCard({
   currencyCode: CurrencyCode;
 }) {
   const t = useTranslations("settings.providers");
+  const canManageVendor = currentUser?.role === "admin";
 
   const displayName =
     vendorId === -1
       ? t("orphanedProviders")
       : vendor?.displayName || vendor?.websiteDomain || t("vendorFallbackName", { id: vendorId });
   const websiteUrl = vendor?.websiteUrl;
-  const faviconUrl = vendor?.faviconUrl;
+  const faviconUrl = resolveProviderFaviconUrl(vendor?.faviconUrl);
 
   return (
     <Card
@@ -164,7 +165,7 @@ function VendorCard({
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-3">
             <Avatar className="h-11 w-11 border border-white/60 bg-background shadow-[inset_0_1px_0_rgba(255,255,255,0.9)]">
-              <AvatarImage src={faviconUrl || ""} />
+              <AvatarImage src={faviconUrl ?? undefined} />
               <AvatarFallback>{displayName.substring(0, 2).toUpperCase()}</AvatarFallback>
             </Avatar>
             <div className="space-y-1">
@@ -205,7 +206,9 @@ function VendorCard({
             </div>
           </div>
           <div className="flex items-center gap-2">
-            {vendorId > 0 && <DeleteVendorDialog vendor={vendor} vendorId={vendorId} />}
+            {vendorId > 0 && canManageVendor ? (
+              <DeleteVendorDialog vendor={vendor} vendorId={vendorId} />
+            ) : null}
           </div>
         </div>
       </CardHeader>
@@ -224,7 +227,11 @@ function VendorCard({
         />
 
         {enableMultiProviderTypes && vendorId > 0 && (
-          <ProviderEndpointsSection vendorId={vendorId} deferUntilInView />
+          <ProviderEndpointsSection
+            vendorId={vendorId}
+            readOnly={!canManageVendor}
+            deferUntilInView
+          />
         )}
       </CardContent>
     </Card>

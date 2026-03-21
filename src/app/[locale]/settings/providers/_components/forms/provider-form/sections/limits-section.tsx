@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 import { MixedValueIndicator } from "../../../batch-edit/mixed-value-indicator";
 import { FieldGroup, SectionCard, SmartInputWrapper } from "../components/section-card";
 import { useProviderForm } from "../provider-form-context";
+import { PROVIDER_FORM_SECTION_MOTION } from "../provider-form-motion";
 
 // Validation helpers
 function validatePositiveDecimalField(value: string): number | null {
@@ -140,13 +141,7 @@ export function LimitsSection({ subSectionRefs }: LimitsSectionProps) {
   const isBatch = mode === "batch";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.2 }}
-      className="space-y-6"
-    >
+    <motion.div {...PROVIDER_FORM_SECTION_MOTION} className="space-y-6">
       {/* USD Spending Limits */}
       <SectionCard
         title={t("sections.rateLimit.title")}

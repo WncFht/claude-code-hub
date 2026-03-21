@@ -7,42 +7,15 @@ import { PriceList } from "@/app/[locale]/settings/prices/_components/price-list
 import { PricesSkeleton } from "@/app/[locale]/settings/prices/_components/prices-skeleton";
 import { SyncLiteLLMButton } from "@/app/[locale]/settings/prices/_components/sync-litellm-button";
 import { UploadPriceDialog } from "@/app/[locale]/settings/prices/_components/upload-price-dialog";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
+import { getConsolePricesPageQueryOptions } from "../../console-screen-query-options";
 import { useScreenToolbar } from "../../hooks/use-screen-toolbar";
-
-interface PricesPagePayload {
-  data: unknown[];
-  total: number;
-  page: number;
-  pageSize: number;
-}
-
-async function fetchPricesPage(): Promise<PricesPagePayload> {
-  const response = await fetch("/api/prices?page=1&pageSize=50");
-
-  if (!response.ok) {
-    throw new Error("FETCH_PRICES_FAILED");
-  }
-
-  const result = (await response.json()) as {
-    ok: boolean;
-    data?: PricesPagePayload;
-    error?: string;
-  };
-
-  if (!result.ok || !result.data) {
-    throw new Error(result.error || "FETCH_PRICES_FAILED");
-  }
-
-  return result.data;
-}
 
 export default function ProvidersPricingScreen() {
   const t = useTranslations("settings");
   const { data, isLoading } = useQuery({
-    queryKey: ["console-prices-page"],
-    queryFn: fetchPricesPage,
+    ...getConsolePricesPageQueryOptions(),
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   useScreenToolbar(
@@ -57,16 +30,16 @@ export default function ProvidersPricingScreen() {
   if (isLoading || !data) {
     return (
       <div data-slot="console-screen" data-screen-id="providers-pricing">
-        <div data-slot="providers-pricing-screen">
+        <ConsoleScreenStage screenId="providers-pricing">
           <PricesSkeleton />
-        </div>
+        </ConsoleScreenStage>
       </div>
     );
   }
 
   return (
     <div data-slot="console-screen" data-screen-id="providers-pricing">
-      <div data-slot="providers-pricing-screen" className="space-y-4">
+      <ConsoleScreenStage screenId="providers-pricing" className="space-y-4">
         <section data-slot="section" data-title={t("prices.section.title")}>
           <PriceList
             initialPrices={data.data as never[]}
@@ -78,7 +51,7 @@ export default function ProvidersPricingScreen() {
             initialLitellmProviderFilter=""
           />
         </section>
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

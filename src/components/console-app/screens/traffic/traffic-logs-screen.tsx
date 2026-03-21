@@ -7,7 +7,8 @@ import { ActiveSessionsSkeleton } from "@/app/[locale]/dashboard/logs/_component
 import { UsageLogsSkeleton } from "@/app/[locale]/dashboard/logs/_components/usage-logs-skeleton";
 import { UsageLogsViewVirtualized } from "@/app/[locale]/dashboard/logs/_components/usage-logs-view-virtualized";
 import { ActiveSessionsList } from "@/components/customs/active-sessions-list";
-import { getConsoleDashboardContext } from "../../adapters/dashboard-bootstrap";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
+import { getConsoleDashboardContextQueryOptions } from "../../console-screen-query-options";
 
 function buildSearchParamsRecord(searchParams: URLSearchParams) {
   const result: Record<string, string | string[] | undefined> = {};
@@ -23,17 +24,15 @@ function buildSearchParamsRecord(searchParams: URLSearchParams) {
 export default function TrafficLogsScreen() {
   const searchParams = useSearchParams();
   const { data, isLoading } = useQuery({
-    queryKey: ["console-dashboard-context"],
-    queryFn: getConsoleDashboardContext,
+    ...getConsoleDashboardContextQueryOptions(),
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   const resolvedSearchParams = useMemo(() => buildSearchParamsRecord(searchParams), [searchParams]);
 
   return (
     <div data-slot="console-screen" data-screen-id="traffic-logs">
-      <div data-slot="traffic-logs-screen" className="space-y-4">
+      <ConsoleScreenStage screenId="traffic-logs" className="space-y-4">
         {isLoading || !data ? (
           <>
             <ActiveSessionsSkeleton />
@@ -62,7 +61,7 @@ export default function TrafficLogsScreen() {
             />
           </>
         )}
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

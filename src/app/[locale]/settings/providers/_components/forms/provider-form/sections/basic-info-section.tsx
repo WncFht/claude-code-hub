@@ -20,6 +20,7 @@ import { UrlPreview } from "../../url-preview";
 import { QuickPasteDialog } from "../components/quick-paste-dialog";
 import { SectionCard, SmartInputWrapper } from "../components/section-card";
 import { useProviderForm } from "../provider-form-context";
+import { PROVIDER_FORM_SECTION_MOTION } from "../provider-form-motion";
 
 const MAX_DISPLAYED_PROVIDERS = 5;
 
@@ -61,13 +62,7 @@ export function BasicInfoSection({ autoUrlPending, endpointPool }: BasicInfoSect
     const remaining = providers.length - displayed.length;
 
     return (
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-        transition={{ duration: 0.2 }}
-        className="space-y-6"
-      >
+      <motion.div {...PROVIDER_FORM_SECTION_MOTION} className="space-y-6">
         <SectionCard
           title={t("sections.basic.identity.title")}
           description={tBatch("dialog.editDesc", { count: providers.length })}
@@ -125,13 +120,7 @@ export function BasicInfoSection({ autoUrlPending, endpointPool }: BasicInfoSect
   }
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.2 }}
-      className="space-y-6"
-    >
+    <motion.div {...PROVIDER_FORM_SECTION_MOTION} className="space-y-6">
       {/* Provider Identity */}
       <SectionCard
         title={t("sections.basic.identity.title")}

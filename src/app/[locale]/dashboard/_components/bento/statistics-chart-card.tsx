@@ -13,16 +13,16 @@ import { TIME_RANGE_OPTIONS } from "@/types/statistics";
 import { BentoCard } from "./bento-grid";
 
 const USER_COLOR_PALETTE = [
-  "var(--chart-1)",
-  "var(--chart-2)",
-  "var(--chart-3)",
-  "var(--chart-4)",
-  "var(--chart-5)",
-  "hsl(15, 85%, 60%)",
-  "hsl(195, 85%, 60%)",
-  "hsl(285, 85%, 60%)",
-  "hsl(135, 85%, 50%)",
-  "hsl(45, 85%, 55%)",
+  "var(--dashboard-user-series-1)",
+  "var(--dashboard-user-series-2)",
+  "var(--dashboard-user-series-3)",
+  "var(--dashboard-user-series-4)",
+  "var(--dashboard-user-series-5)",
+  "var(--dashboard-user-series-6)",
+  "oklch(0.66 0.14 198)",
+  "oklch(0.72 0.16 320)",
+  "oklch(0.8 0.17 96)",
+  "oklch(0.63 0.15 22)",
 ] as const;
 
 const getUserColor = (index: number) => USER_COLOR_PALETTE[index % USER_COLOR_PALETTE.length];
@@ -327,22 +327,39 @@ export function StatisticsChartCard({
         ref={headerRef}
         className="flex items-center justify-between border-b border-border/50 dark:border-white/[0.06]"
       >
-        <div className="flex items-center gap-4 px-4 py-2">
+        <div className="flex items-center gap-3 px-4 py-2">
           <h4 className="text-sm font-semibold">{t("title")}</h4>
-          {/* Chart Mode Toggle */}
+
+          <div className="inline-flex rounded-full border border-border/60 bg-background/45 p-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
+            <button
+              data-active={activeChart === "cost"}
+              onClick={() => setActiveChart("cost")}
+              className="rounded-full px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[active=true]:bg-background data-[active=true]:text-foreground data-[active=true]:shadow-sm"
+            >
+              {t("cost")}
+            </button>
+            <button
+              data-active={activeChart === "calls"}
+              onClick={() => setActiveChart("calls")}
+              className="rounded-full px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[active=true]:bg-background data-[active=true]:text-foreground data-[active=true]:shadow-sm"
+            >
+              {t("calls")}
+            </button>
+          </div>
+
           {visibleUsers.length > 1 && (
-            <div className="inline-flex rounded-md border bg-muted/30 p-0.5">
+            <div className="inline-flex rounded-full border border-border/60 bg-background/45 p-0.5 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]">
               <button
                 data-active={chartMode === "overlay"}
                 onClick={() => setChartMode("overlay")}
-                className="data-[active=true]:bg-background data-[active=true]:shadow-sm text-[10px] text-muted-foreground px-2 py-0.5 rounded transition-colors hover:text-foreground cursor-pointer"
+                className="rounded-full px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[active=true]:bg-background data-[active=true]:text-foreground data-[active=true]:shadow-sm"
               >
                 {t("chartMode.overlay")}
               </button>
               <button
                 data-active={chartMode === "stacked"}
                 onClick={() => setChartMode("stacked")}
-                className="data-[active=true]:bg-background data-[active=true]:shadow-sm text-[10px] text-muted-foreground px-2 py-0.5 rounded transition-colors hover:text-foreground cursor-pointer"
+                className="rounded-full px-2.5 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:text-foreground data-[active=true]:bg-background data-[active=true]:text-foreground data-[active=true]:shadow-sm"
               >
                 {t("chartMode.stacked")}
               </button>
@@ -372,41 +389,38 @@ export function StatisticsChartCard({
         )}
       </div>
 
-      {/* Metric Tabs */}
-      <div ref={metricTabsRef} className="flex border-b border-border/50 dark:border-white/[0.06]">
-        <button
+      {/* Summary Cards */}
+      <div
+        ref={metricTabsRef}
+        className="grid grid-cols-2 border-b border-border/50 dark:border-white/[0.06]"
+      >
+        <div
+          data-slot="statistics-summary-card"
           data-active={activeChart === "cost"}
-          onClick={() => setActiveChart("cost")}
           className={cn(
-            "flex-1 flex flex-col items-start gap-0.5 px-4 py-2 transition-colors cursor-pointer",
+            "flex min-h-[76px] flex-col items-start gap-1 px-4 py-3 transition-colors",
             "border-r border-border/50 dark:border-white/[0.06]",
-            "hover:bg-muted/30 dark:hover:bg-white/[0.02]",
-            "data-[active=true]:bg-muted/50 dark:data-[active=true]:bg-white/[0.04]"
+            "data-[active=true]:bg-muted/45 dark:data-[active=true]:bg-white/[0.04]"
           )}
         >
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-            {t("totalCost")}
-          </span>
-          <span className="text-base font-bold tabular-nums">
+          <span className="text-[11px] text-muted-foreground">{t("totalCost")}</span>
+          <span className="text-[15px] font-semibold tabular-nums md:text-2xl">
             {formatCurrency(visibleTotals.cost, currencyCode)}
           </span>
-        </button>
-        <button
+        </div>
+        <div
+          data-slot="statistics-summary-card"
           data-active={activeChart === "calls"}
-          onClick={() => setActiveChart("calls")}
           className={cn(
-            "flex-1 flex flex-col items-start gap-0.5 px-4 py-2 transition-colors cursor-pointer",
-            "hover:bg-muted/30 dark:hover:bg-white/[0.02]",
-            "data-[active=true]:bg-muted/50 dark:data-[active=true]:bg-white/[0.04]"
+            "flex min-h-[76px] flex-col items-start gap-1 px-4 py-3 transition-colors",
+            "data-[active=true]:bg-muted/45 dark:data-[active=true]:bg-white/[0.04]"
           )}
         >
-          <span className="text-[10px] text-muted-foreground uppercase tracking-wide">
-            {t("totalCalls")}
-          </span>
-          <span className="text-base font-bold tabular-nums">
+          <span className="text-[11px] text-muted-foreground">{t("totalCalls")}</span>
+          <span className="text-[15px] font-semibold tabular-nums md:text-2xl">
             {visibleTotals.calls.toLocaleString()}
           </span>
-        </button>
+        </div>
       </div>
 
       {/* Chart */}
@@ -555,14 +569,14 @@ export function StatisticsChartCard({
 
       {/* Legend */}
       {enableUserFilter && (
-        <div ref={legendRef} className="relative px-4 pb-2 min-h-[20px]">
+        <div ref={legendRef} className="relative px-4 pb-3 min-h-[28px]">
           {/* Control buttons (floating, does not take extra vertical space) */}
-          <div className="absolute right-4 rtl:right-auto rtl:left-4 top-0.5 z-10 w-auto flex flex-nowrap justify-end gap-x-2 gap-y-0.5">
+          <div className="absolute right-4 rtl:right-auto rtl:left-4 top-1 z-10 w-auto flex flex-nowrap justify-end gap-x-2 gap-y-0.5">
             <button
               onClick={() => setSelectedUserIds(new Set(data.users.map((u) => u.id)))}
               disabled={selectedUserIds.size === data.users.length}
               className={cn(
-                "text-[10px] px-2 py-0.5 rounded transition-colors cursor-pointer whitespace-nowrap",
+                "text-[10px] px-2 py-0.5 rounded-full transition-colors cursor-pointer whitespace-nowrap",
                 selectedUserIds.size === data.users.length
                   ? "text-muted-foreground/50 cursor-not-allowed"
                   : "text-primary hover:text-primary/80 hover:bg-primary/10"
@@ -584,7 +598,7 @@ export function StatisticsChartCard({
               }}
               disabled={selectedUserIds.size === 1}
               className={cn(
-                "text-[10px] px-2 py-0.5 rounded transition-colors cursor-pointer whitespace-nowrap",
+                "text-[10px] px-2 py-0.5 rounded-full transition-colors cursor-pointer whitespace-nowrap",
                 selectedUserIds.size === 1
                   ? "text-muted-foreground/50 cursor-not-allowed"
                   : "text-primary hover:text-primary/80 hover:bg-primary/10"
@@ -595,7 +609,7 @@ export function StatisticsChartCard({
           </div>
           {/* User list with max 3 rows (3 * 24px = 72px) and scroll - only show users with non-zero usage */}
           <div className="max-h-[72px] overflow-y-auto pr-36 rtl:pr-0 rtl:pl-36">
-            <div className="flex flex-wrap gap-1.5 justify-center">
+            <div className="flex flex-wrap gap-2 justify-center">
               {data.users
                 .map((user, originalIndex) => ({ user, originalIndex }))
                 .filter(({ user }) => {
@@ -611,13 +625,14 @@ export function StatisticsChartCard({
                       key={user.dataKey}
                       onClick={() => toggleUserSelection(user.id)}
                       className={cn(
-                        "flex items-center gap-1.5 px-2 py-1 rounded-md text-xs transition-all cursor-pointer",
+                        "flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs transition-all cursor-pointer",
                         isSelected
-                          ? "bg-muted/50 ring-1 ring-border"
-                          : "bg-muted/10 opacity-50 hover:opacity-75"
+                          ? "border-border/70 bg-muted/45 shadow-[inset_0_1px_0_rgba(255,255,255,0.08)]"
+                          : "border-border/35 bg-muted/15 opacity-55 hover:opacity-80"
                       )}
                     >
                       <div
+                        data-slot="statistics-legend-dot"
                         className="h-2 w-2 rounded-full flex-shrink-0"
                         style={{ backgroundColor: color }}
                       />

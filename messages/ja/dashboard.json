@@ -43,6 +43,41 @@
     "errorRate": "エラー率",
     "avgResponseTime": "平均応答時間"
   },
+  "home": {
+    "eyebrow": "運用コックピット",
+    "title": "運用の全体像",
+    "description": "スループット、消費、ライブ セッションを、より落ち着いた指令卓のようなホーム画面にまとめます。",
+    "sections": {
+      "pulse": {
+        "title": "トラフィック パルス",
+        "description": "詳細を見る前に、リクエスト圧力、コスト、レイテンシを短い窓で確認します。"
+      },
+      "activity": {
+        "title": "リクエスト活動帯",
+        "description": "長いヒートマップで最近のリクエストのリズムを残し、ホームで起伏を把握します。"
+      },
+      "statistics": {
+        "title": "利用カーブ",
+        "description": "現在の時間範囲で、呼び出し数と消費額の推移をホームからそのまま追跡します。"
+      },
+      "rankings": {
+        "title": "ランキングとライブ キュー",
+        "description": "ユーザー、プロバイダー、モデルのランキングとアクティブ セッションの流れを同じ運用ビューに置きます。"
+      }
+    },
+    "activity": {
+      "noData": "データなし",
+      "legend": {
+        "quiet": "低",
+        "busy": "高"
+      },
+      "summary": {
+        "requests": "30日間の呼び出し",
+        "activeDays": "稼働日数",
+        "window": "直近54週"
+      }
+    }
+  },
   "stats": {
     "title": "統計",
     "requests": "リクエスト",

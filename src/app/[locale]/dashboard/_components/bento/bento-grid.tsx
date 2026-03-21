@@ -16,9 +16,9 @@ export function BentoGrid({ children, className }: BentoGridProps) {
   return (
     <div
       className={cn(
-        "grid gap-4 md:gap-6",
+        "grid gap-4 md:gap-5 xl:gap-6",
         "grid-cols-1 sm:grid-cols-2 lg:grid-cols-4",
-        "auto-rows-[minmax(140px,auto)]",
+        "auto-rows-[minmax(152px,auto)]",
         className
       )}
     >
@@ -70,21 +70,21 @@ export const BentoCard = forwardRef<HTMLDivElement, BentoCardProps>(
         role={interactive ? "button" : undefined}
         tabIndex={interactive ? 0 : undefined}
         className={cn(
-          // Base styles - Glass morphism (subtle)
-          "relative overflow-hidden rounded-2xl",
-          "bg-card/60 dark:bg-[rgba(20,20,23,0.5)]",
+          // Base styles - softer card treatment for dashboard stages
+          "relative overflow-hidden rounded-[1.7rem]",
+          "bg-card/90",
           "backdrop-blur-lg",
-          "border border-border/50 dark:border-white/[0.08]",
-          "shadow-sm",
-          "p-4 md:p-5",
+          "border border-border/55 dark:border-white/[0.08]",
+          "shadow-[0_24px_80px_-64px_rgba(15,23,42,0.42)]",
+          "p-5 md:p-6",
           // Inner light gradient
-          "before:absolute before:inset-0 before:bg-gradient-to-b before:from-white/[0.02] before:to-transparent before:pointer-events-none before:z-[1]",
+          "before:absolute before:inset-0 before:bg-gradient-to-br before:from-white/[0.18] before:via-white/[0.04] before:to-transparent before:pointer-events-none before:z-[1]",
           // Transitions
           "transition-all duration-300 ease-out",
           // Hover effects for interactive cards
           interactive && [
             "cursor-pointer",
-            "hover:border-primary/20 hover:shadow-md",
+            "hover:border-primary/20 hover:shadow-[0_28px_90px_-64px_rgba(69,115,92,0.4)]",
             "hover:-translate-y-0.5",
             "active:scale-[0.99]",
           ],

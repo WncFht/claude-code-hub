@@ -4,6 +4,7 @@
 
 import type { ReactNode } from "react";
 import { act } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { createRoot } from "react-dom/client";
 import { NextIntlClientProvider } from "next-intl";
 import { describe, expect, test, vi } from "vitest";
@@ -23,29 +24,38 @@ function renderWithIntl(node: ReactNode) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
 
   act(() => {
     root.render(
-      <NextIntlClientProvider
-        locale="en"
-        timeZone="UTC"
-        messages={{
-          dashboard: {
-            availability: {
-              tabs: { provider: "Provider", endpoint: "Endpoint" },
-              states: { fetchFailed: "Fetch failed" },
-              actions: {
-                probeAll: "Probe All",
-                probing: "Probing",
-                probeSuccess: "Probe success",
-                probeFailed: "Probe failed",
+      <QueryClientProvider client={queryClient}>
+        <NextIntlClientProvider
+          locale="en"
+          timeZone="UTC"
+          messages={{
+            dashboard: {
+              availability: {
+                tabs: { provider: "Provider", endpoint: "Endpoint" },
+                states: { fetchFailed: "Fetch failed" },
+                actions: {
+                  probeAll: "Probe All",
+                  probing: "Probing",
+                  probeSuccess: "Probe success",
+                  probeFailed: "Probe failed",
+                },
               },
             },
-          },
-        }}
-      >
-        {node}
-      </NextIntlClientProvider>
+          }}
+        >
+          {node}
+        </NextIntlClientProvider>
+      </QueryClientProvider>
     );
   });
 
@@ -53,6 +63,7 @@ function renderWithIntl(node: ReactNode) {
     container,
     unmount: () => {
       act(() => root.unmount());
+      queryClient.clear();
       container.remove();
     },
   };

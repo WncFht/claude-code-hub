@@ -43,6 +43,41 @@
     "errorRate": "错误率",
     "avgResponseTime": "平均响应时间"
   },
+  "home": {
+    "eyebrow": "运营驾驶舱",
+    "title": "系统运行总览",
+    "description": "把吞吐、消耗和实时会话收进一个更安静、更像调度台的首页壳层里。",
+    "sections": {
+      "pulse": {
+        "title": "实时脉冲",
+        "description": "先看请求压力、费用和延迟，再决定往哪块细查。"
+      },
+      "activity": {
+        "title": "请求活动带",
+        "description": "用一条长热力图保留近期请求节奏，首页就能看出系统起伏。"
+      },
+      "statistics": {
+        "title": "使用曲线",
+        "description": "沿当前时间范围观察调用量和消耗走势，不必跳出首页。"
+      },
+      "rankings": {
+        "title": "排行与会话队列",
+        "description": "把用户、供应商、模型排行和活跃 Session 放进同一张运营视图。"
+      }
+    },
+    "activity": {
+      "noData": "暂无数据",
+      "legend": {
+        "quiet": "低",
+        "busy": "高"
+      },
+      "summary": {
+        "requests": "30 天调用",
+        "activeDays": "活跃天数",
+        "window": "近 54 周"
+      }
+    }
+  },
   "stats": {
     "title": "统计",
     "requests": "请求",

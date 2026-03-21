@@ -43,6 +43,41 @@
     "errorRate": "錯誤率",
     "avgResponseTime": "平均回覆時間"
   },
+  "home": {
+    "eyebrow": "營運駕駛艙",
+    "title": "系統運行總覽",
+    "description": "把吞吐、消耗與即時工作階段收進一個更安靜、更像調度台的首頁外層。",
+    "sections": {
+      "pulse": {
+        "title": "即時脈衝",
+        "description": "先看請求壓力、費用與延遲，再決定往哪一塊細查。"
+      },
+      "activity": {
+        "title": "請求活動帶",
+        "description": "用一條長熱力圖保留近期請求節奏，首頁就能看出系統起伏。"
+      },
+      "statistics": {
+        "title": "使用曲線",
+        "description": "沿目前時間範圍觀察呼叫量與消耗走勢，不必離開首頁。"
+      },
+      "rankings": {
+        "title": "排行與工作階段佇列",
+        "description": "把使用者、供應商、模型排行和活躍工作階段放進同一張營運視圖。"
+      }
+    },
+    "activity": {
+      "noData": "暫無資料",
+      "legend": {
+        "quiet": "低",
+        "busy": "高"
+      },
+      "summary": {
+        "requests": "30 天呼叫",
+        "activeDays": "活躍天數",
+        "window": "近 54 週"
+      }
+    }
+  },
   "stats": {
     "title": "統計",
     "requests": "請求",

@@ -1,5 +1,6 @@
 "use client";
 
+import { motion } from "framer-motion";
 import { Link } from "@/i18n/routing";
 import { cn } from "@/lib/utils";
 import { useScreenPreload } from "./hooks/use-screen-preload";
@@ -23,13 +24,22 @@ function ConsoleModuleTabLink({ item }: { item: ConsoleModuleTabItem }) {
       onMouseOver={preload}
       onFocus={preload}
       className={cn(
-        "inline-flex min-h-10 items-center rounded-full border px-4 py-2 text-sm font-medium transition-colors",
+        "relative inline-flex min-h-11 items-center overflow-hidden rounded-full border px-4 py-2.5 text-sm font-medium whitespace-nowrap transition-[color,border-color,transform,box-shadow] duration-200",
         item.active
-          ? "border-primary/30 bg-primary/10 text-foreground"
-          : "border-transparent bg-transparent text-muted-foreground hover:border-border/70 hover:bg-card hover:text-foreground"
+          ? "border-primary/20 text-foreground shadow-[0_10px_24px_rgba(15,23,42,0.05)]"
+          : "border-transparent bg-transparent text-muted-foreground hover:border-border/70 hover:bg-background/80 hover:text-foreground"
       )}
     >
-      {item.label}
+      {item.active ? (
+        <motion.span
+          layoutId="console-module-tab-indicator"
+          data-slot="console-module-tab-indicator"
+          data-active-tab-id={item.id}
+          className="absolute inset-0 rounded-full border border-primary/20 bg-primary/10 shadow-[inset_0_1px_0_rgba(255,255,255,0.35)]"
+          transition={{ type: "spring", stiffness: 380, damping: 32, mass: 0.8 }}
+        />
+      ) : null}
+      <span className="relative z-10">{item.label}</span>
     </Link>
   );
 }
@@ -46,7 +56,7 @@ export function ConsoleModuleTabs({ items }: ConsoleModuleTabsProps) {
   return (
     <nav
       data-slot="console-module-tabs"
-      className="flex flex-wrap items-center gap-2 rounded-[24px] border border-border/70 bg-card/70 p-3"
+      className="flex flex-wrap items-center gap-2 overflow-x-auto rounded-[28px] border border-border/70 bg-card/75 p-2.5 shadow-[0_16px_40px_rgba(15,23,42,0.06)] backdrop-blur-sm"
     >
       {items.map((item) => (
         <ConsoleModuleTabLink key={item.id} item={item} />

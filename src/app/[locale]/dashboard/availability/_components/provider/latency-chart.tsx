@@ -16,15 +16,15 @@ interface LatencyChartProps {
 const chartConfig = {
   p50: {
     label: "P50",
-    color: "var(--chart-2)",
+    color: "var(--availability-latency-p50)",
   },
   p95: {
     label: "P95",
-    color: "var(--chart-4)",
+    color: "var(--availability-latency-p95)",
   },
   p99: {
     label: "P99",
-    color: "var(--chart-1)",
+    color: "var(--availability-latency-p99)",
   },
 } satisfies ChartConfig;
 
@@ -96,15 +96,24 @@ export function LatencyChart({ providers, className }: LatencyChartProps) {
         <h3 className="text-sm font-medium text-muted-foreground">{t("title")}</h3>
         <div className="flex items-center gap-4 text-xs">
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-0.5 rounded" style={{ backgroundColor: "var(--chart-2)" }} />
+            <div
+              className="w-3 h-0.5 rounded"
+              style={{ backgroundColor: "var(--availability-latency-p50)" }}
+            />
             <span className="text-muted-foreground">{t("p50")}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-0.5 rounded" style={{ backgroundColor: "var(--chart-4)" }} />
+            <div
+              className="w-3 h-0.5 rounded"
+              style={{ backgroundColor: "var(--availability-latency-p95)" }}
+            />
             <span className="text-muted-foreground">{t("p95")}</span>
           </div>
           <div className="flex items-center gap-1.5">
-            <div className="w-3 h-0.5 rounded" style={{ backgroundColor: "var(--chart-1)" }} />
+            <div
+              className="w-3 h-0.5 rounded"
+              style={{ backgroundColor: "var(--availability-latency-p99)" }}
+            />
             <span className="text-muted-foreground">{t("p99")}</span>
           </div>
         </div>

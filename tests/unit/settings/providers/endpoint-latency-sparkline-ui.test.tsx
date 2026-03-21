@@ -124,6 +124,13 @@ describe("EndpointLatencySparkline", () => {
     expect(line?.getAttribute("data-key")).toBe("latencyMs");
     expect(line?.getAttribute("data-stroke")).toBe("#16a34a");
 
+    expect(container.querySelector('[data-testid="recharts-responsive"]')).toBeNull();
+
+    const chartParent = container.querySelector('[data-testid="recharts-linechart"]')
+      ?.parentElement as HTMLElement | null;
+    expect(chartParent?.className).toContain("min-w-0");
+    expect(chartParent?.className).toContain("min-h-0");
+
     unmount();
   });
 

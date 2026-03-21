@@ -146,9 +146,9 @@ describe("LatencyChart color bindings", () => {
     const config = JSON.parse(configStr!);
 
     // Colors should use var(--chart-*) directly, NOT hsl(var(--chart-*))
-    expect(config.p50.color).toBe("var(--chart-2)");
-    expect(config.p95.color).toBe("var(--chart-4)");
-    expect(config.p99.color).toBe("var(--chart-1)");
+    expect(config.p50.color).toBe("var(--availability-latency-p50)");
+    expect(config.p95.color).toBe("var(--availability-latency-p95)");
+    expect(config.p99.color).toBe("var(--availability-latency-p99)");
 
     // Ensure no hsl wrapper
     expect(config.p50.color).not.toMatch(/^hsl\(/);

@@ -29,6 +29,7 @@ import { ModelRedirectEditor } from "../../../model-redirect-editor";
 import { buildProviderModelVisibility } from "../../../provider-model-visibility";
 import { FieldGroup, SectionCard, SmartInputWrapper, ToggleRow } from "../components/section-card";
 import { useProviderForm } from "../provider-form-context";
+import { PROVIDER_FORM_SECTION_MOTION } from "../provider-form-motion";
 
 const GROUP_TAG_MAX_TOTAL_LENGTH = 255;
 
@@ -197,13 +198,7 @@ export function RoutingSection({ subSectionRefs }: RoutingSectionProps) {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.2 }}
-      className="space-y-6"
-    >
+    <motion.div {...PROVIDER_FORM_SECTION_MOTION} className="space-y-6">
       {/* Provider Type & Group - hidden in batch mode */}
       {!isBatch && (
         <SectionCard

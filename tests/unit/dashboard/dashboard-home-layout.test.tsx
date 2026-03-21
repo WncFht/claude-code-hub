@@ -75,6 +75,39 @@ const mockStatisticsData: UserStatisticsData = {
   mode: "users",
 };
 
+const mockActivityStatisticsData: UserStatisticsData = {
+  chartData: [
+    {
+      date: "2026-02-20",
+      "user-1_calls": 2,
+      "user-2_calls": 1,
+      "user-1_cost": "0.2",
+      "user-2_cost": "0.1",
+    },
+    {
+      date: "2026-03-19",
+      "user-1_calls": 8,
+      "user-2_calls": 3,
+      "user-1_cost": "0.8",
+      "user-2_cost": "0.3",
+    },
+    {
+      date: "2026-03-20",
+      "user-1_calls": 12,
+      "user-2_calls": 4,
+      "user-1_cost": "1.2",
+      "user-2_cost": "0.4",
+    },
+  ],
+  users: [
+    { id: 1, name: "Alpha", dataKey: "user-1" },
+    { id: 2, name: "Beta", dataKey: "user-2" },
+  ],
+  timeRange: "30days",
+  resolution: "day",
+  mode: "users",
+};
+
 function renderSimple(node: ReactNode) {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -156,7 +189,12 @@ beforeEach(() => {
   document.body.innerHTML = "";
   overviewMocks.getOverviewData.mockResolvedValue({ ok: true, data: mockOverviewData });
   activeSessionsMocks.getActiveSessions.mockResolvedValue({ ok: true, data: [] });
-  statisticsMocks.getUserStatistics.mockResolvedValue({ ok: true, data: mockStatisticsData });
+  statisticsMocks.getUserStatistics.mockImplementation(async (timeRange?: string) => {
+    if (timeRange === "30days") {
+      return { ok: true, data: mockActivityStatisticsData };
+    }
+    return { ok: true, data: mockStatisticsData };
+  });
   vi.stubGlobal(
     "fetch",
     vi.fn(async () => ({
@@ -223,6 +261,55 @@ describe("DashboardBento admin layout", () => {
     expect(livePanel).toBeTruthy();
 
     expect(grid?.contains(livePanel as HTMLElement)).toBe(true);
+
+    unmount();
+  });
+
+  test("renders overview hero, grouped sections, and page-level time range controls", async () => {
+    const { container, unmount } = renderWithProviders(
+      <DashboardBento
+        isAdmin={true}
+        currencyCode="USD"
+        allowGlobalUsageView={true}
+        initialStatistics={mockStatisticsData}
+        initialOverview={mockOverviewData}
+      />
+    );
+    await flushPromises();
+
+    expect(container.querySelector('[data-slot="page-hero"]')).toBeTruthy();
+    expect(container.textContent).toContain("Operations overview");
+    expect(container.textContent).toContain("Traffic pulse");
+    expect(container.textContent).toContain("Request activity");
+    expect(container.textContent).toContain("Usage curve");
+    expect(container.textContent).toContain("Rankings and live queue");
+    expect(container.querySelector('[data-slot="dashboard-activity-panel"]')).toBeTruthy();
+    const futureDayCount = Math.max(0, 6 - new Date().getDay());
+    expect(container.querySelectorAll('[data-slot="activity-cell"]').length).toBe(
+      54 * 7 - futureDayCount
+    );
+
+    const todayButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Today")
+    );
+    const last7DaysButton = Array.from(container.querySelectorAll("button")).find((button) =>
+      button.textContent?.includes("Last 7 Days")
+    );
+
+    expect(todayButton?.getAttribute("data-active")).toBe("true");
+    expect(last7DaysButton?.getAttribute("data-active")).toBe("false");
+
+    const overviewMainGrid = container.querySelector('[data-slot="dashboard-overview-main-grid"]');
+    expect(overviewMainGrid).toBeTruthy();
+    expect(overviewMainGrid?.className).toContain("grid-cols-1");
+    expect(overviewMainGrid?.className).not.toContain("xl:grid-cols-[360px_minmax(0,1fr)]");
+
+    act(() => {
+      last7DaysButton?.click();
+    });
+
+    expect(last7DaysButton?.getAttribute("data-active")).toBe("true");
+    expect(todayButton?.getAttribute("data-active")).toBe("false");
 
     unmount();
   });

@@ -18,6 +18,12 @@ export const QUERY_CLIENT_DEFAULTS = {
   },
 };
 
+export const APP_THEME_DEFAULTS = {
+  defaultTheme: "dark",
+  enableSystem: false,
+  storageKey: "claude-code-hub-theme",
+} as const;
+
 export function AppProviders({ children }: AppProvidersProps) {
   const [queryClient] = useState(
     () =>
@@ -30,9 +36,7 @@ export function AppProviders({ children }: AppProvidersProps) {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider
         attribute="class"
-        defaultTheme="system"
-        enableSystem
-        storageKey="claude-code-hub-theme"
+        {...APP_THEME_DEFAULTS}
         enableColorScheme
         disableTransitionOnChange
       >

@@ -3,12 +3,12 @@ import { useQuery } from "@tanstack/react-query";
 import { Globe } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useMemo } from "react";
-import { getProviderVendors } from "@/actions/provider-endpoints";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import type { CurrencyCode } from "@/lib/utils/currency";
 import type { ProviderDisplay, ProviderStatisticsMap } from "@/types/provider";
 import type { User } from "@/types/user";
 import type { EndpointCircuitInfoMap } from "./provider-manager";
+import { getProviderVendorsQueryOptions } from "./provider-manager-data";
 import { ProviderRichListItem } from "./provider-rich-list-item";
 
 // Stable default references to avoid re-creating on every render (defeats React.memo)
@@ -64,9 +64,7 @@ export function ProviderList({
   const t = useTranslations("settings.providers");
 
   const { data: vendors = [] } = useQuery({
-    queryKey: ["provider-vendors"],
-    queryFn: getProviderVendors,
-    staleTime: 60_000,
+    ...getProviderVendorsQueryOptions(),
     refetchOnWindowFocus: false,
   });
 

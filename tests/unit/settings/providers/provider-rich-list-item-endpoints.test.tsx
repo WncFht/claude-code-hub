@@ -384,4 +384,29 @@ describe("ProviderRichListItem Endpoint Display", () => {
 
     unmount();
   });
+
+  test("does not render filtered Google favicon service URLs in provider rows", async () => {
+    const provider = makeProviderDisplay({
+      faviconUrl:
+        "https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&url=http://api.codexcn.com&size=32",
+    });
+
+    const { container, unmount } = renderWithProviders(
+      <ProviderRichListItem
+        provider={provider}
+        currentUser={ADMIN_USER}
+        enableMultiProviderTypes={true}
+      />
+    );
+
+    await flushTicks(5);
+
+    expect(
+      container.querySelector(
+        'img[src="https://t0.gstatic.com/faviconV2?client=SOCIAL&type=FAVICON&url=http://api.codexcn.com&size=32"]'
+      )
+    ).toBeNull();
+
+    unmount();
+  });
 });

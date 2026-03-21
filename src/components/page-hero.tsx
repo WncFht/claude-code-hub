@@ -34,11 +34,11 @@ export function PageHero({
       animate={{ opacity: 1, y: 0 }}
       transition={{ type: "spring", stiffness: 260, damping: 28 }}
       className={cn(
-        "relative overflow-hidden rounded-[2rem] border border-border/70 bg-card/85 px-6 py-6 shadow-[0_20px_70px_-45px_rgba(30,41,59,0.35)] backdrop-blur-xl md:px-8 md:py-8",
+        "relative overflow-hidden rounded-[2rem] border border-border/70 bg-card/88 px-6 py-6 shadow-[0_26px_90px_-62px_rgba(8,22,15,0.5)] backdrop-blur-xl md:px-8 md:py-8",
         className
       )}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(81,167,124,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(181,204,192,0.25),transparent_30%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(111,186,119,0.16),transparent_32%),radial-gradient(circle_at_bottom_left,rgba(80,118,93,0.18),transparent_30%)]" />
       <div className="relative z-10 flex flex-col gap-6">
         <div className="flex flex-col gap-5 lg:flex-row lg:items-start lg:justify-between">
           <div className="max-w-3xl space-y-3">
@@ -66,7 +66,7 @@ export function PageHero({
             {metrics.map((metric) => (
               <div
                 key={metric.label}
-                className="rounded-[1.35rem] border border-border/60 bg-background/70 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.45)]"
+                className="rounded-[1.35rem] border border-border/60 bg-background/55 px-4 py-3 shadow-[inset_0_1px_0_rgba(255,255,255,0.18)]"
               >
                 <div className="text-[11px] font-medium uppercase tracking-[0.18em] text-muted-foreground/80">
                   {metric.label}

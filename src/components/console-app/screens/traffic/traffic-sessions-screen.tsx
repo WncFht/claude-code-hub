@@ -4,10 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
 import { ActiveSessionsClient } from "@/app/[locale]/dashboard/sessions/_components/active-sessions-client";
 import SessionsLoading from "@/app/[locale]/dashboard/sessions/loading";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
 import { Section } from "@/components/section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getConsoleDashboardContext } from "../../adapters/dashboard-bootstrap";
+import { getConsoleDashboardContextQueryOptions } from "../../console-screen-query-options";
 
 function SessionsPermissionState() {
   return (
@@ -33,15 +34,13 @@ function SessionsPermissionState() {
 
 export default function TrafficSessionsScreen() {
   const { data, isLoading } = useQuery({
-    queryKey: ["console-dashboard-context"],
-    queryFn: getConsoleDashboardContext,
+    ...getConsoleDashboardContextQueryOptions(),
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   return (
     <div data-slot="console-screen" data-screen-id="traffic-sessions">
-      <div data-slot="traffic-sessions-screen">
+      <ConsoleScreenStage screenId="traffic-sessions">
         {isLoading || !data ? (
           <SessionsLoading />
         ) : data.currentUser.role === "admin" ? (
@@ -53,7 +52,7 @@ export default function TrafficSessionsScreen() {
         ) : (
           <SessionsPermissionState />
         )}
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

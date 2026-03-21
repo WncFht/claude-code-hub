@@ -7,7 +7,9 @@ import { NextIntlClientProvider } from "next-intl";
 import { type ReactNode, act } from "react";
 import { createRoot } from "react-dom/client";
 import { beforeEach, describe, expect, test, vi } from "vitest";
+import { getProviderVendors } from "@/actions/provider-endpoints";
 import type { ProviderDisplay } from "@/types/provider";
+import type { User } from "@/types/user";
 import enMessages from "../../../../../../messages/en";
 import { ProviderVendorView } from "./provider-vendor-view";
 
@@ -33,8 +35,10 @@ vi.mock("./vendor-keys-compact-list", () => ({
 }));
 
 vi.mock("./provider-endpoints-table", () => ({
-  ProviderEndpointsSection: ({ vendorId }: { vendorId: number }) => (
-    <div data-testid={`vendor-endpoints-${vendorId}`}>Vendor endpoints {vendorId}</div>
+  ProviderEndpointsSection: ({ vendorId, readOnly }: { vendorId: number; readOnly?: boolean }) => (
+    <div data-testid={`vendor-endpoints-${vendorId}`} data-read-only={readOnly ? "true" : "false"}>
+      Vendor endpoints {vendorId}
+    </div>
   ),
 }));
 
@@ -116,6 +120,22 @@ function buildProvider(overrides: Partial<ProviderDisplay> = {}): ProviderDispla
   };
 }
 
+const ADMIN_USER: User = {
+  id: 1,
+  name: "admin",
+  description: "",
+  role: "admin",
+  rpm: null,
+  dailyQuota: null,
+  providerGroup: null,
+  tags: [],
+  createdAt: new Date("2026-01-01T00:00:00.000Z"),
+  updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+  dailyResetMode: "fixed",
+  dailyResetTime: "00:00",
+  isEnabled: true,
+};
+
 function renderWithProviders(node: ReactNode) {
   const container = document.createElement("div");
   document.body.appendChild(container);
@@ -187,6 +207,93 @@ describe("ProviderVendorView", () => {
     expect(container.textContent).toContain("Unknown Vendor");
     expect(container.querySelector('[data-testid="vendor-keys-101"]')).not.toBeNull();
     expect(container.querySelector('[data-testid="vendor-endpoints-101"]')).not.toBeNull();
+
+    unmount();
+  });
+
+  test("shows vendor delete and editable endpoints only for admins", async () => {
+    const providers = [buildProvider({ id: 1, providerVendorId: 101, name: "Anthropic Key 1" })];
+
+    const adminView = renderWithProviders(
+      <ProviderVendorView
+        providers={providers}
+        currentUser={ADMIN_USER}
+        enableMultiProviderTypes={true}
+        healthStatus={{}}
+        statistics={{}}
+        statisticsLoading={false}
+        currencyCode="USD"
+      />
+    );
+
+    await flushTicks(5);
+
+    const adminDeleteButton = adminView.container.querySelector("button.text-destructive");
+    const adminEndpoints = adminView.container.querySelector(
+      '[data-testid="vendor-endpoints-101"]'
+    );
+    expect(adminDeleteButton).not.toBeNull();
+    expect(adminEndpoints?.getAttribute("data-read-only")).toBe("false");
+
+    adminView.unmount();
+
+    const readOnlyView = renderWithProviders(
+      <ProviderVendorView
+        providers={providers}
+        enableMultiProviderTypes={true}
+        healthStatus={{}}
+        statistics={{}}
+        statisticsLoading={false}
+        currencyCode="USD"
+      />
+    );
+
+    await flushTicks(5);
+
+    const readOnlyDeleteButton = readOnlyView.container.querySelector("button.text-destructive");
+    const readOnlyEndpoints = readOnlyView.container.querySelector(
+      '[data-testid="vendor-endpoints-101"]'
+    );
+    expect(readOnlyDeleteButton).toBeNull();
+    expect(readOnlyEndpoints?.getAttribute("data-read-only")).toBe("true");
+
+    readOnlyView.unmount();
+  });
+
+  test("falls back to initials instead of rendering filtered remote favicon services", async () => {
+    vi.mocked(getProviderVendors).mockResolvedValueOnce([
+      {
+        id: 101,
+        displayName: "Anthropic",
+        websiteDomain: "anthropic.com",
+        websiteUrl: "https://anthropic.com",
+        faviconUrl: "https://www.google.com/s2/favicons?domain=anthropic.com&sz=32",
+        createdAt: new Date("2026-01-01T00:00:00.000Z"),
+        updatedAt: new Date("2026-01-01T00:00:00.000Z"),
+      },
+    ]);
+
+    const providers = [buildProvider({ id: 1, providerVendorId: 101, name: "Anthropic Key 1" })];
+
+    const { container, unmount } = renderWithProviders(
+      <ProviderVendorView
+        providers={providers}
+        enableMultiProviderTypes={true}
+        healthStatus={{}}
+        statistics={{}}
+        statisticsLoading={false}
+        currencyCode="USD"
+      />
+    );
+
+    await flushTicks(5);
+
+    expect(
+      container.querySelector(
+        'img[src="https://www.google.com/s2/favicons?domain=anthropic.com&sz=32"]'
+      )
+    ).toBeNull();
+    expect(container.textContent).toContain("AN");
 
     unmount();
   });

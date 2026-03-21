@@ -300,6 +300,10 @@ const DEFAULT_CONSOLE_PATH_BY_ROLE: Record<ConsoleRole, string> = {
   user: "/console/overview",
 };
 
+const CONSOLE_RUNTIME_ROUTE_ORDER = new Map<ConsoleScreenId, number>(
+  CONSOLE_RUNTIME_ROUTES.map((route, index) => [route.screenId, index])
+);
+
 function normalizePath(pathname: string) {
   const trimmed = (pathname.split("?")[0]?.split("#")[0] ?? "").trim();
   if (!trimmed || trimmed === "/") return "/";
@@ -329,6 +333,10 @@ export function getDefaultConsolePath(role: ConsoleRole) {
 export function resolveConsoleRuntimeRoute(pathname: string) {
   const normalizedPath = normalizePath(pathname);
   return CONSOLE_RUNTIME_ROUTES.find((route) => matchesRuntimeRoute(route, normalizedPath)) ?? null;
+}
+
+export function getConsoleRuntimeRouteOrder(screenId: ConsoleScreenId) {
+  return CONSOLE_RUNTIME_ROUTE_ORDER.get(screenId) ?? -1;
 }
 
 export function getVisibleConsoleRuntimeModuleTabs({

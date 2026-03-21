@@ -9,7 +9,7 @@ import { describe, expect, test } from "vitest";
  * we test the configuration by constructing a QueryClient with the same options.
  */
 
-import { QUERY_CLIENT_DEFAULTS } from "@/app/providers";
+import { APP_THEME_DEFAULTS, QUERY_CLIENT_DEFAULTS } from "@/app/providers";
 import { QueryClient } from "@tanstack/react-query";
 
 function createQueryClientWithDefaults(): QueryClient {
@@ -37,5 +37,13 @@ describe("QueryClient global defaults", () => {
   test("refetchIntervalInBackground is disabled", () => {
     const qc = createQueryClientWithDefaults();
     expect(qc.getDefaultOptions().queries?.refetchIntervalInBackground).toBe(false);
+  });
+});
+
+describe("App theme defaults", () => {
+  test("defaults the app shell to dark mode", () => {
+    expect(APP_THEME_DEFAULTS.defaultTheme).toBe("dark");
+    expect(APP_THEME_DEFAULTS.enableSystem).toBe(false);
+    expect(APP_THEME_DEFAULTS.storageKey).toBe("claude-code-hub-theme");
   });
 });

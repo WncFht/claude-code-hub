@@ -1,9 +1,9 @@
 "use client";
 
+import { keepPreviousData, useQuery } from "@tanstack/react-query";
 import { useSearchParams } from "next/navigation";
 import { useTranslations } from "next-intl";
-import { useCallback, useEffect, useState } from "react";
-import { getAllUserKeyGroups, getAllUserTags } from "@/actions/users";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ProviderTypeFilter } from "@/app/[locale]/settings/providers/_components/provider-type-filter";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -13,17 +13,24 @@ import { Link } from "@/i18n/routing";
 import { formatTokenAmount } from "@/lib/utils";
 import type {
   DateRangeParams,
-  LeaderboardEntry,
   LeaderboardPeriod,
   ModelCacheHitStat,
-  ModelLeaderboardEntry,
-  ModelProviderStat,
   ProviderCacheHitRateLeaderboardEntry,
-  ProviderLeaderboardEntry,
-  UserModelStat,
 } from "@/repository/leaderboard";
 import type { ProviderType } from "@/types/provider";
 import { DateRangePicker } from "./date-range-picker";
+import {
+  getLeaderboardGroupSuggestionsQueryOptions,
+  getLeaderboardTableQueryOptions,
+  getLeaderboardTagSuggestionsQueryOptions,
+  type LeaderboardTableEntry,
+  type LeaderboardViewScope,
+  type ModelEntry,
+  type ModelProviderStatClient,
+  type ProviderEntry,
+  type UserEntry,
+  type UserModelStatClient,
+} from "./leaderboard-data";
 import { type ColumnDef, LeaderboardTable } from "./leaderboard-table";
 
 interface LeaderboardViewProps {
@@ -31,29 +38,10 @@ interface LeaderboardViewProps {
 }
 
 type LeaderboardScope = "user" | "provider" | "providerCacheHitRate" | "model";
-type TotalCostFormattedFields = { totalCostFormatted?: string };
-type ProviderCostFormattedFields = {
-  // API 额外返回的展示用字段（格式化后的字符串）
-  totalCostFormatted?: string;
-  avgCostPerRequestFormatted?: string | null;
-  avgCostPerMillionTokensFormatted?: string | null;
-};
-type UserEntry = LeaderboardEntry &
-  TotalCostFormattedFields & {
-    modelStats?: UserModelStatClient[];
-  };
-type UserModelStatClient = UserModelStat & TotalCostFormattedFields;
 type UserTableRow = UserEntry | UserModelStatClient;
-type ModelEntry = ModelLeaderboardEntry & TotalCostFormattedFields;
-type ModelProviderStatClient = ModelProviderStat & ProviderCostFormattedFields;
-type ProviderEntry = Omit<ProviderLeaderboardEntry, "modelStats"> &
-  ProviderCostFormattedFields & {
-    modelStats?: ModelProviderStatClient[];
-  };
 type ProviderTableRow = ProviderEntry | ModelProviderStatClient;
 type ProviderCacheHitRateEntry = ProviderCacheHitRateLeaderboardEntry;
 type ProviderCacheHitRateTableRow = ProviderCacheHitRateEntry | ModelCacheHitStat;
-type AnyEntry = UserEntry | ProviderEntry | ProviderCacheHitRateEntry | ModelEntry;
 
 const VALID_PERIODS: LeaderboardPeriod[] = ["daily", "weekly", "monthly", "allTime", "custom"];
 
@@ -77,26 +65,6 @@ export function LeaderboardView({ isAdmin }: LeaderboardViewProps) {
   const [providerTypeFilter, setProviderTypeFilter] = useState<ProviderType | "all">("all");
   const [userTagFilters, setUserTagFilters] = useState<string[]>([]);
   const [userGroupFilters, setUserGroupFilters] = useState<string[]>([]);
-  const [tagSuggestions, setTagSuggestions] = useState<string[]>([]);
-  const [groupSuggestions, setGroupSuggestions] = useState<string[]>([]);
-  const [data, setData] = useState<AnyEntry[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    if (!isAdmin) return;
-
-    const fetchSuggestions = async () => {
-      const [tagsResult, groupsResult] = await Promise.all([
-        getAllUserTags(),
-        getAllUserKeyGroups(),
-      ]);
-      if (tagsResult.ok) setTagSuggestions(tagsResult.data);
-      if (groupsResult.ok) setGroupSuggestions(groupsResult.data);
-    };
-
-    fetchSuggestions();
-  }, [isAdmin]);
 
   // 与 URL 查询参数保持同步，支持外部携带 scope/period 直达特定榜单
   // biome-ignore lint/correctness/useExhaustiveDependencies: period 和 scope 仅用于比较，不应触发 effect 重新执行
@@ -123,61 +91,38 @@ export function LeaderboardView({ isAdmin }: LeaderboardViewProps) {
     }
   }, [isAdmin, searchParams]);
 
-  // Fetch data when period, scope, or dateRange changes
-  useEffect(() => {
-    let cancelled = false;
-    const fetchData = async () => {
-      try {
-        setLoading(true);
-        let url = `/api/leaderboard?period=${period}&scope=${scope}`;
-        if (period === "custom" && dateRange) {
-          url += `&startDate=${dateRange.startDate}&endDate=${dateRange.endDate}`;
-        }
-        if (
-          (scope === "providerCacheHitRate" || scope === "provider") &&
-          providerTypeFilter !== "all"
-        ) {
-          url += `&providerType=${encodeURIComponent(providerTypeFilter)}`;
-        }
-        if (scope === "provider") {
-          url += "&includeModelStats=1";
-        }
-        if (scope === "user" && isAdmin) {
-          url += "&includeUserModelStats=1";
-        }
-        if (scope === "user") {
-          if (userTagFilters.length > 0) {
-            url += `&userTags=${encodeURIComponent(userTagFilters.join(","))}`;
-          }
-          if (userGroupFilters.length > 0) {
-            url += `&userGroups=${encodeURIComponent(userGroupFilters.join(","))}`;
-          }
-        }
-        const res = await fetch(url);
-
-        if (!res.ok) {
-          throw new Error(t("states.fetchFailed"));
-        }
-
-        const result = await res.json();
-
-        if (!cancelled) {
-          setData(result);
-          setError(null);
-        }
-      } catch (err) {
-        console.error(t("states.fetchFailed"), err);
-        if (!cancelled) setError(err instanceof Error ? err.message : t("states.fetchFailed"));
-      } finally {
-        if (!cancelled) setLoading(false);
-      }
-    };
-
-    fetchData();
-    return () => {
-      cancelled = true;
-    };
-  }, [scope, period, dateRange, providerTypeFilter, userTagFilters, userGroupFilters, isAdmin, t]);
+  const leaderboardQueryParams = useMemo(
+    () => ({
+      scope: scope as LeaderboardViewScope,
+      period,
+      dateRange,
+      providerTypeFilter,
+      userTagFilters,
+      userGroupFilters,
+      isAdmin,
+    }),
+    [dateRange, isAdmin, period, providerTypeFilter, scope, userGroupFilters, userTagFilters]
+  );
+  const {
+    data = [],
+    isLoading: loading,
+    error,
+  } = useQuery<LeaderboardTableEntry[]>({
+    ...getLeaderboardTableQueryOptions(leaderboardQueryParams),
+    placeholderData: keepPreviousData,
+    refetchOnWindowFocus: false,
+  });
+  const { data: tagSuggestions = [] } = useQuery<string[]>({
+    ...getLeaderboardTagSuggestionsQueryOptions(),
+    enabled: isAdmin,
+    refetchOnWindowFocus: false,
+  });
+  const { data: groupSuggestions = [] } = useQuery<string[]>({
+    ...getLeaderboardGroupSuggestionsQueryOptions(),
+    enabled: isAdmin,
+    refetchOnWindowFocus: false,
+  });
+  const errorMessage = error instanceof Error ? error.message : null;
 
   const handlePeriodChange = useCallback(
     (newPeriod: LeaderboardPeriod, newDateRange?: DateRangeParams) => {
@@ -570,10 +515,14 @@ export function LeaderboardView({ isAdmin }: LeaderboardViewProps) {
               <div className="text-center text-xs text-muted-foreground">{t("states.loading")}</div>
             </CardContent>
           </Card>
-        ) : error ? (
+        ) : errorMessage ? (
           <Card>
             <CardContent className="py-8">
-              <div className="text-center text-destructive">{error}</div>
+              <div className="text-center text-destructive">
+                {errorMessage === "FETCH_LEADERBOARD_FAILED"
+                  ? t("states.fetchFailed")
+                  : errorMessage}
+              </div>
             </CardContent>
           </Card>
         ) : (

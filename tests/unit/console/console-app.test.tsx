@@ -4,6 +4,7 @@
 
 import type { ReactNode } from "react";
 import { act } from "react";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { NextIntlClientProvider } from "next-intl";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
@@ -31,6 +32,7 @@ vi.mock("@/i18n/routing", () => ({
 }));
 
 vi.mock("@/lib/console/runtime-screen-registry", () => ({
+  getConsoleInitialRuntimeScreen: (_screenId: string) => null,
   getConsoleRuntimeScreen: (_screenId: string) => ({
     Component: ({ route }: { route: { screenId: string; moduleId: string } }) => (
       <section
@@ -50,7 +52,10 @@ vi.mock("@/lib/console/runtime-screen-registry", () => ({
     }),
     preload: async () => undefined,
   }),
-  preloadConsoleRuntimeScreen: async (_screenId: string) => undefined,
+  preloadConsoleRuntimeScreen: async (
+    _screenId: string,
+    _options?: { pathname?: string; queryClient?: unknown }
+  ) => undefined,
 }));
 
 const messages = {
@@ -111,13 +116,24 @@ async function flushPromises() {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
+async function flushTransition(duration = 720) {
+  await new Promise((resolve) => setTimeout(resolve, duration));
+}
+
 async function render(node: ReactNode) {
   const container = document.createElement("div");
   document.body.appendChild(container);
   const root = createRoot(container);
+  const queryClient = new QueryClient({
+    defaultOptions: {
+      queries: {
+        retry: false,
+      },
+    },
+  });
 
   await act(async () => {
-    root.render(node);
+    root.render(<QueryClientProvider client={queryClient}>{node}</QueryClientProvider>);
     await flushPromises();
   });
 
@@ -125,7 +141,7 @@ async function render(node: ReactNode) {
     container,
     rerender: async (nextNode: ReactNode) => {
       await act(async () => {
-        root.render(nextNode);
+        root.render(<QueryClientProvider client={queryClient}>{nextNode}</QueryClientProvider>);
         await flushPromises();
       });
     },
@@ -134,6 +150,7 @@ async function render(node: ReactNode) {
         root.unmount();
         await flushPromises();
       });
+      queryClient.clear();
       container.remove();
     },
   };
@@ -194,6 +211,16 @@ describe("ConsoleApp", () => {
     expect(
       view.container.querySelector('[data-slot="console-screen"]')?.getAttribute("data-screen-id")
     ).toBe("providers-inventory");
+    expect(
+      view.container
+        .querySelector('[data-slot="console-entry"]')
+        ?.getAttribute("data-route-direction")
+    ).toBe("0");
+    expect(
+      view.container
+        .querySelector('[data-module-id="providers"] [data-slot="console-sidebar-indicator"]')
+        ?.getAttribute("data-active-module-id")
+    ).toBe("providers");
 
     routingState.pathname = "/console/system/config";
 
@@ -203,9 +230,82 @@ describe("ConsoleApp", () => {
       </NextIntlClientProvider>
     );
 
+    await act(async () => {
+      await flushTransition();
+    });
+
     expect(
       view.container.querySelector('[data-slot="console-screen"]')?.getAttribute("data-screen-id")
     ).toBe("system-config");
+    expect(
+      view.container
+        .querySelector('[data-slot="console-entry"]')
+        ?.getAttribute("data-route-direction")
+    ).toBe("1");
+    expect(
+      view.container
+        .querySelector('[data-slot="console-header-title-stack"]')
+        ?.getAttribute("data-direction")
+    ).toBe("1");
+    expect(view.container.querySelector('[data-slot="console-brand-name"]')?.textContent).toContain(
+      "Claude Code Hub"
+    );
+    expect(
+      view.container.querySelector('[data-slot="console-module-label"]')?.textContent
+    ).toContain("System");
+    expect(
+      view.container.querySelector('[data-slot="console-screen-label"]')?.textContent
+    ).toContain("Config");
+    expect(
+      view.container
+        .querySelector('[data-slot="console-stage-transition"]')
+        ?.getAttribute("data-screen-id")
+    ).toBe("system-config");
+    expect(
+      view.container
+        .querySelector('[data-module-id="system"] [data-slot="console-sidebar-indicator"]')
+        ?.getAttribute("data-active-module-id")
+    ).toBe("system");
+    expect(
+      view.container
+        .querySelector('[data-tab-id="config"] [data-slot="console-module-tab-indicator"]')
+        ?.getAttribute("data-active-tab-id")
+    ).toBe("config");
+
+    await view.unmount();
+  });
+
+  test("skips current-screen preload on first mount but still preloads after console pathname changes", async () => {
+    routingState.pathname = "/console/overview";
+    const screenRegistry = await import("@/lib/console/runtime-screen-registry");
+    const preloadSpy = vi.spyOn(screenRegistry, "preloadConsoleRuntimeScreen");
+    const { ConsoleApp } = await import("@/components/console-app/console-app");
+
+    const view = await render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <ConsoleApp bootstrap={makeBootstrap("/console/overview")} />
+      </NextIntlClientProvider>
+    );
+
+    expect(preloadSpy).not.toHaveBeenCalled();
+
+    routingState.pathname = "/console/system/config";
+
+    await view.rerender(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <ConsoleApp bootstrap={makeBootstrap("/console/overview")} />
+      </NextIntlClientProvider>
+    );
+
+    await act(async () => {
+      await flushPromises();
+    });
+
+    expect(preloadSpy).toHaveBeenCalledTimes(1);
+    expect(preloadSpy).toHaveBeenCalledWith(
+      "system-config",
+      expect.objectContaining({ pathname: "/console/system/config" })
+    );
 
     await view.unmount();
   });
@@ -241,6 +341,7 @@ describe("ConsoleApp", () => {
         <ConsoleApp bootstrap={makeBootstrap("/console/overview")} />
       </NextIntlClientProvider>
     );
+    preloadSpy.mockClear();
 
     const providersNav = view.container.querySelector('[data-module-id="providers"]');
     expect(providersNav).not.toBeNull();
@@ -251,7 +352,10 @@ describe("ConsoleApp", () => {
       await flushPromises();
     });
 
-    expect(preloadSpy).toHaveBeenCalledWith("providers-inventory");
+    expect(preloadSpy).toHaveBeenCalledWith(
+      "providers-inventory",
+      expect.objectContaining({ pathname: "/console/providers/inventory" })
+    );
     expect(preloadSpy).toHaveBeenCalledTimes(2);
 
     await view.unmount();
@@ -270,9 +374,16 @@ describe("ConsoleApp", () => {
     const header = view.container.querySelector('[data-slot="console-header"]');
     const moduleTabs = view.container.querySelector('[data-slot="console-module-tabs"]');
 
+    expect(header?.querySelector('[data-slot="console-brand-lockup"]')).not.toBeNull();
+    expect(
+      header?.querySelector(
+        '[data-slot="console-header-title-stack"] [data-slot="console-brand-name"]'
+      )?.textContent
+    ).toContain("Claude Code Hub");
     expect(header?.querySelector('[data-slot="console-module-label"]')?.textContent).toContain(
       "Policy"
     );
+    expect(header?.querySelector('[data-slot="console-header-title-stack"]')).not.toBeNull();
     expect(header?.querySelector('[data-slot="console-screen-label"]')?.textContent).toContain(
       "Request Filters"
     );

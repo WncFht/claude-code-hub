@@ -62,8 +62,10 @@ import {
   PROVIDER_LIMITS,
   PROVIDER_TIMEOUT_DEFAULTS,
 } from "@/lib/constants/provider.constants";
+import { useMediaQuery } from "@/lib/hooks/use-media-query";
 import { PROVIDER_BATCH_PATCH_ERROR_CODES } from "@/lib/provider-batch-patch-error-codes";
 import { getProviderTypeConfig, getProviderTypeTranslationKey } from "@/lib/provider-type-utils";
+import { resolveProviderFaviconUrl } from "@/lib/providers/favicon";
 import { cn } from "@/lib/utils";
 import { copyToClipboard, isClipboardSupported } from "@/lib/utils/clipboard";
 import { getContrastTextColor, getGroupColor } from "@/lib/utils/color";
@@ -76,8 +78,10 @@ import { GroupEditCombobox } from "./group-edit-combobox";
 import { InlineEditPopover } from "./inline-edit-popover";
 import { invalidateProviderQueries } from "./invalidate-provider-queries";
 import { PriorityEditPopover } from "./priority-edit-popover";
+import { ProviderDialogFrame } from "./provider-dialog-frame";
 import { ProviderEndpointHover } from "./provider-endpoint-hover";
 import { buildProviderModelVisibility } from "./provider-model-visibility";
+import { ProviderMorphDialog } from "./provider-morph-dialog";
 
 interface ProviderRichListItemProps {
   provider: ProviderDisplay;
@@ -240,9 +244,11 @@ function ProviderRichListItemInner({
   const [resetUsagePending, startResetUsageTransition] = useTransition();
   const [deletePending, startDeleteTransition] = useTransition();
   const [togglePending, startToggleTransition] = useTransition();
+  const isDesktop = useMediaQuery("(min-width: 768px)");
 
   const canEdit = currentUser?.role === "admin";
   const t = useTranslations("settings.providers");
+  const tCommon = useTranslations("common");
   const tTypes = useTranslations("settings.providers.types");
   const tList = useTranslations("settings.providers.list");
   const tBatchEdit = useTranslations("settings.providers.batchEdit");
@@ -283,6 +289,7 @@ function ProviderRichListItemInner({
   const typeKey = getProviderTypeTranslationKey(provider.providerType);
   const typeLabel = tTypes(`${typeKey}.label`);
   const typeDescription = tTypes(`${typeKey}.description`);
+  const displayFaviconUrl = resolveProviderFaviconUrl(provider.faviconUrl);
 
   useEffect(() => {
     setClipboardAvailable(isClipboardSupported());
@@ -568,6 +575,56 @@ function ProviderRichListItemInner({
       : provider.isEnabled
         ? "border-l-emerald-500"
         : "border-l-gray-300 dark:border-l-gray-600";
+  const providerMorphContentClassName =
+    "max-w-full sm:max-w-5xl lg:max-w-6xl max-h-[var(--cch-viewport-height-90)] flex flex-col overflow-hidden border border-primary/12 bg-card/95 p-0 gap-0 shadow-[0_36px_110px_-46px_rgba(4,12,8,0.72)]";
+
+  const editDialogBody = (
+    <div className="max-h-[var(--cch-viewport-height-90)] flex min-h-0 flex-col overflow-hidden border-primary/12 bg-card/95 p-0 gap-0">
+      <VisuallyHidden>
+        <h2>{t("editProvider")}</h2>
+      </VisuallyHidden>
+      <ProviderDialogFrame onClose={() => setOpenEdit(false)} closeLabel={tCommon("close")}>
+        {editFormReady ? (
+          <FormErrorBoundary>
+            <ProviderForm
+              mode="edit"
+              provider={provider}
+              onSuccess={() => {
+                setOpenEdit(false);
+              }}
+              enableMultiProviderTypes={enableMultiProviderTypes}
+            />
+          </FormErrorBoundary>
+        ) : (
+          <DialogFormSkeleton />
+        )}
+      </ProviderDialogFrame>
+    </div>
+  );
+
+  const cloneDialogBody = (
+    <div className="max-h-[var(--cch-viewport-height-90)] flex min-h-0 flex-col overflow-hidden border-primary/12 bg-card/95 p-0 gap-0">
+      <VisuallyHidden>
+        <h2>{t("clone")}</h2>
+      </VisuallyHidden>
+      <ProviderDialogFrame onClose={() => setOpenClone(false)} closeLabel={tCommon("close")}>
+        {cloneFormReady ? (
+          <FormErrorBoundary>
+            <ProviderForm
+              mode="create"
+              cloneProvider={provider}
+              onSuccess={() => {
+                setOpenClone(false);
+              }}
+              enableMultiProviderTypes={enableMultiProviderTypes}
+            />
+          </FormErrorBoundary>
+        ) : (
+          <DialogFormSkeleton />
+        )}
+      </ProviderDialogFrame>
+    </div>
+  );
 
   return (
     <>
@@ -738,11 +795,29 @@ function ProviderRichListItemInner({
 
         {/* Mobile: actions */}
         <div className="flex items-center justify-end gap-2 md:hidden">
-          {canEdit && (
+          {canEdit && !isDesktop && !onEditProp ? (
+            <ProviderMorphDialog
+              open={openEdit}
+              onOpenChange={setOpenEdit}
+              closeLabel={tCommon("close")}
+              trigger={
+                <Button
+                  data-slot="provider-edit-trigger"
+                  variant="outline"
+                  className="min-h-[44px] min-w-[44px]"
+                >
+                  <Edit className="h-4 w-4" />
+                </Button>
+              }
+              contentClassName={providerMorphContentClassName}
+            >
+              {editDialogBody}
+            </ProviderMorphDialog>
+          ) : canEdit ? (
             <Button variant="outline" className="min-h-[44px] min-w-[44px]" onClick={handleEdit}>
               <Edit className="h-4 w-4" />
             </Button>
-          )}
+          ) : null}
           {canEdit && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
@@ -825,9 +900,9 @@ function ProviderRichListItemInner({
 
         <div className="hidden md:block flex-1 min-w-0">
           <div className="flex items-center gap-2 flex-wrap">
-            {provider.faviconUrl && (
+            {displayFaviconUrl && (
               <img
-                src={provider.faviconUrl}
+                src={displayFaviconUrl}
                 alt=""
                 className="h-4 w-4 flex-shrink-0"
                 onError={(e) => {
@@ -1064,7 +1139,21 @@ function ProviderRichListItemInner({
               className="data-[state=checked]:bg-green-500"
             />
           )}
-          {canEdit && (
+          {canEdit && isDesktop && !onEditProp ? (
+            <ProviderMorphDialog
+              open={openEdit}
+              onOpenChange={setOpenEdit}
+              closeLabel={tCommon("close")}
+              trigger={
+                <Button data-slot="provider-edit-trigger" size="icon" variant="ghost">
+                  <Edit className="h-4 w-4" />
+                </Button>
+              }
+              contentClassName={providerMorphContentClassName}
+            >
+              {editDialogBody}
+            </ProviderMorphDialog>
+          ) : canEdit ? (
             <Button
               size="icon"
               variant="ghost"
@@ -1076,8 +1165,22 @@ function ProviderRichListItemInner({
             >
               <Edit className="h-4 w-4" />
             </Button>
-          )}
-          {canEdit && (
+          ) : null}
+          {canEdit && isDesktop && !onCloneProp ? (
+            <ProviderMorphDialog
+              open={openClone}
+              onOpenChange={setOpenClone}
+              closeLabel={tCommon("close")}
+              trigger={
+                <Button data-slot="provider-clone-trigger" size="icon" variant="ghost">
+                  <Copy className="h-4 w-4" />
+                </Button>
+              }
+              contentClassName={providerMorphContentClassName}
+            >
+              {cloneDialogBody}
+            </ProviderMorphDialog>
+          ) : canEdit ? (
             <Button
               size="icon"
               variant="ghost"
@@ -1089,7 +1192,7 @@ function ProviderRichListItemInner({
             >
               <Copy className="h-4 w-4" />
             </Button>
-          )}
+          ) : null}
           {canEdit && healthStatus?.circuitState === "open" && (
             <Button
               size="icon"
@@ -1155,51 +1258,32 @@ function ProviderRichListItemInner({
         </div>
       </div>
 
-      {/* Edit Dialog */}
-      <Dialog open={openEdit} onOpenChange={setOpenEdit}>
-        <DialogContent className="max-w-6xl max-h-[var(--cch-viewport-height-90)] flex flex-col overflow-hidden p-0 gap-0">
-          <VisuallyHidden>
-            <DialogTitle>{t("editProvider")}</DialogTitle>
-          </VisuallyHidden>
-          {editFormReady ? (
-            <FormErrorBoundary>
-              <ProviderForm
-                mode="edit"
-                provider={provider}
-                onSuccess={() => {
-                  setOpenEdit(false);
-                }}
-                enableMultiProviderTypes={enableMultiProviderTypes}
-              />
-            </FormErrorBoundary>
-          ) : (
-            <DialogFormSkeleton />
-          )}
-        </DialogContent>
-      </Dialog>
-
       {/* Clone Dialog */}
-      <Dialog open={openClone} onOpenChange={setOpenClone}>
-        <DialogContent className="max-w-6xl max-h-[var(--cch-viewport-height-90)] flex flex-col overflow-hidden p-0 gap-0">
-          <VisuallyHidden>
-            <DialogTitle>{t("clone")}</DialogTitle>
-          </VisuallyHidden>
-          {cloneFormReady ? (
-            <FormErrorBoundary>
-              <ProviderForm
-                mode="create"
-                cloneProvider={provider}
-                onSuccess={() => {
-                  setOpenClone(false);
-                }}
-                enableMultiProviderTypes={enableMultiProviderTypes}
-              />
-            </FormErrorBoundary>
-          ) : (
-            <DialogFormSkeleton />
-          )}
-        </DialogContent>
-      </Dialog>
+      {!isDesktop && (
+        <Dialog open={openClone} onOpenChange={setOpenClone}>
+          <DialogContent className="max-w-6xl max-h-[var(--cch-viewport-height-90)] flex flex-col overflow-hidden border-primary/12 bg-card/95 p-0 gap-0">
+            <VisuallyHidden>
+              <DialogTitle>{t("clone")}</DialogTitle>
+            </VisuallyHidden>
+            <ProviderDialogFrame onClose={() => setOpenClone(false)} closeLabel={tCommon("close")}>
+              {cloneFormReady ? (
+                <FormErrorBoundary>
+                  <ProviderForm
+                    mode="create"
+                    cloneProvider={provider}
+                    onSuccess={() => {
+                      setOpenClone(false);
+                    }}
+                    enableMultiProviderTypes={enableMultiProviderTypes}
+                  />
+                </FormErrorBoundary>
+              ) : (
+                <DialogFormSkeleton />
+              )}
+            </ProviderDialogFrame>
+          </DialogContent>
+        </Dialog>
+      )}
 
       {/* API Key 展示 Dialog */}
       <Dialog open={showKeyDialog} onOpenChange={handleCloseDialog}>

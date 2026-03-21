@@ -6,21 +6,20 @@ import { AddWordDialog } from "@/app/[locale]/settings/sensitive-words/_componen
 import { RefreshCacheButton } from "@/app/[locale]/settings/sensitive-words/_components/refresh-cache-button";
 import { SensitiveWordsTableSkeleton } from "@/app/[locale]/settings/sensitive-words/_components/sensitive-words-skeleton";
 import { WordListTable } from "@/app/[locale]/settings/sensitive-words/_components/word-list-table";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
 import { Section } from "@/components/section";
-import { getConsoleSensitiveWordsData } from "../../adapters/policy-bootstrap";
+import { getConsoleSensitiveWordsQueryOptions } from "../../console-screen-query-options";
 
 export default function PolicySensitiveWordsScreen() {
   const t = useTranslations("settings");
   const { data, isLoading } = useQuery({
-    queryKey: ["console-policy-sensitive-words"],
-    queryFn: getConsoleSensitiveWordsData,
+    ...getConsoleSensitiveWordsQueryOptions(),
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   return (
     <div data-slot="console-screen" data-screen-id="policy-sensitive-words">
-      <div data-slot="policy-sensitive-words-screen" className="space-y-4">
+      <ConsoleScreenStage screenId="policy-sensitive-words" className="space-y-4">
         <Section
           title={t("sensitiveWords.section.title")}
           description={t("sensitiveWords.section.description")}
@@ -39,7 +38,7 @@ export default function PolicySensitiveWordsScreen() {
             <WordListTable words={data.words} />
           )}
         </Section>
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

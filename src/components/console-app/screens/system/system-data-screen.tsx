@@ -6,6 +6,7 @@ import { DatabaseExport } from "@/app/[locale]/settings/data/_components/databas
 import { DatabaseImport } from "@/app/[locale]/settings/data/_components/database-import";
 import { DatabaseStatusDisplay } from "@/app/[locale]/settings/data/_components/database-status";
 import { LogCleanupPanel } from "@/app/[locale]/settings/data/_components/log-cleanup-panel";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
 import { Button } from "@/components/ui/button";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { useConsolePreferences } from "../../hooks/use-console-preferences";
@@ -20,7 +21,7 @@ export default function SystemDataScreen() {
 
   return (
     <div data-slot="console-screen" data-screen-id="system-data">
-      <div data-slot="system-data-screen" className="space-y-4">
+      <ConsoleScreenStage screenId="system-data" data-slot="system-data-screen" className="space-y-4">
         <section data-slot="section" data-title={t("data.section.status.title")}>
           <DatabaseStatusDisplay />
         </section>
@@ -86,7 +87,7 @@ export default function SystemDataScreen() {
             </CollapsibleContent>
           </Collapsible>
         </div>
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

@@ -253,4 +253,25 @@ describe("ProviderManager operator view", () => {
 
     unmount();
   });
+
+  test("hides batch edit toolbar in vendor view", () => {
+    const providers = [buildProvider({ id: 1 }), buildProvider({ id: 2 })];
+
+    const { container, unmount } = renderWithProviders(
+      <ProviderManager
+        providers={providers}
+        currentUser={ADMIN_USER}
+        healthStatus={{}}
+        enableMultiProviderTypes={true}
+        embedded={true}
+        viewMode="vendor"
+      />
+    );
+
+    expect(container.querySelector('[data-testid="provider-vendor-view"]')).toBeTruthy();
+    expect(container.querySelector('[data-testid="provider-batch-toolbar"]')).toBeNull();
+    expect(container.querySelector('[data-testid="provider-batch-dialog"]')).toBeNull();
+
+    unmount();
+  });
 });

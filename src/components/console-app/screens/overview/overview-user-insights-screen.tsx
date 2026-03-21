@@ -4,17 +4,14 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
 import { useMemo } from "react";
 import { UserInsightsView } from "@/app/[locale]/dashboard/leaderboard/user/[userId]/_components/user-insights-view";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
 import { Section } from "@/components/section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link, usePathname } from "@/i18n/routing";
 import type { ConsoleRuntimeScreenProps } from "@/lib/console/lazy-screen";
-import { getConsoleLeaderboardUserContext } from "../../adapters/dashboard-bootstrap";
-
-function resolveUserId(pathname: string) {
-  const match = pathname.match(/\/console\/overview\/leaderboard\/users\/(\d+)(?:\/|$)/);
-  return match ? Number(match[1]) : null;
-}
+import { resolveConsoleOverviewUserId } from "../../console-screen-paths";
+import { getConsoleUserInsightsQueryOptions } from "../../console-screen-query-options";
 
 function UserInsightsSkeleton() {
   return <div className="min-h-64 rounded-xl border border-dashed border-border/60 bg-card/40" />;
@@ -55,18 +52,18 @@ function UserInsightsFallbackState({ invalidPath }: { invalidPath: boolean }) {
 
 export default function OverviewUserInsightsScreen({ route }: ConsoleRuntimeScreenProps) {
   const pathname = usePathname() ?? route.consolePath;
-  const userId = useMemo(() => resolveUserId(pathname), [pathname]);
+  const userId = useMemo(() => resolveConsoleOverviewUserId(pathname), [pathname]);
   const { data, isLoading } = useQuery({
-    queryKey: ["console-overview-user-insights", userId],
-    queryFn: () => getConsoleLeaderboardUserContext(userId ?? 0),
+    ...(userId === null
+      ? getConsoleUserInsightsQueryOptions(0)
+      : getConsoleUserInsightsQueryOptions(userId)),
     enabled: userId !== null,
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   return (
     <div data-slot="console-screen" data-screen-id="overview-user-insights">
-      <div data-slot="overview-user-insights-screen">
+      <ConsoleScreenStage screenId="overview-user-insights">
         {userId === null ? (
           <UserInsightsFallbackState invalidPath={true} />
         ) : isLoading ? (
@@ -76,7 +73,7 @@ export default function OverviewUserInsightsScreen({ route }: ConsoleRuntimeScre
         ) : (
           <UserInsightsFallbackState invalidPath={false} />
         )}
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

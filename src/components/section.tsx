@@ -93,11 +93,11 @@ export function Section({
 }: SectionProps) {
   const variantStyles = {
     default:
-      "border-border/65 bg-card/82 shadow-[0_24px_70px_-52px_rgba(15,23,42,0.28)] hover:border-border/90",
+      "border-border/65 bg-card/88 shadow-[0_28px_90px_-62px_rgba(8,22,15,0.45)] hover:border-border/90",
     highlight:
-      "border-primary/25 bg-[linear-gradient(135deg,rgba(223,235,229,0.82),rgba(255,255,255,0.86))] shadow-[0_28px_90px_-58px_rgba(69,115,92,0.42)] hover:border-primary/35",
+      "border-primary/25 bg-[linear-gradient(135deg,rgba(70,96,77,0.18),rgba(255,255,255,0.88))] shadow-[0_28px_90px_-58px_rgba(58,96,69,0.45)] hover:border-primary/35 dark:bg-[linear-gradient(135deg,rgba(90,146,103,0.12),rgba(34,45,39,0.86))]",
     warning:
-      "border-amber-300/40 bg-[linear-gradient(135deg,rgba(255,247,221,0.92),rgba(255,255,255,0.84))] shadow-[0_28px_90px_-64px_rgba(180,120,28,0.28)] hover:border-amber-400/50 dark:border-amber-800/70 dark:bg-amber-950/25",
+      "border-amber-300/40 bg-[linear-gradient(135deg,rgba(255,247,221,0.92),rgba(245,252,246,0.84))] shadow-[0_28px_90px_-64px_rgba(92,118,83,0.28)] hover:border-amber-400/50 dark:border-amber-800/70 dark:bg-amber-950/25",
   };
 
   const Icon = icon ? SECTION_ICON_MAP[icon] : null;
@@ -115,7 +115,7 @@ export function Section({
         className
       )}
     >
-      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(117,160,132,0.12),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(245,222,178,0.12),transparent_28%)]" />
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_top_right,rgba(117,180,132,0.1),transparent_30%),radial-gradient(circle_at_bottom_left,rgba(77,109,91,0.12),transparent_28%)]" />
 
       <div className="relative z-10">
         {(title || description || Icon || actions) && (
@@ -164,7 +164,7 @@ export function SectionStatic({
     <section
       data-slot="section"
       className={cn(
-        "rounded-[1.75rem] border border-border/65 bg-card/82 p-5 shadow-[0_24px_70px_-52px_rgba(15,23,42,0.28)] transition-[border-color,transform,box-shadow] duration-200 hover:border-border/90 md:p-6 lg:p-7",
+        "rounded-[1.75rem] border border-border/65 bg-card/88 p-5 shadow-[0_28px_90px_-62px_rgba(8,22,15,0.45)] transition-[border-color,transform,box-shadow] duration-200 hover:border-border/90 md:p-6 lg:p-7",
         className
       )}
     >

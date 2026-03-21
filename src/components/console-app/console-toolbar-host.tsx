@@ -52,7 +52,7 @@ interface ConsoleToolbarProviderProps {
 
 export function ConsoleToolbarProvider({ children }: ConsoleToolbarProviderProps) {
   const toolbarRegistryRef = useRef<ConsoleToolbarRegistry>({});
-  const preferencesRef = useRef<ConsolePreferencesRegistry>(readStoredPreferences());
+  const preferencesRef = useRef<ConsolePreferencesRegistry>({});
   const listenersRef = useRef(new Set<() => void>());
   const storeRef = useRef<ConsoleToolbarStore | null>(null);
 
@@ -121,6 +121,10 @@ export function ConsoleToolbarProvider({ children }: ConsoleToolbarProviderProps
 
   useEffect(() => {
     const hydratedPreferences = readStoredPreferences();
+    if (Object.is(preferencesRef.current, hydratedPreferences)) {
+      return;
+    }
+
     preferencesRef.current = hydratedPreferences;
 
     for (const listener of listenersRef.current) {

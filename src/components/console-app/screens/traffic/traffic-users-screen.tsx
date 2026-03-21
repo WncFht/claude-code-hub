@@ -3,25 +3,24 @@
 import { useQuery } from "@tanstack/react-query";
 import { UsersPageSkeleton } from "@/app/[locale]/dashboard/users/_components/users-skeleton";
 import { UsersPageClient } from "@/app/[locale]/dashboard/users/users-page-client";
-import { getConsoleDashboardContext } from "../../adapters/dashboard-bootstrap";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
+import { getConsoleDashboardContextQueryOptions } from "../../console-screen-query-options";
 
 export default function TrafficUsersScreen() {
   const { data, isLoading } = useQuery({
-    queryKey: ["console-dashboard-context"],
-    queryFn: getConsoleDashboardContext,
+    ...getConsoleDashboardContextQueryOptions(),
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   return (
     <div data-slot="console-screen" data-screen-id="traffic-users">
-      <div data-slot="traffic-users-screen">
+      <ConsoleScreenStage screenId="traffic-users">
         {isLoading || !data ? (
           <UsersPageSkeleton />
         ) : (
           <UsersPageClient currentUser={data.currentUser} />
         )}
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

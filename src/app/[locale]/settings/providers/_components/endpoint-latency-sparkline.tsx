@@ -2,7 +2,7 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
-import { Line, LineChart, ResponsiveContainer, Tooltip, YAxis } from "recharts";
+import { Line, LineChart, Tooltip, YAxis } from "recharts";
 import { useInViewOnce } from "@/lib/hooks/use-in-view-once";
 import { type ProbeLog, probeLogsBatcher } from "@/lib/provider-endpoints/probe-logs-batcher";
 import { cn } from "@/lib/utils";
@@ -113,24 +113,27 @@ export function EndpointLatencySparkline(props: { endpointId: number; limit?: nu
   const stroke = lastPoint?.ok ? "#16a34a" : "#dc2626";
 
   return (
-    <div ref={ref} className="flex items-center gap-2">
-      <div className="h-6 w-32">
-        <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={points} margin={{ top: 2, right: 2, bottom: 2, left: 2 }}>
-            <YAxis hide domain={[0, "dataMax + 50"]} />
-            <Tooltip content={<CustomTooltip />} cursor={false} isAnimationActive={false} />
-            <Line
-              type="monotone"
-              dataKey="latencyMs"
-              stroke={stroke}
-              strokeWidth={1.5}
-              dot={false}
-              activeDot={{ r: 3, strokeWidth: 0, fill: stroke }}
-              isAnimationActive={false}
-              connectNulls={false}
-            />
-          </LineChart>
-        </ResponsiveContainer>
+    <div ref={ref} className="flex min-w-0 items-center gap-2">
+      <div className="h-6 w-32 min-h-0 min-w-0 shrink-0">
+        <LineChart
+          width={128}
+          height={24}
+          data={points}
+          margin={{ top: 2, right: 2, bottom: 2, left: 2 }}
+        >
+          <YAxis hide domain={[0, "dataMax + 50"]} />
+          <Tooltip content={<CustomTooltip />} cursor={false} isAnimationActive={false} />
+          <Line
+            type="monotone"
+            dataKey="latencyMs"
+            stroke={stroke}
+            strokeWidth={1.5}
+            dot={false}
+            activeDot={{ r: 3, strokeWidth: 0, fill: stroke }}
+            isAnimationActive={false}
+            connectNulls={false}
+          />
+        </LineChart>
       </div>
       {avgLatency !== null && (
         <span className="text-[10px] font-mono text-muted-foreground whitespace-nowrap">

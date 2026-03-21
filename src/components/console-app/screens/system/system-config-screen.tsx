@@ -5,30 +5,19 @@ import { useTranslations } from "next-intl";
 import { AutoCleanupForm } from "@/app/[locale]/settings/config/_components/auto-cleanup-form";
 import { SettingsConfigSkeleton } from "@/app/[locale]/settings/config/_components/settings-config-skeleton";
 import { SystemSettingsForm } from "@/app/[locale]/settings/config/_components/system-settings-form";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
 import { Button } from "@/components/ui/button";
-import type { SystemSettings } from "@/types/system-config";
+import { getConsoleSystemSettingsQueryOptions } from "../../console-screen-query-options";
 import { useScreenToolbar } from "../../hooks/use-screen-toolbar";
 
 const SYSTEM_CONFIG_FORM_ID = "console-system-config-form";
-
-async function fetchSystemSettings(): Promise<SystemSettings> {
-  const response = await fetch("/api/system-settings");
-
-  if (!response.ok) {
-    throw new Error("FETCH_SYSTEM_SETTINGS_FAILED");
-  }
-
-  return response.json() as Promise<SystemSettings>;
-}
 
 export default function SystemConfigScreen() {
   const t = useTranslations("settings");
   const tForm = useTranslations("settings.config.form");
   const { data: settings, isLoading } = useQuery({
-    queryKey: ["console-system-settings"],
-    queryFn: fetchSystemSettings,
+    ...getConsoleSystemSettingsQueryOptions(),
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   useScreenToolbar(
@@ -41,16 +30,20 @@ export default function SystemConfigScreen() {
   if (isLoading || !settings) {
     return (
       <div data-slot="console-screen" data-screen-id="system-config">
-        <div data-slot="system-config-screen">
+        <ConsoleScreenStage screenId="system-config" data-slot="system-config-screen">
           <SettingsConfigSkeleton />
-        </div>
+        </ConsoleScreenStage>
       </div>
     );
   }
 
   return (
     <div data-slot="console-screen" data-screen-id="system-config">
-      <div data-slot="system-config-screen" className="space-y-4">
+      <ConsoleScreenStage
+        screenId="system-config"
+        data-slot="system-config-screen"
+        className="space-y-4"
+      >
         <section data-slot="section" data-title={t("config.section.siteParams.title")}>
           <SystemSettingsForm
             formId={SYSTEM_CONFIG_FORM_ID}
@@ -85,7 +78,7 @@ export default function SystemConfigScreen() {
         <section data-slot="section" data-title={t("config.section.autoCleanup.title")}>
           <AutoCleanupForm settings={settings} />
         </section>
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

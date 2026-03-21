@@ -4,10 +4,11 @@ import { useQuery } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
 import { AvailabilityDashboard } from "@/app/[locale]/dashboard/availability/_components/availability-dashboard";
 import { AvailabilityDashboardSkeleton } from "@/app/[locale]/dashboard/availability/_components/availability-skeleton";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
 import { Section } from "@/components/section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { getConsoleDashboardContext } from "../../adapters/dashboard-bootstrap";
+import { getConsoleDashboardContextQueryOptions } from "../../console-screen-query-options";
 
 function AvailabilityPermissionState() {
   return (
@@ -33,17 +34,15 @@ function AvailabilityPermissionState() {
 
 export default function OverviewAvailabilityScreen() {
   const { data, isLoading } = useQuery({
-    queryKey: ["console-dashboard-context"],
-    queryFn: getConsoleDashboardContext,
+    ...getConsoleDashboardContextQueryOptions(),
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   const isAdmin = data?.currentUser.role === "admin";
 
   return (
     <div data-slot="console-screen" data-screen-id="overview-availability">
-      <div data-slot="overview-availability-screen">
+      <ConsoleScreenStage screenId="overview-availability">
         {isLoading || !data ? (
           <AvailabilityDashboardSkeleton />
         ) : isAdmin ? (
@@ -51,7 +50,7 @@ export default function OverviewAvailabilityScreen() {
         ) : (
           <AvailabilityPermissionState />
         )}
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

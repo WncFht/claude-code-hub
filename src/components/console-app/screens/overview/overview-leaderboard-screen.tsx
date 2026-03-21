@@ -3,11 +3,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { AlertCircle } from "lucide-react";
 import { LeaderboardView } from "@/app/[locale]/dashboard/leaderboard/_components/leaderboard-view";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
 import { Section } from "@/components/section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Link } from "@/i18n/routing";
-import { getConsoleDashboardContext } from "../../adapters/dashboard-bootstrap";
+import { getConsoleDashboardContextQueryOptions } from "../../console-screen-query-options";
 
 function LeaderboardPermissionState({ isAdmin }: { isAdmin: boolean }) {
   return (
@@ -46,10 +47,8 @@ function LeaderboardPermissionState({ isAdmin }: { isAdmin: boolean }) {
 
 export default function OverviewLeaderboardScreen() {
   const { data, isLoading } = useQuery({
-    queryKey: ["console-dashboard-context"],
-    queryFn: getConsoleDashboardContext,
+    ...getConsoleDashboardContextQueryOptions(),
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   const isAdmin = data?.currentUser.role === "admin";
@@ -57,13 +56,13 @@ export default function OverviewLeaderboardScreen() {
 
   return (
     <div data-slot="console-screen" data-screen-id="overview-leaderboard">
-      <div data-slot="overview-leaderboard-screen">
+      <ConsoleScreenStage screenId="overview-leaderboard">
         {isLoading || !data ? null : canViewLeaderboard ? (
           <LeaderboardView isAdmin={isAdmin} />
         ) : (
           <LeaderboardPermissionState isAdmin={isAdmin} />
         )}
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

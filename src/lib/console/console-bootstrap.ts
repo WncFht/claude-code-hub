@@ -10,6 +10,7 @@ export interface BuildConsoleBootstrapInput {
   locale: string;
   pathname: string;
   role: ConsoleRole;
+  siteTitle?: string;
 }
 
 export interface ConsoleBootstrapPayload {
@@ -19,12 +20,14 @@ export interface ConsoleBootstrapPayload {
   currentPath: string;
   defaultPath: string;
   activeRoute: ConsoleRuntimeRouteDefinition;
+  siteTitle: string;
 }
 
 export function buildConsoleBootstrap({
   locale,
   pathname,
   role,
+  siteTitle = "Claude Code Hub",
 }: BuildConsoleBootstrapInput): ConsoleBootstrapPayload {
   const requestedPath = pathname;
   const defaultPath = getDefaultConsolePath(role);
@@ -43,5 +46,6 @@ export function buildConsoleBootstrap({
     currentPath: activeRoute.consolePath,
     defaultPath,
     activeRoute,
+    siteTitle,
   };
 }

@@ -43,6 +43,41 @@
     "errorRate": "Error Rate",
     "avgResponseTime": "Average Response Time"
   },
+  "home": {
+    "eyebrow": "Operator cockpit",
+    "title": "Operations overview",
+    "description": "A calmer command surface for throughput, spend, and live session activity.",
+    "sections": {
+      "pulse": {
+        "title": "Traffic pulse",
+        "description": "Watch request pressure, spend, and latency before you drill into detail."
+      },
+      "activity": {
+        "title": "Request activity",
+        "description": "A long-running heatmap view that keeps recent request rhythm visible at a glance."
+      },
+      "statistics": {
+        "title": "Usage curve",
+        "description": "Track calls and spend across the active window without leaving the overview."
+      },
+      "rankings": {
+        "title": "Rankings and live queue",
+        "description": "Keep leaderboard movement and active session flow in the same operator view."
+      }
+    },
+    "activity": {
+      "noData": "No data",
+      "legend": {
+        "quiet": "Quiet",
+        "busy": "Busy"
+      },
+      "summary": {
+        "requests": "30d calls",
+        "activeDays": "Active days",
+        "window": "Last 54 weeks"
+      }
+    }
+  },
   "stats": {
     "title": "Statistics",
     "requests": "Requests",

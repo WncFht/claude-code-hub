@@ -7,21 +7,20 @@ import { ErrorRuleTester } from "@/app/[locale]/settings/error-rules/_components
 import { ErrorRulesTableSkeleton } from "@/app/[locale]/settings/error-rules/_components/error-rules-skeleton";
 import { RefreshCacheButton } from "@/app/[locale]/settings/error-rules/_components/refresh-cache-button";
 import { RuleListTable } from "@/app/[locale]/settings/error-rules/_components/rule-list-table";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
 import { Section } from "@/components/section";
-import { getConsoleErrorRulesData } from "../../adapters/policy-bootstrap";
+import { getConsoleErrorRulesQueryOptions } from "../../console-screen-query-options";
 
 export default function PolicyErrorRulesScreen() {
   const t = useTranslations("settings");
   const { data, isLoading } = useQuery({
-    queryKey: ["console-policy-error-rules"],
-    queryFn: getConsoleErrorRulesData,
+    ...getConsoleErrorRulesQueryOptions(),
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   return (
     <div data-slot="console-screen" data-screen-id="policy-error-rules">
-      <div data-slot="policy-error-rules-screen" className="space-y-4">
+      <ConsoleScreenStage screenId="policy-error-rules" className="space-y-4">
         <Section
           title={t("errorRules.tester.title")}
           description={t("errorRules.tester.description")}
@@ -44,7 +43,7 @@ export default function PolicyErrorRulesScreen() {
         >
           {isLoading || !data ? <ErrorRulesTableSkeleton /> : <RuleListTable rules={data.rules} />}
         </Section>
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

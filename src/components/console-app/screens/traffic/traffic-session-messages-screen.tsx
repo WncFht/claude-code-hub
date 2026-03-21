@@ -3,6 +3,7 @@
 import { useMemo } from "react";
 import { SessionMessagesClient } from "@/app/[locale]/dashboard/sessions/[sessionId]/messages/_components/session-messages-client";
 import { usePathname } from "@/i18n/routing";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
 
 function resolveSessionId(pathname: string) {
   const normalizedPath = pathname.split("?")[0]?.split("#")[0] ?? "";
@@ -16,11 +17,11 @@ export default function TrafficSessionMessagesScreen() {
 
   return (
     <div data-slot="console-screen" data-screen-id="traffic-session-messages">
-      <div data-slot="traffic-session-messages-screen" className="h-full">
+      <ConsoleScreenStage screenId="traffic-session-messages" className="h-full">
         {sessionId ? (
           <SessionMessagesClient sessionId={sessionId} backHref="/console/traffic/sessions" />
         ) : null}
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

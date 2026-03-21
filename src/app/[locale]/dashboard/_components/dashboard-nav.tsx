@@ -1,5 +1,6 @@
 "use client";
 
+import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, ExternalLink } from "lucide-react";
 import { useTranslations } from "next-intl";
 import { useEffect, useRef, useState } from "react";
@@ -27,6 +28,12 @@ export interface DashboardNavItem {
 interface DashboardNavProps {
   items: DashboardNavItem[];
 }
+
+const activePillTransition = {
+  type: "spring" as const,
+  stiffness: 300,
+  damping: 30,
+};
 
 export function DashboardNav({ items }: DashboardNavProps) {
   const pathname = usePathname();
@@ -89,17 +96,32 @@ export function DashboardNav({ items }: DashboardNavProps) {
     }, CLOSE_DELAY_MS);
   };
 
+  const renderActiveIndicator = (isActive: boolean) => {
+    return (
+      <AnimatePresence initial={false}>
+        {isActive ? (
+          <motion.span
+            data-slot="dashboard-nav-indicator"
+            layoutId="dashboard-nav-indicator"
+            className="absolute inset-0 rounded-full border border-primary/20 bg-primary/10 shadow-[0_10px_30px_-22px_rgba(69,115,92,0.45)]"
+            transition={activePillTransition}
+          />
+        ) : null}
+      </AnimatePresence>
+    );
+  };
+
   const renderSettingsDropdown = (item: DashboardNavItem, isActive: boolean) => {
     // Disable dropdown menu completely when on a settings page
     if (isActive) {
       return (
         <div
           className={cn(
-            "inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium transition-all",
-            "border border-primary/20 bg-primary/10 text-foreground shadow-[0_10px_30px_-22px_rgba(69,115,92,0.45)]"
+            "relative inline-flex items-center gap-1 rounded-full px-3 py-2 text-sm font-medium text-foreground transition-all"
           )}
         >
-          {item.label}
+          {renderActiveIndicator(isActive)}
+          <span className="relative z-10">{item.label}</span>
         </div>
       );
     }
@@ -111,14 +133,16 @@ export function DashboardNav({ items }: DashboardNavProps) {
             <Link
               href="/settings/config"
               className={cn(
-                "inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-all",
-                "border border-transparent text-muted-foreground hover:border-border/70 hover:bg-background/80 hover:text-foreground",
-                isActive &&
-                  "border-primary/20 bg-primary/10 text-foreground shadow-[0_10px_30px_-22px_rgba(69,115,92,0.45)]"
+                "relative inline-flex items-center gap-1 whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-all",
+                "text-muted-foreground hover:bg-background/80 hover:text-foreground",
+                isActive && "text-foreground"
               )}
             >
-              {item.label}
-              <ChevronDown className="size-3 opacity-50" />
+              {renderActiveIndicator(isActive)}
+              <span className="relative z-10 inline-flex items-center gap-1">
+                {item.label}
+                <ChevronDown className="size-3 opacity-50" />
+              </span>
             </Link>
           </DropdownMenuTrigger>
 
@@ -177,9 +201,10 @@ export function DashboardNav({ items }: DashboardNavProps) {
         }
 
         const className = cn(
-          "whitespace-nowrap rounded-full border border-transparent px-3 py-2 text-sm font-medium text-muted-foreground transition-all hover:border-border/70 hover:bg-background/80 hover:text-foreground",
-          isActive &&
-            "border-primary/20 bg-primary/10 text-foreground shadow-[0_10px_30px_-22px_rgba(69,115,92,0.45)]"
+          "relative whitespace-nowrap rounded-full px-3 py-2 text-sm font-medium transition-all",
+          isActive
+            ? "text-foreground"
+            : "text-muted-foreground hover:bg-background/80 hover:text-foreground"
         );
 
         if (item.external) {
@@ -191,14 +216,16 @@ export function DashboardNav({ items }: DashboardNavProps) {
               rel="noopener noreferrer"
               className={className}
             >
-              {item.label}
+              {renderActiveIndicator(isActive)}
+              <span className="relative z-10">{item.label}</span>
             </a>
           );
         }
 
         return (
           <Link key={item.href} href={item.href} className={className}>
-            {item.label}
+            {renderActiveIndicator(isActive)}
+            <span className="relative z-10">{item.label}</span>
           </Link>
         );
       })}

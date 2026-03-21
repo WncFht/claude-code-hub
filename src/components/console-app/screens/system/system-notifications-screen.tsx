@@ -11,6 +11,7 @@ import {
   type NotificationSettingsState,
   useNotificationsPageData,
 } from "@/app/[locale]/settings/notifications/_lib/hooks";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export default function SystemNotificationsScreen() {
@@ -40,16 +41,23 @@ export default function SystemNotificationsScreen() {
   if (isLoading || !settings) {
     return (
       <div data-slot="console-screen" data-screen-id="system-notifications">
-        <div data-slot="system-notifications-screen">
+        <ConsoleScreenStage
+          screenId="system-notifications"
+          data-slot="system-notifications-screen"
+        >
           <NotificationsSkeleton />
-        </div>
+        </ConsoleScreenStage>
       </div>
     );
   }
 
   return (
     <div data-slot="console-screen" data-screen-id="system-notifications">
-      <div data-slot="system-notifications-screen" className="space-y-6">
+      <ConsoleScreenStage
+        screenId="system-notifications"
+        data-slot="system-notifications-screen"
+        className="space-y-6"
+      >
         {loadError ? (
           <Alert variant="destructive">
             <AlertTitle>{t("notifications.form.loadError")}</AlertTitle>
@@ -87,7 +95,7 @@ export default function SystemNotificationsScreen() {
             ))}
           </div>
         </section>
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }

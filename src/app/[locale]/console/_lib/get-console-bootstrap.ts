@@ -4,6 +4,7 @@ import {
 } from "@/lib/console/console-bootstrap";
 import type { ConsoleRole } from "@/lib/console/module-registry";
 import { getDefaultConsolePath } from "@/lib/console/runtime-route-map";
+import { getSystemSettings } from "@/repository/system-config";
 
 export interface GetConsoleBootstrapInput {
   locale: string;
@@ -19,16 +20,19 @@ function getRequestedConsolePath(role: ConsoleRole, slug?: string[]) {
   return `/console/${slug.join("/")}`;
 }
 
-export function getConsoleBootstrap({
+export async function getConsoleBootstrap({
   locale,
   role,
   slug,
-}: GetConsoleBootstrapInput): ConsoleBootstrapPayload {
+}: GetConsoleBootstrapInput): Promise<ConsoleBootstrapPayload> {
   const requestedPath = getRequestedConsolePath(role, slug);
+  const systemSettings = await getSystemSettings();
+  const siteTitle = systemSettings.siteTitle?.trim() || "Claude Code Hub";
   const bootstrap = buildConsoleBootstrap({
     locale,
     pathname: requestedPath,
     role,
+    siteTitle,
   });
 
   if (bootstrap.activeRoute.visibleForRoles.includes(role)) {
@@ -39,5 +43,6 @@ export function getConsoleBootstrap({
     locale,
     pathname: getDefaultConsolePath(role),
     role,
+    siteTitle,
   });
 }

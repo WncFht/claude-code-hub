@@ -10,6 +10,7 @@ import { cn } from "@/lib/utils";
 import { ProxyTestButton } from "../../proxy-test-button";
 import { FieldGroup, SectionCard, SmartInputWrapper, ToggleRow } from "../components/section-card";
 import { useProviderForm } from "../provider-form-context";
+import { PROVIDER_FORM_SECTION_MOTION } from "../provider-form-motion";
 
 // Timeout input component with visual indicator
 interface TimeoutInputProps {
@@ -122,13 +123,7 @@ export function NetworkSection({ subSectionRefs }: NetworkSectionProps) {
   const isBatch = mode === "batch";
 
   return (
-    <motion.div
-      initial={{ opacity: 0, x: 20 }}
-      animate={{ opacity: 1, x: 0 }}
-      exit={{ opacity: 0, x: -20 }}
-      transition={{ duration: 0.2 }}
-      className="space-y-6"
-    >
+    <motion.div {...PROVIDER_FORM_SECTION_MOTION} className="space-y-6">
       {/* Proxy Configuration */}
       <SectionCard
         title={t("sections.proxy.title")}

@@ -26,6 +26,7 @@ import { AdaptiveThinkingEditor } from "../../../adaptive-thinking-editor";
 import { ThinkingBudgetEditor } from "../../../thinking-budget-editor";
 import { SectionCard, SmartInputWrapper, ToggleRow } from "../components/section-card";
 import { useProviderForm } from "../provider-form-context";
+import { PROVIDER_FORM_SECTION_MOTION } from "../provider-form-motion";
 
 interface OptionsSectionProps {
   subSectionRefs?: {
@@ -43,13 +44,7 @@ export function OptionsSection({ subSectionRefs }: OptionsSectionProps) {
 
   return (
     <TooltipProvider>
-      <motion.div
-        initial={{ opacity: 0, x: 20 }}
-        animate={{ opacity: 1, x: 0 }}
-        exit={{ opacity: 0, x: -20 }}
-        transition={{ duration: 0.2 }}
-        className="space-y-6"
-      >
+      <motion.div {...PROVIDER_FORM_SECTION_MOTION} className="space-y-6">
         <div className="space-y-6">
           {/* Advanced Settings */}
           <SectionCard

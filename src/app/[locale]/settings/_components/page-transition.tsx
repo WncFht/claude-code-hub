@@ -1,9 +1,8 @@
 "use client";
 
-import { motion } from "framer-motion";
 import type { ReactNode } from "react";
+import { PageStage } from "@/components/page-stage";
 import { usePathname } from "@/i18n/routing";
-import { cn } from "@/lib/utils";
 
 interface PageTransitionProps {
   children: ReactNode;
@@ -14,20 +13,8 @@ export function PageTransition({ children, className }: PageTransitionProps) {
   const pathname = usePathname();
 
   return (
-    <motion.div
-      data-slot="page-transition"
-      key={pathname}
-      className={cn(className)}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -8 }}
-      transition={{
-        type: "spring",
-        stiffness: 380,
-        damping: 30,
-      }}
-    >
+    <PageStage activeKey={pathname} className={className}>
       {children}
-    </motion.div>
+    </PageStage>
   );
 }

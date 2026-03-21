@@ -7,28 +7,18 @@ import { KeysQuotaManager } from "@/app/[locale]/dashboard/quotas/keys/_componen
 import { ProvidersQuotaManager } from "@/app/[locale]/dashboard/quotas/providers/_components/providers-quota-manager";
 import { UsersQuotaClient } from "@/app/[locale]/dashboard/quotas/users/_components/users-quota-client";
 import { QuotaCards } from "@/app/[locale]/my-usage/_components/quota-cards";
+import { ConsoleScreenStage } from "@/components/console-app/console-screen-stage";
 import { Section } from "@/components/section";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Link, usePathname } from "@/i18n/routing";
 import type { ConsoleRuntimeScreenProps } from "@/lib/console/lazy-screen";
+import { resolveConsoleQuotaSubview } from "../../console-screen-paths";
 import {
-  getConsoleTrafficKeyQuotaData,
-  getConsoleTrafficQuotaData,
-} from "../../adapters/dashboard-bootstrap";
-
-function resolveQuotaSubview(pathname: string) {
-  if (pathname.endsWith("/providers")) {
-    return "providers";
-  }
-
-  if (pathname.endsWith("/keys")) {
-    return "keys";
-  }
-
-  return "users";
-}
+  getConsoleTrafficKeyQuotaQueryOptions,
+  getConsoleTrafficQuotaQueryOptions,
+} from "../../console-screen-query-options";
 
 function TrafficQuotaSkeleton() {
   return <div className="min-h-64 rounded-xl border border-dashed border-border/60 bg-card/40" />;
@@ -58,26 +48,27 @@ function AdminQuotaPermissionState() {
 
 export default function TrafficQuotaScreen({ route }: ConsoleRuntimeScreenProps) {
   const pathname = usePathname() ?? route.consolePath;
-  const quotaSubview = useMemo(() => resolveQuotaSubview(pathname), [pathname]);
+  const quotaSubview = useMemo(() => resolveConsoleQuotaSubview(pathname), [pathname]);
   const { data, isLoading } = useQuery({
-    queryKey: ["console-traffic-quota-data", route.screenId],
-    queryFn: getConsoleTrafficQuotaData,
+    ...getConsoleTrafficQuotaQueryOptions(route.screenId),
     enabled: route.screenId === "traffic-my-quota" || quotaSubview !== "keys",
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
   const { data: keyQuotaData, isLoading: isKeyQuotaLoading } = useQuery({
-    queryKey: ["console-traffic-key-quota-data", quotaSubview],
-    queryFn: getConsoleTrafficKeyQuotaData,
+    ...getConsoleTrafficKeyQuotaQueryOptions(quotaSubview),
     enabled: route.screenId !== "traffic-my-quota" && quotaSubview === "keys",
     refetchOnWindowFocus: false,
-    staleTime: 30_000,
   });
 
   if (route.screenId === "traffic-my-quota") {
     return (
       <div data-slot="console-screen" data-screen-id="traffic-my-quota">
-        <div data-slot="traffic-quota-screen" data-quota-mode="self" data-quota-subview="self">
+        <ConsoleScreenStage
+          screenId="traffic-my-quota"
+          data-slot="traffic-quota-screen"
+          data-quota-mode="self"
+          data-quota-subview="self"
+        >
           {isLoading || !data ? (
             <TrafficQuotaSkeleton />
           ) : data.mode === "self" ? (
@@ -85,14 +76,15 @@ export default function TrafficQuotaScreen({ route }: ConsoleRuntimeScreenProps)
           ) : (
             <AdminQuotaPermissionState />
           )}
-        </div>
+        </ConsoleScreenStage>
       </div>
     );
   }
 
   return (
     <div data-slot="console-screen" data-screen-id="traffic-quotas">
-      <div
+      <ConsoleScreenStage
+        screenId="traffic-quotas"
         data-slot="traffic-quota-screen"
         data-quota-mode="admin"
         data-quota-subview={quotaSubview}
@@ -132,7 +124,7 @@ export default function TrafficQuotaScreen({ route }: ConsoleRuntimeScreenProps)
             )}
           </>
         )}
-      </div>
+      </ConsoleScreenStage>
     </div>
   );
 }
