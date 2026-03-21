@@ -1,10 +1,10 @@
 "use client";
 
-import { AnimatePresence, motion } from "framer-motion";
-import { Children, isValidElement, type HTMLAttributes, type ReactNode } from "react";
+import { AnimatePresence, motion, type HTMLMotionProps } from "framer-motion";
+import { Children, isValidElement, type ReactNode } from "react";
 import { cn } from "@/lib/utils";
 
-interface PageStageProps extends HTMLAttributes<HTMLDivElement> {
+interface PageStageProps extends HTMLMotionProps<"div"> {
   activeKey: string;
   children: ReactNode;
 }
