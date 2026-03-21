@@ -74,6 +74,26 @@ vi.mock("@/app/[locale]/dashboard/quotas/_components/providers-quota-skeleton", 
   ProvidersQuotaSkeleton: () => createElement("div", { "data-slot": "providers-quota-skeleton" }),
 }));
 
+vi.mock("@/app/[locale]/dashboard/rate-limits/_components/rate-limit-dashboard", () => ({
+  RateLimitDashboard: () => createElement("div", { "data-slot": "rate-limit-dashboard" }),
+}));
+
+vi.mock("@/app/[locale]/dashboard/rate-limits/_components/rate-limits-skeleton", () => ({
+  RateLimitsContentSkeleton: () =>
+    createElement("div", { "data-slot": "rate-limits-content-skeleton" }),
+}));
+
+vi.mock("@/app/[locale]/dashboard/leaderboard/user/[userId]/_components/user-insights-view", () => ({
+  UserInsightsView: () => createElement("div", { "data-slot": "user-insights-view" }),
+}));
+
+vi.mock("@/repository/user", () => ({
+  findUserById: vi.fn(async () => ({
+    id: 7,
+    name: "Operator",
+  })),
+}));
+
 vi.mock("@/app/[locale]/settings/config/_components/system-settings-form", () => ({
   SystemSettingsForm: () => createElement("form", { "data-slot": "system-settings-form" }),
 }));
@@ -248,6 +268,39 @@ describe("legacy console route redirects", () => {
     });
     expect(routingMocks.redirect).toHaveBeenNthCalledWith(2, {
       href: "/console/traffic/quotas/providers",
+      locale: "en",
+    });
+  });
+
+  test("redirects the remaining dashboard detail and diagnostic pages into console deep links", async () => {
+    authMocks.getSession.mockResolvedValue(makeSession({ role: "admin" }));
+
+    const UserInsightsPage = (await import("@/app/[locale]/dashboard/leaderboard/user/[userId]/page"))
+      .default;
+    await UserInsightsPage({
+      params: makeAsyncParams({ locale: "en", userId: "7" }),
+    });
+
+    const RateLimitsPage = (await import("@/app/[locale]/dashboard/rate-limits/page")).default;
+    await RateLimitsPage({
+      params: makeAsyncParams({ locale: "en" }),
+    });
+
+    const KeysQuotaPage = (await import("@/app/[locale]/dashboard/quotas/keys/page")).default;
+    await KeysQuotaPage({
+      params: makeAsyncParams({ locale: "en" }),
+    });
+
+    expect(routingMocks.redirect).toHaveBeenNthCalledWith(1, {
+      href: "/console/overview/leaderboard/users/7",
+      locale: "en",
+    });
+    expect(routingMocks.redirect).toHaveBeenNthCalledWith(2, {
+      href: "/console/traffic/rate-limits",
+      locale: "en",
+    });
+    expect(routingMocks.redirect).toHaveBeenNthCalledWith(3, {
+      href: "/console/traffic/quotas/keys",
       locale: "en",
     });
   });
