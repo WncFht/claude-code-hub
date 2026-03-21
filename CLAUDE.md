@@ -12,7 +12,8 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 1. **No Emoji in Code** - Never use emoji characters in any code, comments, or string literals
 2. **Test Coverage** - All new features must have unit test coverage of at least 80%
 3. **i18n Required** - All user-facing strings must use i18n (5 languages supported). Never hardcode display text
-4. **Pre-commit Checklist** - Before committing, always run:
+4. **Do Not Use `opencli` In This Repository** - Use shell commands, Playwright, or direct web requests instead
+5. **Pre-commit Checklist** - Before committing, always run:
    ```bash
    bun run build      # Production build
    bun run lint       # Biome check
