@@ -15,12 +15,28 @@ import {
 const MIGRATED_SCREEN_LOADERS: Partial<
   Record<ConsoleScreenId, () => Promise<{ default: ComponentType<ConsoleRuntimeScreenProps> }>>
 > = {
+  "overview-home": () =>
+    import("../../components/console-app/screens/overview/overview-home-screen"),
+  "overview-leaderboard": () =>
+    import("../../components/console-app/screens/overview/overview-leaderboard-screen"),
+  "overview-availability": () =>
+    import("../../components/console-app/screens/overview/overview-availability-screen"),
+  "traffic-logs": () => import("../../components/console-app/screens/traffic/traffic-logs-screen"),
+  "traffic-users": () =>
+    import("../../components/console-app/screens/traffic/traffic-users-screen"),
+  "traffic-sessions": () =>
+    import("../../components/console-app/screens/traffic/traffic-sessions-screen"),
+  "traffic-session-messages": () =>
+    import("../../components/console-app/screens/traffic/traffic-session-messages-screen"),
+  "traffic-quotas": () =>
+    import("../../components/console-app/screens/traffic/traffic-quota-screen"),
+  "traffic-my-quota": () =>
+    import("../../components/console-app/screens/traffic/traffic-quota-screen"),
   "providers-inventory": () =>
     import("../../components/console-app/screens/providers/providers-inventory-screen"),
   "providers-pricing": () =>
     import("../../components/console-app/screens/providers/providers-pricing-screen"),
-  "system-config": () =>
-    import("../../components/console-app/screens/system/system-config-screen"),
+  "system-config": () => import("../../components/console-app/screens/system/system-config-screen"),
   "system-data": () => import("../../components/console-app/screens/system/system-data-screen"),
   "system-notifications": () =>
     import("../../components/console-app/screens/system/system-notifications-screen"),

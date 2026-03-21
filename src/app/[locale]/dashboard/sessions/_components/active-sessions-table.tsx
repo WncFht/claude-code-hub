@@ -41,6 +41,7 @@ interface ActiveSessionsTableProps {
   inactive?: boolean; // 标记是否为非活跃 session
   currencyCode?: CurrencyCode;
   onSessionTerminated?: () => void; // 终止后的回调
+  sessionDetailHrefBuilder?: (sessionId: string) => string;
 }
 
 function formatDuration(durationMs: number | undefined): string {
@@ -124,6 +125,7 @@ export function ActiveSessionsTable({
   inactive = false,
   currencyCode = "USD",
   onSessionTerminated,
+  sessionDetailHrefBuilder,
 }: ActiveSessionsTableProps) {
   const t = useTranslations("dashboard.sessions");
   const [sessionToTerminate, setSessionToTerminate] = useState<string | null>(null);
@@ -416,7 +418,12 @@ export function ActiveSessionsTable({
                   </TableCell>
                   <TableCell className="text-center">
                     <div className="flex items-center gap-2 justify-center">
-                      <Link href={`/dashboard/sessions/${session.sessionId}/messages`}>
+                      <Link
+                        href={
+                          sessionDetailHrefBuilder?.(session.sessionId) ??
+                          `/dashboard/sessions/${session.sessionId}/messages`
+                        }
+                      >
                         <Button variant="ghost" size="sm">
                           <Eye className="h-4 w-4 mr-1" />
                           {t("actions.view")}
