@@ -237,7 +237,13 @@ describe("ProviderRichListItem dialog triggers", () => {
       trigger?.dispatchEvent(new MouseEvent("click", { bubbles: true }));
     });
 
-    expect(document.body.querySelector('[data-slot="provider-morph-dialog-content"]')).toBeTruthy();
+    const dialogContent = document.body.querySelector(
+      '[data-slot="provider-morph-dialog-content"]'
+    ) as HTMLDivElement | null;
+    expect(dialogContent).toBeTruthy();
+    expect(dialogContent?.className ?? "").toContain("p-3");
+    expect(dialogContent?.className ?? "").not.toContain("p-0");
+    expect(document.body.querySelector('[data-slot="provider-dialog-chrome"]')).toBeNull();
     expect(document.body.textContent).toContain("Edit provider form");
 
     unmount();

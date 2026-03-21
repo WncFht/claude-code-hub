@@ -3,7 +3,7 @@ import { describe, expect, test, vi } from "vitest";
 import { ProviderDialogFrame } from "./provider-dialog-frame";
 
 describe("ProviderDialogFrame", () => {
-  test("renders the provider dialog chrome slots and child content", () => {
+  test("renders a clean provider dialog shell without faux window chrome", () => {
     const html = renderToStaticMarkup(
       <ProviderDialogFrame>
         <div>Provider form body</div>
@@ -11,8 +11,8 @@ describe("ProviderDialogFrame", () => {
     );
 
     expect(html).toContain('data-slot="provider-dialog-frame"');
-    expect(html).toContain('data-slot="provider-dialog-glow"');
-    expect(html).toContain('data-slot="provider-dialog-chrome"');
+    expect(html).not.toContain('data-slot="provider-dialog-glow"');
+    expect(html).not.toContain('data-slot="provider-dialog-chrome"');
     expect(html).toContain("Provider form body");
   });
 

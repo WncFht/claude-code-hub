@@ -670,7 +670,7 @@ function ProviderFormContent({
       </div>
 
       {/* Footer */}
-      <div className="flex-shrink-0 px-6 py-4 border-t bg-card/50 backdrop-blur-sm">
+      <div className="flex-shrink-0 border-t border-border/60 px-6 pb-6 pt-4 bg-card/30 backdrop-blur-sm sm:px-8">
         {isEdit ? (
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <AlertDialog>
