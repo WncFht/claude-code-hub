@@ -6,6 +6,7 @@ import { CONSOLE_MODULES, type ConsoleModuleId } from "@/lib/console/module-regi
 import { CONSOLE_RUNTIME_ROUTES } from "@/lib/console/runtime-route-map";
 import { ConsoleScreenLoader } from "./console-screen-loader";
 import { ConsoleShell } from "./console-shell";
+import { ConsoleToolbarHost, ConsoleToolbarProvider } from "./console-toolbar-host";
 import { useConsoleRoute } from "./hooks/use-console-route";
 
 export interface ConsoleAppProps {
@@ -50,22 +51,25 @@ export function ConsoleApp({ bootstrap }: ConsoleAppProps) {
   });
 
   return (
-    <div
-      data-slot="console-entry"
-      data-current-path={currentPath}
-      data-requested-path={bootstrap.requestedPath}
-      data-default-path={bootstrap.defaultPath}
-      data-screen-id={activeRoute.screenId}
-      data-module-id={activeRoute.moduleId}
-    >
-      <ConsoleShell
-        currentPath={currentPath}
-        activeModuleLabel={moduleLabels[activeRoute.moduleId]}
-        activeRoute={activeRoute}
-        navigationItems={navigationItems}
+    <ConsoleToolbarProvider>
+      <div
+        data-slot="console-entry"
+        data-current-path={currentPath}
+        data-requested-path={bootstrap.requestedPath}
+        data-default-path={bootstrap.defaultPath}
+        data-screen-id={activeRoute.screenId}
+        data-module-id={activeRoute.moduleId}
       >
-        <ConsoleScreenLoader bootstrap={bootstrap} activeRoute={activeRoute} />
-      </ConsoleShell>
-    </div>
+        <ConsoleShell
+          currentPath={currentPath}
+          activeModuleLabel={moduleLabels[activeRoute.moduleId]}
+          activeRoute={activeRoute}
+          navigationItems={navigationItems}
+          toolbar={<ConsoleToolbarHost activeScreenId={activeRoute.screenId} />}
+        >
+          <ConsoleScreenLoader bootstrap={bootstrap} activeRoute={activeRoute} />
+        </ConsoleShell>
+      </div>
+    </ConsoleToolbarProvider>
   );
 }
