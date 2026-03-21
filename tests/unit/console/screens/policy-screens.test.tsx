@@ -378,12 +378,13 @@ describe("policy console screens", () => {
     expect(view.container.querySelector('[data-slot="word-list-table"]')).not.toBeNull();
     expect(view.container.querySelector('[data-slot="policy-module-page"]')).toBeNull();
 
-    const toolbarTabs = view.container.querySelector('[data-slot="policy-console-tabs"]');
-    expect(toolbarTabs).not.toBeNull();
-    expect(toolbarTabs?.querySelector('[data-tab-id="sensitive-words"]')).not.toBeNull();
-    expect(toolbarTabs?.querySelector('[data-tab-id="error-rules"]')).not.toBeNull();
-    expect(toolbarTabs?.querySelector('[data-tab-id="request-filters"]')).not.toBeNull();
-    expect(toolbarTabs?.querySelector('[data-tab-id="client-versions"]')).not.toBeNull();
+    const moduleTabs = view.container.querySelector('[data-slot="console-module-tabs"]');
+    expect(view.container.querySelector('[data-slot="policy-console-tabs"]')).toBeNull();
+    expect(moduleTabs).not.toBeNull();
+    expect(moduleTabs?.querySelector('[data-tab-id="sensitive-words"]')).not.toBeNull();
+    expect(moduleTabs?.querySelector('[data-tab-id="error-rules"]')).not.toBeNull();
+    expect(moduleTabs?.querySelector('[data-tab-id="request-filters"]')).not.toBeNull();
+    expect(moduleTabs?.querySelector('[data-tab-id="client-versions"]')).not.toBeNull();
 
     routingState.pathname = "/console/policy/error-rules";
     await view.rerender(<ConsoleApp bootstrap={makeBootstrap("/console/policy/error-rules")} />);

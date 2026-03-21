@@ -77,6 +77,8 @@ const messages = {
   },
   settings: {
     nav: {
+      providers: "Providers",
+      prices: "Pricing",
       sensitiveWords: "Sensitive Words",
       errorRules: "Error Rules",
       requestFilters: "Request Filters",
@@ -243,6 +245,42 @@ describe("ConsoleApp", () => {
 
     expect(preloadSpy).toHaveBeenCalledWith("providers-inventory");
     expect(preloadSpy).toHaveBeenCalledTimes(2);
+
+    await view.unmount();
+  });
+
+  test("renders shell-owned secondary module tabs and active screen titles from runtime metadata", async () => {
+    routingState.pathname = "/console/policy/request-filters";
+    const { ConsoleApp } = await import("@/components/console-app/console-app");
+
+    const view = await render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <ConsoleApp bootstrap={makeBootstrap("/console/overview")} />
+      </NextIntlClientProvider>
+    );
+
+    const header = view.container.querySelector('[data-slot="console-header"]');
+    const moduleTabs = view.container.querySelector('[data-slot="console-module-tabs"]');
+
+    expect(header?.querySelector('[data-slot="console-module-label"]')?.textContent).toContain(
+      "Policy"
+    );
+    expect(header?.querySelector('[data-slot="console-screen-label"]')?.textContent).toContain(
+      "Request Filters"
+    );
+    expect(moduleTabs).not.toBeNull();
+    expect(moduleTabs?.querySelector('[data-tab-id="sensitive-words"]')?.textContent).toContain(
+      "Sensitive Words"
+    );
+    expect(moduleTabs?.querySelector('[data-tab-id="error-rules"]')?.textContent).toContain(
+      "Error Rules"
+    );
+    expect(moduleTabs?.querySelector('[data-tab-id="request-filters"]')?.textContent).toContain(
+      "Request Filters"
+    );
+    expect(
+      moduleTabs?.querySelector('[data-tab-id="request-filters"]')?.getAttribute("data-active")
+    ).toBe("true");
 
     await view.unmount();
   });

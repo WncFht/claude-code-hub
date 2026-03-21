@@ -8,8 +8,6 @@ import { SensitiveWordsTableSkeleton } from "@/app/[locale]/settings/sensitive-w
 import { WordListTable } from "@/app/[locale]/settings/sensitive-words/_components/word-list-table";
 import { Section } from "@/components/section";
 import { getConsoleSensitiveWordsData } from "../../adapters/policy-bootstrap";
-import { useScreenToolbar } from "../../hooks/use-screen-toolbar";
-import { PolicyConsoleTabs } from "./policy-console-tabs";
 
 export default function PolicySensitiveWordsScreen() {
   const t = useTranslations("settings");
@@ -19,8 +17,6 @@ export default function PolicySensitiveWordsScreen() {
     refetchOnWindowFocus: false,
     staleTime: 30_000,
   });
-
-  useScreenToolbar("policy-sensitive-words", <PolicyConsoleTabs activeTab="sensitive-words" />);
 
   return (
     <div data-slot="console-screen" data-screen-id="policy-sensitive-words">

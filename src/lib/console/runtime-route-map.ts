@@ -23,12 +23,17 @@ export type ConsoleScreenId =
   | "system-notifications"
   | "system-logs";
 
+export type ConsoleRuntimeLabelKind = "console" | "settings-nav";
+
 export interface ConsoleRuntimeRouteDefinition {
   screenId: ConsoleScreenId;
   moduleId: ConsoleModuleId;
   consolePath: string;
+  labelKind: ConsoleRuntimeLabelKind;
+  labelKey: string;
   visibleForRoles: ConsoleRole[];
   matchKind: ConsoleRuntimeMatchKind;
+  secondaryTabId?: string;
   fullBleed: boolean;
   legacyPaths: string[];
 }
@@ -38,8 +43,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "overview-home",
     moduleId: "overview",
     consolePath: "/console/overview",
+    labelKind: "console",
+    labelKey: "dashboard",
     visibleForRoles: ["admin", "user"],
     matchKind: "exact",
+    secondaryTabId: "home",
     fullBleed: false,
     legacyPaths: ["/dashboard"],
   },
@@ -47,8 +55,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "overview-leaderboard",
     moduleId: "overview",
     consolePath: "/console/overview/leaderboard",
+    labelKind: "console",
+    labelKey: "leaderboard",
     visibleForRoles: ["admin", "user"],
     matchKind: "exact",
+    secondaryTabId: "leaderboard",
     fullBleed: false,
     legacyPaths: ["/dashboard/leaderboard"],
   },
@@ -56,8 +67,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "overview-availability",
     moduleId: "overview",
     consolePath: "/console/overview/availability",
+    labelKind: "console",
+    labelKey: "availability",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "availability",
     fullBleed: false,
     legacyPaths: ["/dashboard/availability"],
   },
@@ -65,8 +79,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "traffic-logs",
     moduleId: "traffic",
     consolePath: "/console/traffic/logs",
+    labelKind: "console",
+    labelKey: "logs",
     visibleForRoles: ["admin", "user"],
     matchKind: "exact",
+    secondaryTabId: "logs",
     fullBleed: false,
     legacyPaths: ["/dashboard/logs"],
   },
@@ -74,8 +91,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "traffic-users",
     moduleId: "traffic",
     consolePath: "/console/traffic/users",
+    labelKind: "console",
+    labelKey: "users",
     visibleForRoles: ["admin", "user"],
     matchKind: "exact",
+    secondaryTabId: "users",
     fullBleed: false,
     legacyPaths: ["/dashboard/users"],
   },
@@ -83,8 +103,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "traffic-sessions",
     moduleId: "traffic",
     consolePath: "/console/traffic/sessions",
+    labelKind: "console",
+    labelKey: "sessions",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "sessions",
     fullBleed: false,
     legacyPaths: ["/dashboard/sessions"],
   },
@@ -92,8 +115,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "traffic-session-messages",
     moduleId: "traffic",
     consolePath: "/console/traffic/sessions",
+    labelKind: "console",
+    labelKey: "sessions",
     visibleForRoles: ["admin"],
     matchKind: "session-messages",
+    secondaryTabId: "sessions",
     fullBleed: true,
     legacyPaths: ["/dashboard/sessions"],
   },
@@ -101,8 +127,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "traffic-quotas",
     moduleId: "traffic",
     consolePath: "/console/traffic/quotas",
+    labelKind: "console",
+    labelKey: "quotas",
     visibleForRoles: ["admin"],
     matchKind: "prefix",
+    secondaryTabId: "quotas",
     fullBleed: false,
     legacyPaths: ["/dashboard/quotas"],
   },
@@ -110,8 +139,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "traffic-my-quota",
     moduleId: "traffic",
     consolePath: "/console/traffic/my-quota",
+    labelKind: "console",
+    labelKey: "myQuota",
     visibleForRoles: ["user"],
     matchKind: "prefix",
+    secondaryTabId: "my-quota",
     fullBleed: false,
     legacyPaths: ["/dashboard/my-quota"],
   },
@@ -119,8 +151,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "providers-inventory",
     moduleId: "providers",
     consolePath: "/console/providers/inventory",
+    labelKind: "settings-nav",
+    labelKey: "providers",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "inventory",
     fullBleed: false,
     legacyPaths: ["/dashboard/providers", "/settings/providers"],
   },
@@ -128,8 +163,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "providers-pricing",
     moduleId: "providers",
     consolePath: "/console/providers/pricing",
+    labelKind: "settings-nav",
+    labelKey: "prices",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "pricing",
     fullBleed: false,
     legacyPaths: ["/settings/prices"],
   },
@@ -137,8 +175,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "policy-sensitive-words",
     moduleId: "policy",
     consolePath: "/console/policy/sensitive-words",
+    labelKind: "settings-nav",
+    labelKey: "sensitiveWords",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "sensitive-words",
     fullBleed: false,
     legacyPaths: ["/settings/sensitive-words"],
   },
@@ -146,8 +187,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "policy-error-rules",
     moduleId: "policy",
     consolePath: "/console/policy/error-rules",
+    labelKind: "settings-nav",
+    labelKey: "errorRules",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "error-rules",
     fullBleed: false,
     legacyPaths: ["/settings/error-rules"],
   },
@@ -155,8 +199,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "policy-request-filters",
     moduleId: "policy",
     consolePath: "/console/policy/request-filters",
+    labelKind: "settings-nav",
+    labelKey: "requestFilters",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "request-filters",
     fullBleed: false,
     legacyPaths: ["/settings/request-filters"],
   },
@@ -164,8 +211,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "policy-client-versions",
     moduleId: "policy",
     consolePath: "/console/policy/client-versions",
+    labelKind: "settings-nav",
+    labelKey: "clientVersions",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "client-versions",
     fullBleed: false,
     legacyPaths: ["/settings/client-versions"],
   },
@@ -173,8 +223,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "system-config",
     moduleId: "system",
     consolePath: "/console/system/config",
+    labelKind: "settings-nav",
+    labelKey: "config",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "config",
     fullBleed: false,
     legacyPaths: ["/settings", "/settings/config"],
   },
@@ -182,8 +235,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "system-data",
     moduleId: "system",
     consolePath: "/console/system/data",
+    labelKind: "settings-nav",
+    labelKey: "data",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "data",
     fullBleed: false,
     legacyPaths: ["/settings/data"],
   },
@@ -191,8 +247,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "system-notifications",
     moduleId: "system",
     consolePath: "/console/system/notifications",
+    labelKind: "settings-nav",
+    labelKey: "notifications",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "notifications",
     fullBleed: false,
     legacyPaths: ["/settings/notifications"],
   },
@@ -200,8 +259,11 @@ export const CONSOLE_RUNTIME_ROUTES: ConsoleRuntimeRouteDefinition[] = [
     screenId: "system-logs",
     moduleId: "system",
     consolePath: "/console/system/logs",
+    labelKind: "settings-nav",
+    labelKey: "logs",
     visibleForRoles: ["admin"],
     matchKind: "exact",
+    secondaryTabId: "logs",
     fullBleed: false,
     legacyPaths: ["/settings/logs"],
   },
@@ -241,4 +303,29 @@ export function getDefaultConsolePath(role: ConsoleRole) {
 export function resolveConsoleRuntimeRoute(pathname: string) {
   const normalizedPath = normalizePath(pathname);
   return CONSOLE_RUNTIME_ROUTES.find((route) => matchesRuntimeRoute(route, normalizedPath)) ?? null;
+}
+
+export function getVisibleConsoleRuntimeModuleTabs({
+  moduleId,
+  role,
+}: {
+  moduleId: ConsoleModuleId;
+  role: ConsoleRole;
+}) {
+  const tabs = new Map<string, ConsoleRuntimeRouteDefinition>();
+
+  for (const route of CONSOLE_RUNTIME_ROUTES) {
+    if (
+      route.moduleId !== moduleId ||
+      !route.secondaryTabId ||
+      !route.visibleForRoles.includes(role) ||
+      tabs.has(route.secondaryTabId)
+    ) {
+      continue;
+    }
+
+    tabs.set(route.secondaryTabId, route);
+  }
+
+  return [...tabs.values()];
 }

@@ -6,8 +6,6 @@ import { FilterTable } from "@/app/[locale]/settings/request-filters/_components
 import { RequestFiltersTableSkeleton } from "@/app/[locale]/settings/request-filters/_components/request-filters-skeleton";
 import { Section } from "@/components/section";
 import { getConsoleRequestFiltersData } from "../../adapters/policy-bootstrap";
-import { useScreenToolbar } from "../../hooks/use-screen-toolbar";
-import { PolicyConsoleTabs } from "./policy-console-tabs";
 
 export default function PolicyRequestFiltersScreen() {
   const t = useTranslations("settings.requestFilters");
@@ -17,8 +15,6 @@ export default function PolicyRequestFiltersScreen() {
     refetchOnWindowFocus: false,
     staleTime: 30_000,
   });
-
-  useScreenToolbar("policy-request-filters", <PolicyConsoleTabs activeTab="request-filters" />);
 
   return (
     <div data-slot="console-screen" data-screen-id="policy-request-filters">

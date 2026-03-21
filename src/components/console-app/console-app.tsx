@@ -4,6 +4,10 @@ import { useTranslations } from "next-intl";
 import type { ConsoleBootstrapPayload } from "@/lib/console/console-bootstrap";
 import { CONSOLE_MODULES, type ConsoleModuleId } from "@/lib/console/module-registry";
 import { CONSOLE_RUNTIME_ROUTES } from "@/lib/console/runtime-route-map";
+import {
+  getVisibleConsoleRuntimeModuleTabs,
+  type ConsoleRuntimeLabelKind,
+} from "@/lib/console/runtime-route-map";
 import { ConsoleScreenLoader } from "./console-screen-loader";
 import { ConsoleShell } from "./console-shell";
 import { ConsoleToolbarHost, ConsoleToolbarProvider } from "./console-toolbar-host";
@@ -25,10 +29,31 @@ function getModuleLabels(
   };
 }
 
+function getRouteLabel(
+  labelKind: ConsoleRuntimeLabelKind,
+  labelKey: string,
+  tConsoleRoutes: ReturnType<typeof useTranslations<"dashboard.console.routes">>,
+  tSettingsNav: ReturnType<typeof useTranslations<"settings.nav">>
+) {
+  if (labelKind === "settings-nav") {
+    return tSettingsNav(labelKey as never);
+  }
+
+  return tConsoleRoutes(labelKey as never);
+}
+
 export function ConsoleApp({ bootstrap }: ConsoleAppProps) {
   const tModules = useTranslations("dashboard.console.modules");
+  const tConsoleRoutes = useTranslations("dashboard.console.routes");
+  const tSettingsNav = useTranslations("settings.nav");
   const moduleLabels = getModuleLabels(tModules);
   const { currentPath, activeRoute } = useConsoleRoute(bootstrap);
+  const activeScreenLabel = getRouteLabel(
+    activeRoute.labelKind,
+    activeRoute.labelKey,
+    tConsoleRoutes,
+    tSettingsNav
+  );
 
   const navigationItems = CONSOLE_MODULES.flatMap((module) => {
     const route = CONSOLE_RUNTIME_ROUTES.find(
@@ -50,6 +75,16 @@ export function ConsoleApp({ bootstrap }: ConsoleAppProps) {
     ];
   });
 
+  const moduleTabs = getVisibleConsoleRuntimeModuleTabs({
+    moduleId: activeRoute.moduleId,
+    role: bootstrap.role,
+  }).map((route) => ({
+    id: route.secondaryTabId ?? route.screenId,
+    href: route.consolePath,
+    label: getRouteLabel(route.labelKind, route.labelKey, tConsoleRoutes, tSettingsNav),
+    active: route.secondaryTabId === activeRoute.secondaryTabId,
+  }));
+
   return (
     <ConsoleToolbarProvider>
       <div
@@ -63,8 +98,10 @@ export function ConsoleApp({ bootstrap }: ConsoleAppProps) {
         <ConsoleShell
           currentPath={currentPath}
           activeModuleLabel={moduleLabels[activeRoute.moduleId]}
+          activeScreenLabel={activeScreenLabel}
           activeRoute={activeRoute}
           navigationItems={navigationItems}
+          moduleTabs={moduleTabs}
           toolbar={<ConsoleToolbarHost activeScreenId={activeRoute.screenId} />}
         >
           <ConsoleScreenLoader bootstrap={bootstrap} activeRoute={activeRoute} />

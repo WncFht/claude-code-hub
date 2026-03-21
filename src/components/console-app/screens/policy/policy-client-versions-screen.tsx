@@ -10,8 +10,6 @@ import {
   ClientVersionsTableSkeleton,
 } from "@/app/[locale]/settings/client-versions/_components/client-versions-skeleton";
 import { getConsoleClientVersionsData } from "../../adapters/policy-bootstrap";
-import { useScreenToolbar } from "../../hooks/use-screen-toolbar";
-import { PolicyConsoleTabs } from "./policy-console-tabs";
 
 function ClientVersionsEmptyState() {
   const t = useTranslations("settings");
@@ -35,8 +33,6 @@ export default function PolicyClientVersionsScreen() {
     refetchOnWindowFocus: false,
     staleTime: 30_000,
   });
-
-  useScreenToolbar("policy-client-versions", <PolicyConsoleTabs activeTab="client-versions" />);
 
   return (
     <div data-slot="console-screen" data-screen-id="policy-client-versions">

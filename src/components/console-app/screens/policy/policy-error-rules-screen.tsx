@@ -9,8 +9,6 @@ import { RefreshCacheButton } from "@/app/[locale]/settings/error-rules/_compone
 import { RuleListTable } from "@/app/[locale]/settings/error-rules/_components/rule-list-table";
 import { Section } from "@/components/section";
 import { getConsoleErrorRulesData } from "../../adapters/policy-bootstrap";
-import { useScreenToolbar } from "../../hooks/use-screen-toolbar";
-import { PolicyConsoleTabs } from "./policy-console-tabs";
 
 export default function PolicyErrorRulesScreen() {
   const t = useTranslations("settings");
@@ -20,8 +18,6 @@ export default function PolicyErrorRulesScreen() {
     refetchOnWindowFocus: false,
     staleTime: 30_000,
   });
-
-  useScreenToolbar("policy-error-rules", <PolicyConsoleTabs activeTab="error-rules" />);
 
   return (
     <div data-slot="console-screen" data-screen-id="policy-error-rules">

@@ -1,9 +1,14 @@
 interface ConsoleHeaderProps {
   activeModuleLabel: string;
+  activeScreenLabel: string;
   currentPath: string;
 }
 
-export function ConsoleHeader({ activeModuleLabel, currentPath }: ConsoleHeaderProps) {
+export function ConsoleHeader({
+  activeModuleLabel,
+  activeScreenLabel,
+  currentPath,
+}: ConsoleHeaderProps) {
   return (
     <header
       data-slot="console-header"
@@ -14,7 +19,12 @@ export function ConsoleHeader({ activeModuleLabel, currentPath }: ConsoleHeaderP
           <div className="text-xs font-medium uppercase tracking-[0.28em] text-muted-foreground">
             Console
           </div>
-          <div className="text-lg font-semibold text-foreground">{activeModuleLabel}</div>
+          <div data-slot="console-module-label" className="text-sm text-muted-foreground">
+            {activeModuleLabel}
+          </div>
+          <div data-slot="console-screen-label" className="text-lg font-semibold text-foreground">
+            {activeScreenLabel}
+          </div>
         </div>
         <div className="hidden rounded-full border border-border/70 bg-card/70 px-3 py-1.5 text-xs text-muted-foreground md:block">
           {currentPath}
