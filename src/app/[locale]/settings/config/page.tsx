@@ -1,73 +1,16 @@
-import { getTranslations } from "next-intl/server";
-import { Suspense } from "react";
-import { Section } from "@/components/section";
-import { getSystemSettings } from "@/repository/system-config";
-import { SystemModulePage } from "../_components/system-module-page";
-import { AutoCleanupForm } from "./_components/auto-cleanup-form";
-import { SettingsConfigSkeleton } from "./_components/settings-config-skeleton";
-import { SystemSettingsForm } from "./_components/system-settings-form";
+import { redirectLegacyConsoleRoute } from "@/lib/console/legacy-route-redirect";
 
 export const dynamic = "force-dynamic";
 
-export default async function SettingsConfigPage() {
-  return (
-    <SystemModulePage role="admin" activeTab="config">
-      <Suspense fallback={<SettingsConfigSkeleton />}>
-        <SettingsConfigContent />
-      </Suspense>
-    </SystemModulePage>
-  );
-}
+export default async function SettingsConfigPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  const { locale } = await params;
 
-async function SettingsConfigContent() {
-  const t = await getTranslations("settings");
-  const settings = await getSystemSettings();
-
-  return (
-    <>
-      <Section
-        title={t("config.section.siteParams.title")}
-        description={t("config.section.siteParams.description")}
-        icon="settings"
-        variant="default"
-      >
-        <SystemSettingsForm
-          initialSettings={{
-            siteTitle: settings.siteTitle,
-            allowGlobalUsageView: settings.allowGlobalUsageView,
-            currencyDisplay: settings.currencyDisplay,
-            billingModelSource: settings.billingModelSource,
-            timezone: settings.timezone,
-            verboseProviderError: settings.verboseProviderError,
-            enableHttp2: settings.enableHttp2,
-            interceptAnthropicWarmupRequests: settings.interceptAnthropicWarmupRequests,
-            enableThinkingSignatureRectifier: settings.enableThinkingSignatureRectifier,
-            enableThinkingBudgetRectifier: settings.enableThinkingBudgetRectifier,
-            enableBillingHeaderRectifier: settings.enableBillingHeaderRectifier,
-            enableResponseInputRectifier: settings.enableResponseInputRectifier,
-            enableCodexSessionIdCompletion: settings.enableCodexSessionIdCompletion,
-            enableClaudeMetadataUserIdInjection: settings.enableClaudeMetadataUserIdInjection,
-            enableResponseFixer: settings.enableResponseFixer,
-            responseFixerConfig: settings.responseFixerConfig,
-            quotaDbRefreshIntervalSeconds: settings.quotaDbRefreshIntervalSeconds,
-            quotaLeasePercent5h: settings.quotaLeasePercent5h,
-            quotaLeasePercentDaily: settings.quotaLeasePercentDaily,
-            quotaLeasePercentWeekly: settings.quotaLeasePercentWeekly,
-            quotaLeasePercentMonthly: settings.quotaLeasePercentMonthly,
-            quotaLeaseCapUsd: settings.quotaLeaseCapUsd,
-          }}
-        />
-      </Section>
-
-      <Section
-        title={t("config.section.autoCleanup.title")}
-        description={t("config.section.autoCleanup.description")}
-        icon="trash"
-        iconColor="text-red-400"
-        variant="default"
-      >
-        <AutoCleanupForm settings={settings} />
-      </Section>
-    </>
-  );
+  return redirectLegacyConsoleRoute({
+    locale,
+    legacyPath: "/settings/config",
+  });
 }

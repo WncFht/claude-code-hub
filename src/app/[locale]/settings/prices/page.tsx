@@ -1,110 +1,19 @@
-import { getTranslations } from "next-intl/server";
-import { Suspense } from "react";
-import { getModelPrices, getModelPricesPaginated } from "@/actions/model-prices";
-import { Section } from "@/components/section";
-import { ProvidersModulePage } from "../providers/_components/providers-module-page";
-import { ModelPriceDrawer } from "./_components/model-price-drawer";
-import { PriceList } from "./_components/price-list";
-import { PricesSkeleton } from "./_components/prices-skeleton";
-import { SyncLiteLLMButton } from "./_components/sync-litellm-button";
-import { UploadPriceDialog } from "./_components/upload-price-dialog";
+import { redirectLegacyConsoleRoute } from "@/lib/console/legacy-route-redirect";
 
 export const dynamic = "force-dynamic";
 
-interface SettingsPricesPageProps {
-  searchParams: Promise<{
-    required?: string;
-    page?: string;
-    pageSize?: string;
-    size?: string;
-    search?: string;
-    source?: string;
-    litellmProvider?: string;
-  }>;
-}
+export default async function SettingsPricesPage({
+  params,
+  searchParams,
+}: {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
+  const [{ locale }, resolvedSearchParams] = await Promise.all([params, searchParams]);
 
-export default async function SettingsPricesPage({ searchParams }: SettingsPricesPageProps) {
-  return (
-    <ProvidersModulePage
-      activeTab="pricing"
-      inventoryHref="/settings/providers"
-      pricingHref="/settings/prices"
-    >
-      <Suspense fallback={<PricesSkeleton />}>
-        <SettingsPricesContent searchParams={searchParams} />
-      </Suspense>
-    </ProvidersModulePage>
-  );
-}
-
-async function SettingsPricesContent({ searchParams }: SettingsPricesPageProps) {
-  const t = await getTranslations("settings");
-  const params = await searchParams;
-
-  // 解析分页参数
-  const page = parseInt(params.page || "1", 10);
-  const pageSize = parseInt(params.pageSize || params.size || "50", 10);
-  const search = params.search?.trim() || undefined;
-  const source =
-    params.source === "manual" || params.source === "litellm" ? params.source : undefined;
-  const litellmProvider = params.litellmProvider?.trim() || undefined;
-
-  // 获取分页数据（搜索与过滤在 SQL 层面执行）
-  const pricesResult = await getModelPricesPaginated({
-    page,
-    pageSize,
-    search,
-    source,
-    litellmProvider,
+  return redirectLegacyConsoleRoute({
+    locale,
+    legacyPath: "/settings/prices",
+    searchParams: resolvedSearchParams,
   });
-  const isRequired = params.required === "true";
-
-  // 如果获取分页数据失败，降级到获取所有数据
-  let initialPrices = [];
-  let initialTotal = 0;
-  let initialPage = page;
-  let initialPageSize = pageSize;
-
-  if (pricesResult.ok) {
-    initialPrices = pricesResult.data?.data;
-    initialTotal = pricesResult.data?.total;
-    initialPage = pricesResult.data?.page;
-    initialPageSize = pricesResult.data?.pageSize;
-  } else {
-    // 降级处理：获取所有数据
-    const allPrices = await getModelPrices();
-    initialPrices = allPrices;
-    initialTotal = allPrices.length;
-    initialPage = 1;
-    initialPageSize = allPrices.length; // 显示所有数据
-  }
-
-  const isEmpty = initialTotal === 0;
-
-  return (
-    <Section
-      title={t("prices.section.title")}
-      description={t("prices.section.description")}
-      icon="dollar-sign"
-      iconColor="text-[#E25706]"
-      variant="default"
-      actions={
-        <div className="flex gap-2">
-          <ModelPriceDrawer mode="create" />
-          <SyncLiteLLMButton />
-          <UploadPriceDialog defaultOpen={isRequired && isEmpty} isRequired={isRequired} />
-        </div>
-      }
-    >
-      <PriceList
-        initialPrices={initialPrices}
-        initialTotal={initialTotal}
-        initialPage={initialPage}
-        initialPageSize={initialPageSize}
-        initialSearchTerm={search ?? ""}
-        initialSourceFilter={source ?? ""}
-        initialLitellmProviderFilter={litellmProvider ?? ""}
-      />
-    </Section>
-  );
 }

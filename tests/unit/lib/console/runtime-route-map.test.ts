@@ -1,10 +1,7 @@
 import { describe, expect, test } from "vitest";
 import { buildConsoleBootstrap } from "@/lib/console/console-bootstrap";
 import { mapLegacyConsolePath } from "@/lib/console/legacy-route-map";
-import {
-  getDefaultConsolePath,
-  resolveConsoleRuntimeRoute,
-} from "@/lib/console/runtime-route-map";
+import { getDefaultConsolePath, resolveConsoleRuntimeRoute } from "@/lib/console/runtime-route-map";
 
 describe("console runtime route map", () => {
   test("resolves overview and traffic console slugs", () => {
@@ -27,6 +24,9 @@ describe("console runtime route map", () => {
     expect(mapLegacyConsolePath("/dashboard/logs")).toBe("/console/traffic/logs");
     expect(mapLegacyConsolePath("/settings/client-versions")).toBe(
       "/console/policy/client-versions"
+    );
+    expect(mapLegacyConsolePath("/dashboard/quotas/providers")).toBe(
+      "/console/traffic/quotas/providers"
     );
   });
 
