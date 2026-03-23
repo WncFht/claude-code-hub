@@ -1,7 +1,7 @@
 import "server-only";
 
 import type { SQL } from "drizzle-orm";
-import { and, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
+import { and, eq, gte, inArray, isNull, lt, lte, sql } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { keys, messageRequest, usageLedger } from "@/drizzle/schema";
 import { TTLMap } from "@/lib/cache/ttl-map";
@@ -1040,33 +1040,25 @@ export async function getRateLimitEventStats(
   const timezone = await resolveSystemTimezone();
   const { user_id, provider_id, limit_type, start_time, end_time, key_id } = filters;
 
-  // 构建 WHERE 条件
-  const conditions: string[] = [
-    `${messageRequest.errorMessage.name} LIKE '%rate_limit_metadata%'`,
-    `${messageRequest.deletedAt.name} IS NULL`,
+  const conditions: SQL[] = [
+    sql`${messageRequest.errorMessage} LIKE ${"%rate_limit_metadata%"}`,
+    isNull(messageRequest.deletedAt),
   ];
 
-  const params: (string | number | Date)[] = [];
-  let paramIndex = 1;
-
   if (user_id !== undefined) {
-    conditions.push(`${messageRequest.userId.name} = $${paramIndex++}`);
-    params.push(user_id);
+    conditions.push(eq(messageRequest.userId, user_id));
   }
 
   if (provider_id !== undefined) {
-    conditions.push(`${messageRequest.providerId.name} = $${paramIndex++}`);
-    params.push(provider_id);
+    conditions.push(eq(messageRequest.providerId, provider_id));
   }
 
   if (start_time) {
-    conditions.push(`${messageRequest.createdAt.name} >= $${paramIndex++}`);
-    params.push(start_time);
+    conditions.push(gte(messageRequest.createdAt, start_time));
   }
 
   if (end_time) {
-    conditions.push(`${messageRequest.createdAt.name} <= $${paramIndex++}`);
-    params.push(end_time);
+    conditions.push(lte(messageRequest.createdAt, end_time));
   }
 
   // Key ID 过滤需要先查询 key 字符串
@@ -1074,8 +1066,7 @@ export async function getRateLimitEventStats(
   if (key_id !== undefined) {
     keyString = await getKeyStringByIdCached(key_id);
     if (keyString) {
-      conditions.push(`${messageRequest.key.name} = $${paramIndex++}`);
-      params.push(keyString);
+      conditions.push(eq(messageRequest.key, keyString));
     } else {
       // Key 不存在，返回空统计
       return {
@@ -1089,6 +1080,11 @@ export async function getRateLimitEventStats(
     }
   }
 
+  const whereClause = and(...conditions);
+  if (!whereClause) {
+    throw new Error("Rate limit event query requires at least one condition");
+  }
+
   // 查询所有符合条件的限流事件
   const query = sql`
     SELECT
@@ -1098,7 +1094,7 @@ export async function getRateLimitEventStats(
       ${messageRequest.errorMessage},
       DATE_TRUNC('hour', ${messageRequest.createdAt} AT TIME ZONE ${timezone}) AS hour
     FROM ${messageRequest}
-    WHERE ${sql.raw(conditions.join(" AND "))}
+    WHERE ${whereClause}
     ORDER BY ${messageRequest.createdAt}
   `;
 
