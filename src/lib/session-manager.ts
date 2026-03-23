@@ -19,7 +19,7 @@ import type {
   SessionUsageUpdate,
 } from "@/types/session";
 import type { SpecialSetting } from "@/types/special-settings";
-import { getRedisClient } from "./redis";
+import { getRedisClient, waitForRedisReady } from "./redis";
 import {
   getGlobalActiveSessionsKey,
   getKeyActiveSessionsKey,
@@ -88,6 +88,14 @@ type SessionResponseMeta = {
   url: string;
   statusCode: number;
 };
+
+const SESSION_DETAILS_REDIS_READY_TIMEOUT_MS = 1000;
+
+async function getSessionDetailsRedisClient() {
+  const redis = getRedisClient();
+  if (!redis) return null;
+  return await waitForRedisReady(redis, SESSION_DETAILS_REDIS_READY_TIMEOUT_MS);
+}
 
 /**
  * Session 管理器
@@ -235,8 +243,8 @@ export class SessionManager {
    * @returns 当前请求数量，不存在返回 0
    */
   static async getSessionRequestCount(sessionId: string): Promise<number> {
-    const redis = getRedisClient();
-    if (!redis || redis.status !== "ready") return 0;
+    const redis = await getSessionDetailsRedisClient();
+    if (!redis) return 0;
 
     try {
       const count = await redis.get(`session:${sessionId}:seq`);
@@ -1276,8 +1284,8 @@ export class SessionManager {
     sessionId: string,
     requestSequence?: number
   ): Promise<unknown | null> {
-    const redis = getRedisClient();
-    if (!redis || redis.status !== "ready") return null;
+    const redis = await getSessionDetailsRedisClient();
+    if (!redis) return null;
 
     try {
       // 优先尝试新格式
@@ -1469,8 +1477,8 @@ export class SessionManager {
     sessionId: string,
     requestSequence?: number
   ): Promise<unknown | null> {
-    const redis = getRedisClient();
-    if (!redis || redis.status !== "ready") return null;
+    const redis = await getSessionDetailsRedisClient();
+    if (!redis) return null;
 
     try {
       const sequence = normalizeRequestSequence(requestSequence);
@@ -1518,8 +1526,8 @@ export class SessionManager {
     sessionId: string,
     requestSequence?: number
   ): Promise<SpecialSetting[] | null> {
-    const redis = getRedisClient();
-    if (!redis || redis.status !== "ready") return null;
+    const redis = await getSessionDetailsRedisClient();
+    if (!redis) return null;
 
     try {
       const sequence = normalizeRequestSequence(requestSequence);
@@ -1569,8 +1577,8 @@ export class SessionManager {
     sessionId: string,
     requestSequence?: number
   ): Promise<SessionRequestMeta | null> {
-    const redis = getRedisClient();
-    if (!redis || redis.status !== "ready") return null;
+    const redis = await getSessionDetailsRedisClient();
+    if (!redis) return null;
 
     try {
       const sequence = normalizeRequestSequence(requestSequence);
@@ -1622,8 +1630,8 @@ export class SessionManager {
     sessionId: string,
     requestSequence?: number
   ): Promise<SessionRequestMeta | null> {
-    const redis = getRedisClient();
-    if (!redis || redis.status !== "ready") return null;
+    const redis = await getSessionDetailsRedisClient();
+    if (!redis) return null;
 
     try {
       const sequence = normalizeRequestSequence(requestSequence);
@@ -1675,8 +1683,8 @@ export class SessionManager {
     sessionId: string,
     requestSequence?: number
   ): Promise<SessionResponseMeta | null> {
-    const redis = getRedisClient();
-    if (!redis || redis.status !== "ready") return null;
+    const redis = await getSessionDetailsRedisClient();
+    if (!redis) return null;
 
     try {
       const sequence = normalizeRequestSequence(requestSequence);
@@ -1749,8 +1757,8 @@ export class SessionManager {
     sessionId: string,
     requestSequence?: number
   ): Promise<Record<string, string> | null> {
-    const redis = getRedisClient();
-    if (!redis || redis.status !== "ready") return null;
+    const redis = await getSessionDetailsRedisClient();
+    if (!redis) return null;
 
     try {
       const sequence = normalizeRequestSequence(requestSequence);
@@ -1769,8 +1777,8 @@ export class SessionManager {
     sessionId: string,
     requestSequence?: number
   ): Promise<Record<string, string> | null> {
-    const redis = getRedisClient();
-    if (!redis || redis.status !== "ready") return null;
+    const redis = await getSessionDetailsRedisClient();
+    if (!redis) return null;
 
     try {
       const sequence = normalizeRequestSequence(requestSequence);
@@ -1796,8 +1804,8 @@ export class SessionManager {
     sessionId: string,
     requestSequence?: number
   ): Promise<string | null> {
-    const redis = getRedisClient();
-    if (!redis || redis.status !== "ready") return null;
+    const redis = await getSessionDetailsRedisClient();
+    if (!redis) return null;
 
     try {
       // 优先尝试新格式

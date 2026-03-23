@@ -2,6 +2,7 @@ import Redis, { type RedisOptions } from "ioredis";
 import { logger } from "@/lib/logger";
 
 let redisClient: Redis | null = null;
+const DEFAULT_REDIS_READY_WAIT_TIMEOUT_MS = 1000;
 
 function maskRedisUrl(redisUrl: string) {
   try {
@@ -151,6 +152,55 @@ export function getRedisClient(input?: { allowWhenRateLimitDisabled?: boolean })
     logger.error("[Redis] Failed to initialize:", error, { redisUrl: safeRedisUrl });
     return null;
   }
+}
+
+export async function waitForRedisReady(
+  client: Redis | null,
+  timeoutMs: number = DEFAULT_REDIS_READY_WAIT_TIMEOUT_MS
+): Promise<Redis | null> {
+  if (!client) return null;
+  if (client.status === "ready") return client;
+  if (client.status === "end") return null;
+
+  return await new Promise((resolve) => {
+    let settled = false;
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+
+    const cleanup = () => {
+      client.off("ready", onReady);
+      client.off("end", onEnd);
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    };
+
+    const finish = (value: Redis | null) => {
+      if (settled) return;
+      settled = true;
+      cleanup();
+      resolve(value);
+    };
+
+    function onReady() {
+      finish(client);
+    }
+
+    function onEnd() {
+      finish(null);
+    }
+
+    client.once("ready", onReady);
+    client.once("end", onEnd);
+
+    if (client.status === "ready") {
+      finish(client);
+      return;
+    }
+
+    timeoutId = setTimeout(() => {
+      finish(client.status === "ready" ? client : null);
+    }, timeoutMs);
+  });
 }
 
 export async function closeRedis(): Promise<void> {
