@@ -507,6 +507,7 @@ export async function findMessageRequestAuditBySessionIdAndSequence(
   sessionId: string,
   requestSequence: number
 ): Promise<{
+  createdAt: Date | string | null;
   statusCode: number | null;
   blockedBy: string | null;
   blockedReason: string | null;
@@ -517,6 +518,7 @@ export async function findMessageRequestAuditBySessionIdAndSequence(
 } | null> {
   const [row] = await db
     .select({
+      createdAt: messageRequest.createdAt,
       statusCode: messageRequest.statusCode,
       blockedBy: messageRequest.blockedBy,
       blockedReason: messageRequest.blockedReason,
@@ -537,6 +539,7 @@ export async function findMessageRequestAuditBySessionIdAndSequence(
 
   if (!row) return null;
   return {
+    createdAt: row.createdAt,
     statusCode: row.statusCode,
     blockedBy: row.blockedBy,
     blockedReason: row.blockedReason,

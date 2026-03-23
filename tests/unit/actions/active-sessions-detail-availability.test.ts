@@ -122,6 +122,78 @@ describe("getSessionDetails - detail availability", () => {
     process.env.SESSION_TTL = ORIGINAL_SESSION_TTL;
   });
 
+  test("uses the selected request timestamp when older requests expire before newer ones in the same session", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-23T10:25:00.000Z"));
+
+    aggregateSessionStatsMock.mockResolvedValue({
+      sessionId: "sess_x",
+      requestCount: 25,
+      totalCostUsd: "0",
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalCacheCreationTokens: 0,
+      totalCacheReadTokens: 0,
+      totalDurationMs: 0,
+      firstRequestAt: new Date("2026-03-23T10:18:43.261Z"),
+      lastRequestAt: new Date("2026-03-23T10:24:02.409Z"),
+      providers: [],
+      models: [],
+      userName: "u",
+      userId: 1,
+      keyName: "k",
+      keyId: 1,
+      userAgent: "Claude-Code/1.0",
+      apiType: "chat",
+      cacheTtlApplied: null,
+    });
+    getSessionRequestCountMock.mockResolvedValue(25);
+    findMessageRequestAuditBySessionIdAndSequenceMock
+      .mockResolvedValueOnce({
+        createdAt: new Date("2026-03-23T10:19:13.223Z"),
+        statusCode: 200,
+        blockedBy: null,
+        blockedReason: null,
+        cacheTtlApplied: null,
+        context1mApplied: null,
+        swapCacheTtlApplied: null,
+        specialSettings: null,
+      })
+      .mockResolvedValueOnce({
+        createdAt: new Date("2026-03-23T10:21:33.246Z"),
+        statusCode: 200,
+        blockedBy: null,
+        blockedReason: null,
+        cacheTtlApplied: null,
+        context1mApplied: null,
+        swapCacheTtlApplied: null,
+        specialSettings: null,
+      });
+
+    const { getSessionDetails } = await import("@/actions/active-sessions");
+    const olderRequest = await getSessionDetails("sess_x", 4);
+    const newerRequest = await getSessionDetails("sess_x", 18);
+
+    expect(olderRequest.ok).toBe(true);
+    expect(newerRequest.ok).toBe(true);
+    if (!olderRequest.ok || !newerRequest.ok) return;
+
+    expect(olderRequest.data.detailAvailability).toEqual({
+      reason: "expired",
+      missingAllDetails: true,
+      ttlSeconds: 300,
+      lastRequestAt: new Date("2026-03-23T10:19:13.223Z"),
+      expiredAt: new Date("2026-03-23T10:24:13.223Z"),
+    });
+    expect(newerRequest.data.detailAvailability).toEqual({
+      reason: "unknown",
+      missingAllDetails: true,
+      ttlSeconds: 300,
+      lastRequestAt: new Date("2026-03-23T10:21:33.246Z"),
+      expiredAt: new Date("2026-03-23T10:26:33.246Z"),
+    });
+  });
+
   test("marks Redis-backed request details as expired once SESSION_TTL has elapsed", async () => {
     vi.useFakeTimers();
     vi.setSystemTime(new Date("2026-03-23T09:10:00.000Z"));
@@ -174,6 +246,55 @@ describe("getSessionDetails - detail availability", () => {
     if (!result.ok) return;
 
     expect(result.data.detailAvailability.reason).toBe("expired");
+    expect(result.data.detailAvailability.expiredAt).toEqual(new Date("2026-03-23T09:12:31.656Z"));
+  });
+
+  test("normalizes the selected request timestamp when it comes back as a database string", async () => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-03-23T09:15:00.000Z"));
+
+    aggregateSessionStatsMock.mockResolvedValue({
+      sessionId: "sess_x",
+      requestCount: 2,
+      totalCostUsd: "0",
+      totalInputTokens: 0,
+      totalOutputTokens: 0,
+      totalCacheCreationTokens: 0,
+      totalCacheReadTokens: 0,
+      totalDurationMs: 0,
+      firstRequestAt: "2026-03-23 16:58:00+08",
+      lastRequestAt: "2026-03-23 17:30:00+08",
+      providers: [],
+      models: [],
+      userName: "u",
+      userId: 1,
+      keyName: "k",
+      keyId: 1,
+      userAgent: "Claude-Code/1.0",
+      apiType: "chat",
+      cacheTtlApplied: null,
+    });
+    findMessageRequestAuditBySessionIdAndSequenceMock.mockResolvedValue({
+      createdAt: "2026-03-23 17:07:31.65667+08",
+      statusCode: 200,
+      blockedBy: null,
+      blockedReason: null,
+      cacheTtlApplied: null,
+      context1mApplied: null,
+      swapCacheTtlApplied: null,
+      specialSettings: null,
+    });
+
+    const { getSessionDetails } = await import("@/actions/active-sessions");
+    const result = await getSessionDetails("sess_x", 2);
+
+    expect(result.ok).toBe(true);
+    if (!result.ok) return;
+
+    expect(result.data.detailAvailability.reason).toBe("expired");
+    expect(result.data.detailAvailability.lastRequestAt).toEqual(
+      new Date("2026-03-23T09:07:31.656Z")
+    );
     expect(result.data.detailAvailability.expiredAt).toEqual(new Date("2026-03-23T09:12:31.656Z"));
   });
 });

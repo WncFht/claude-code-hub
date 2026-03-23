@@ -67,6 +67,7 @@ function normalizeSessionTimestamp(value: Date | string | null | undefined): Dat
 
 function buildSessionDetailAvailability(params: {
   sessionStats: Awaited<ReturnType<typeof import("@/repository/message").aggregateSessionStats>>;
+  requestCreatedAt: Date | string | null | undefined;
   requestBody: unknown | null;
   messages: unknown | null;
   response: string | null;
@@ -77,7 +78,9 @@ function buildSessionDetailAvailability(params: {
 }): SessionDetailAvailability {
   const ttlSeconds = getSessionDetailsTtlSeconds();
   const detailsPresent = hasSessionDetailPayload(params);
-  const lastRequestAt = normalizeSessionTimestamp(params.sessionStats?.lastRequestAt ?? null);
+  const lastRequestAt =
+    normalizeSessionTimestamp(params.requestCreatedAt) ??
+    normalizeSessionTimestamp(params.sessionStats?.lastRequestAt ?? null);
   const expiredAt = lastRequestAt ? new Date(lastRequestAt.getTime() + ttlSeconds * 1000) : null;
 
   if (detailsPresent) {
@@ -775,6 +778,7 @@ export async function getSessionDetails(
     });
     const detailAvailability = buildSessionDetailAvailability({
       sessionStats,
+      requestCreatedAt: requestAudit?.createdAt ?? null,
       requestBody: normalizedRequestBody,
       messages: normalizedMessages,
       response,
