@@ -205,6 +205,52 @@ describe("SessionMessagesDetailsTabs", () => {
     unmount();
   });
 
+  test("uses the explicit empty-state message when detail cache expiry is already known", () => {
+    const expiredMessage = "Detailed request cache expired at 2026-03-23 09:05:00 UTC";
+
+    const { container, unmount } = renderWithIntl(
+      <SessionMessagesDetailsTabs
+        requestBody={null}
+        messages={null}
+        specialSettings={null}
+        response={null}
+        requestHeaders={null}
+        responseHeaders={null}
+        requestMeta={{ clientUrl: null, upstreamUrl: null, method: null }}
+        responseMeta={{ upstreamUrl: null, statusCode: null }}
+        emptyStateMessage={expiredMessage}
+      />
+    );
+
+    const requestBodyTab = container.querySelector(
+      "[data-testid='session-tab-request-body']"
+    ) as HTMLElement;
+    expect(requestBodyTab.textContent).toContain(expiredMessage);
+    expect(requestBodyTab.textContent).not.toContain(dashboardMessages.sessions.details.storageTip);
+
+    const responseBodyTrigger = container.querySelector(
+      "[data-testid='session-tab-trigger-response-body']"
+    ) as HTMLElement;
+    click(responseBodyTrigger);
+
+    const responseBodyTab = container.querySelector(
+      "[data-testid='session-tab-response-body']"
+    ) as HTMLElement;
+    expect(responseBodyTab.textContent).toContain(expiredMessage);
+
+    const specialSettingsTrigger = container.querySelector(
+      "[data-testid='session-tab-trigger-special-settings']"
+    ) as HTMLElement;
+    click(specialSettingsTrigger);
+
+    const specialSettingsTab = container.querySelector(
+      "[data-testid='session-tab-special-settings']"
+    ) as HTMLElement;
+    expect(specialSettingsTab.textContent).toContain(dashboardMessages.sessions.details.noData);
+
+    unmount();
+  });
+
   test("uses larger hard-limit threshold (<= 30,000 lines) for request headers", () => {
     const requestHeaders = Object.fromEntries(
       Array.from({ length: 10_100 }, (_, i) => [`x-h-${i}`, `v-${i}`])

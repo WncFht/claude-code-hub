@@ -1,6 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { formatInTimeZone } from "date-fns-tz";
 import {
   ArrowLeft,
   Check,
@@ -13,7 +14,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useParams, useSearchParams } from "next/navigation";
-import { useTranslations } from "next-intl";
+import { useTimeZone, useTranslations } from "next-intl";
 import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import { getSessionDetails, terminateActiveSession } from "@/actions/active-sessions";
@@ -64,6 +65,7 @@ export function SessionMessagesClient({
   backHref,
 }: SessionMessagesClientProps = {}) {
   const t = useTranslations("dashboard.sessions");
+  const timeZone = useTimeZone() ?? "UTC";
 
   const params = useParams();
   const searchParams = useSearchParams();
@@ -109,6 +111,13 @@ export function SessionMessagesClient({
   const [currentSequence, setCurrentSequence] = useState<number | null>(null);
   const [prevSequence, setPrevSequence] = useState<number | null>(null);
   const [nextSequence, setNextSequence] = useState<number | null>(null);
+  const [detailAvailability, setDetailAvailability] = useState<
+    | Extract<
+        Awaited<ReturnType<typeof getSessionDetails>>,
+        { ok: true }
+      >["data"]["detailAvailability"]
+    | null
+  >(null);
 
   // UI State
   const [isLoading, setIsLoading] = useState(true);
@@ -134,6 +143,7 @@ export function SessionMessagesClient({
     setCurrentSequence(null);
     setPrevSequence(null);
     setNextSequence(null);
+    setDetailAvailability(null);
   }, []);
 
   const { data: systemSettings } = useQuery({
@@ -142,6 +152,25 @@ export function SessionMessagesClient({
   });
 
   const currencyCode = systemSettings?.currencyDisplay || "USD";
+  const hasExpiredDetailCache =
+    detailAvailability?.reason === "expired" && detailAvailability.missingAllDetails;
+  const formatExpiredDetailTimestamp = (value: Date | string | null) => {
+    if (!value) return null;
+    return formatInTimeZone(new Date(value), timeZone, "yyyy-MM-dd HH:mm:ss");
+  };
+  const formattedDetailLastRequestAt = formatExpiredDetailTimestamp(
+    detailAvailability?.lastRequestAt ?? null
+  );
+  const formattedDetailExpiredAt = formatExpiredDetailTimestamp(
+    detailAvailability?.expiredAt ?? null
+  );
+  const expiredDetailEmptyStateMessage = hasExpiredDetailCache
+    ? t("details.expiredStorageTip", {
+        lastRequestAt: formattedDetailLastRequestAt ?? "-",
+        expiredAt: formattedDetailExpiredAt ?? "-",
+        ttlSeconds: detailAvailability?.ttlSeconds ?? 0,
+      })
+    : undefined;
 
   const handleSelectRequest = useCallback(
     (seq: number) => {
@@ -178,6 +207,7 @@ export function SessionMessagesClient({
           setCurrentSequence(result.data.currentSequence);
           setPrevSequence(result.data.prevSequence);
           setNextSequence(result.data.nextSequence);
+          setDetailAvailability(result.data.detailAvailability);
         } else {
           resetDetailsState();
           setError(result.error || t("status.fetchFailed"));
@@ -521,6 +551,53 @@ export function SessionMessagesClient({
                     )}
                   </div>
 
+                  {hasExpiredDetailCache && (
+                    <div
+                      data-testid="session-detail-expired-notice"
+                      className="rounded-xl border border-amber-500/30 bg-amber-500/10 p-4 text-amber-950 dark:text-amber-100"
+                    >
+                      <div className="flex items-start gap-3">
+                        <Info className="mt-0.5 h-5 w-5 shrink-0 text-amber-600 dark:text-amber-300" />
+                        <div className="space-y-3">
+                          <div>
+                            <h2 className="text-sm font-semibold">
+                              {t("details.detailExpiredTitle")}
+                            </h2>
+                            <p className="mt-1 text-sm text-amber-900/80 dark:text-amber-100/80">
+                              {t("details.detailExpiredDescription")}
+                            </p>
+                          </div>
+                          <div className="grid gap-2 text-sm sm:grid-cols-3">
+                            <div className="rounded-lg border border-amber-500/20 bg-background/70 p-3">
+                              <div className="text-xs uppercase tracking-wide text-amber-700/70 dark:text-amber-100/70">
+                                {t("details.detailExpiredLastRequestAt")}
+                              </div>
+                              <div className="mt-1 font-mono text-xs sm:text-sm">
+                                {formattedDetailLastRequestAt ?? "-"}
+                              </div>
+                            </div>
+                            <div className="rounded-lg border border-amber-500/20 bg-background/70 p-3">
+                              <div className="text-xs uppercase tracking-wide text-amber-700/70 dark:text-amber-100/70">
+                                {t("details.detailExpiredAt")}
+                              </div>
+                              <div className="mt-1 font-mono text-xs sm:text-sm">
+                                {formattedDetailExpiredAt ?? "-"}
+                              </div>
+                            </div>
+                            <div className="rounded-lg border border-amber-500/20 bg-background/70 p-3">
+                              <div className="text-xs uppercase tracking-wide text-amber-700/70 dark:text-amber-100/70">
+                                {t("details.detailExpiredTtl")}
+                              </div>
+                              <div className="mt-1 font-mono text-xs sm:text-sm">
+                                {detailAvailability?.ttlSeconds ?? 0}s
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
                   {/* Main Content - No more extra Card wrapper */}
                   <SessionMessagesDetailsTabs
                     messages={messages}
@@ -533,6 +610,7 @@ export function SessionMessagesClient({
                     responseMeta={responseMeta}
                     onCopyResponse={handleCopyResponse}
                     isResponseCopied={copiedResponse}
+                    emptyStateMessage={expiredDetailEmptyStateMessage}
                   />
 
                   {/* Empty State */}
@@ -545,7 +623,9 @@ export function SessionMessagesClient({
                         <div className="text-muted-foreground text-lg mb-2 font-medium">
                           {t("details.noDetailedData")}
                         </div>
-                        <p className="text-sm text-muted-foreground">{t("details.storageTip")}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {expiredDetailEmptyStateMessage ?? t("details.storageTip")}
+                        </p>
                       </div>
                     )}
                 </>

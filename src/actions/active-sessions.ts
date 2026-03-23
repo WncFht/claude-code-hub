@@ -15,6 +15,90 @@ import type { SpecialSetting } from "@/types/special-settings";
 import { summarizeTerminateSessionsBatch } from "./active-sessions-utils";
 import type { ActionResult } from "./types";
 
+type SessionDetailAvailability = {
+  reason: "available" | "expired" | "unknown";
+  missingAllDetails: boolean;
+  ttlSeconds: number;
+  lastRequestAt: Date | null;
+  expiredAt: Date | null;
+};
+
+function getSessionDetailsTtlSeconds(): number {
+  const parsed = Number.parseInt(process.env.SESSION_TTL ?? "", 10);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : 300;
+}
+
+function hasSessionDetailPayload(params: {
+  requestBody: unknown | null;
+  messages: unknown | null;
+  response: string | null;
+  requestHeaders: Record<string, string> | null;
+  responseHeaders: Record<string, string> | null;
+  requestMeta: { clientUrl: string | null; upstreamUrl: string | null; method: string | null };
+  responseMeta: { upstreamUrl: string | null; statusCode: number | null };
+}): boolean {
+  return (
+    params.requestBody !== null ||
+    params.messages !== null ||
+    params.response !== null ||
+    (params.requestHeaders !== null && Object.keys(params.requestHeaders).length > 0) ||
+    (params.responseHeaders !== null && Object.keys(params.responseHeaders).length > 0) ||
+    params.requestMeta.clientUrl !== null ||
+    params.requestMeta.upstreamUrl !== null ||
+    params.requestMeta.method !== null ||
+    params.responseMeta.upstreamUrl !== null ||
+    params.responseMeta.statusCode !== null
+  );
+}
+
+function normalizeSessionTimestamp(value: Date | string | null | undefined): Date | null {
+  if (!value) return null;
+  if (value instanceof Date) {
+    return Number.isNaN(value.getTime()) ? null : value;
+  }
+
+  const normalizedValue = (value.includes("T") ? value : value.replace(" ", "T")).replace(
+    /([+-]\d{2})(?!:?\d{2})$/,
+    "$1:00"
+  );
+  const parsed = new Date(normalizedValue);
+  return Number.isNaN(parsed.getTime()) ? null : parsed;
+}
+
+function buildSessionDetailAvailability(params: {
+  sessionStats: Awaited<ReturnType<typeof import("@/repository/message").aggregateSessionStats>>;
+  requestBody: unknown | null;
+  messages: unknown | null;
+  response: string | null;
+  requestHeaders: Record<string, string> | null;
+  responseHeaders: Record<string, string> | null;
+  requestMeta: { clientUrl: string | null; upstreamUrl: string | null; method: string | null };
+  responseMeta: { upstreamUrl: string | null; statusCode: number | null };
+}): SessionDetailAvailability {
+  const ttlSeconds = getSessionDetailsTtlSeconds();
+  const detailsPresent = hasSessionDetailPayload(params);
+  const lastRequestAt = normalizeSessionTimestamp(params.sessionStats?.lastRequestAt ?? null);
+  const expiredAt = lastRequestAt ? new Date(lastRequestAt.getTime() + ttlSeconds * 1000) : null;
+
+  if (detailsPresent) {
+    return {
+      reason: "available",
+      missingAllDetails: false,
+      ttlSeconds,
+      lastRequestAt,
+      expiredAt,
+    };
+  }
+
+  return {
+    reason: expiredAt !== null && expiredAt.getTime() <= Date.now() ? "expired" : "unknown",
+    missingAllDetails: true,
+    ttlSeconds,
+    lastRequestAt,
+    expiredAt,
+  };
+}
+
 /**
  * 获取所有活跃 session 的详细信息（使用聚合数据 + 批量查询 + 缓存）
  * 用于实时监控页面
@@ -547,6 +631,7 @@ export async function getSessionDetails(
     currentSequence: number | null;
     prevSequence: number | null;
     nextSequence: number | null;
+    detailAvailability: SessionDetailAvailability;
   }>
 > {
   try {
@@ -688,6 +773,16 @@ export async function getSessionDetails(
       cacheTtlApplied: requestAudit?.cacheTtlApplied ?? null,
       context1mApplied: requestAudit?.context1mApplied ?? null,
     });
+    const detailAvailability = buildSessionDetailAvailability({
+      sessionStats,
+      requestBody: normalizedRequestBody,
+      messages: normalizedMessages,
+      response,
+      requestHeaders,
+      responseHeaders,
+      requestMeta,
+      responseMeta,
+    });
 
     return {
       ok: true,
@@ -704,6 +799,7 @@ export async function getSessionDetails(
         currentSequence: effectiveSequence ?? null,
         prevSequence: adjacent.prevSequence,
         nextSequence: adjacent.nextSequence,
+        detailAvailability,
       },
     };
   } catch (error) {

@@ -152,6 +152,65 @@ afterEach(() => {
 });
 
 describe("SessionMessagesClient (request export actions)", () => {
+  test("renders an explicit expired-detail notice when all request details aged out", async () => {
+    getSessionDetailsMock.mockResolvedValue({
+      ok: true,
+      data: {
+        requestBody: null,
+        messages: null,
+        response: null,
+        requestHeaders: null,
+        responseHeaders: null,
+        requestMeta: {
+          clientUrl: null,
+          upstreamUrl: null,
+          method: null,
+        },
+        responseMeta: { upstreamUrl: null, statusCode: null },
+        specialSettings: null,
+        sessionStats: {
+          userAgent: "Claude-Code/1.0",
+          requestCount: 3,
+          firstRequestAt: new Date("2026-03-23T09:01:00.000Z"),
+          lastRequestAt: new Date("2026-03-23T09:07:31.000Z"),
+          totalDurationMs: 0,
+          providers: [],
+          models: [],
+          totalInputTokens: 0,
+          totalOutputTokens: 0,
+          totalCacheCreationTokens: 0,
+          totalCacheReadTokens: 0,
+          totalCostUsd: "0",
+        },
+        currentSequence: 2,
+        prevSequence: 1,
+        nextSequence: 3,
+        detailAvailability: {
+          reason: "expired",
+          missingAllDetails: true,
+          ttlSeconds: 300,
+          lastRequestAt: new Date("2026-03-23T09:07:31.000Z"),
+          expiredAt: new Date("2026-03-23T09:12:31.000Z"),
+        },
+      },
+    });
+
+    const { container, unmount } = renderClient(<SessionMessagesClient />);
+    await flushEffects();
+
+    const notice = container.querySelector(
+      "[data-testid='session-detail-expired-notice']"
+    ) as HTMLElement | null;
+
+    expect(notice).not.toBeNull();
+    expect(notice?.textContent).toContain("details.detailExpiredTitle");
+    expect(notice?.textContent).toContain("2026-03-23 09:07:31");
+    expect(notice?.textContent).toContain("2026-03-23 09:12:31");
+    expect(notice?.textContent).toContain("300s");
+
+    unmount();
+  });
+
   test("selected seq in URL overrides currentSequence for request export", async () => {
     seqParamValue = "3";
     getSessionDetailsMock.mockResolvedValue({

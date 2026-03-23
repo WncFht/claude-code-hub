@@ -53,6 +53,7 @@ interface SessionMessagesDetailsTabsProps {
   responseMeta: { upstreamUrl: string | null; statusCode: number | null };
   onCopyResponse?: () => void;
   isResponseCopied?: boolean;
+  emptyStateMessage?: string;
 }
 
 export function SessionMessagesDetailsTabs({
@@ -66,9 +67,11 @@ export function SessionMessagesDetailsTabs({
   responseMeta,
   onCopyResponse,
   isResponseCopied,
+  emptyStateMessage,
 }: SessionMessagesDetailsTabsProps) {
   const t = useTranslations("dashboard.sessions");
   const codeExpandedMaxHeight = "calc(var(--cch-viewport-height, 100vh) - 260px)";
+  const detailEmptyStateMessage = emptyStateMessage ?? t("details.storageTip");
 
   // 后端已根据 STORE_SESSION_MESSAGES 配置进行脱敏，前端直接显示
   const requestBodyContent = useMemo(() => {
@@ -244,7 +247,7 @@ export function SessionMessagesDetailsTabs({
           data-testid="session-tab-request-headers"
         >
           {formattedRequestHeaders === null ? (
-            <EmptyState message={t("details.storageTip")} />
+            <EmptyState message={detailEmptyStateMessage} />
           ) : (
             <CodeDisplay
               content={formattedRequestHeaders}
@@ -266,7 +269,7 @@ export function SessionMessagesDetailsTabs({
           data-testid="session-tab-request-body"
         >
           {requestBodyContent === null ? (
-            <EmptyState message={t("details.storageTip")} />
+            <EmptyState message={detailEmptyStateMessage} />
           ) : (
             <CodeDisplay
               content={requestBodyContent}
@@ -288,7 +291,7 @@ export function SessionMessagesDetailsTabs({
           data-testid="session-tab-request-messages"
         >
           {requestMessagesContent === null ? (
-            <EmptyState message={t("details.storageTip")} />
+            <EmptyState message={detailEmptyStateMessage} />
           ) : (
             <CodeDisplay
               content={requestMessagesContent}
@@ -332,7 +335,7 @@ export function SessionMessagesDetailsTabs({
           data-testid="session-tab-response-headers"
         >
           {formattedResponseHeaders === null ? (
-            <EmptyState message={t("details.storageTip")} />
+            <EmptyState message={detailEmptyStateMessage} />
           ) : (
             <CodeDisplay
               content={formattedResponseHeaders}
@@ -354,7 +357,7 @@ export function SessionMessagesDetailsTabs({
           data-testid="session-tab-response-body"
         >
           {response === null ? (
-            <EmptyState message={t("details.storageTip")} />
+            <EmptyState message={detailEmptyStateMessage} />
           ) : (
             <CodeDisplay
               content={response}
