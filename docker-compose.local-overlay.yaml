@@ -1,0 +1,9 @@
+services:
+  app:
+    image: ${LOCAL_OVERLAY_IMAGE:-claude-code-hub:local}
+    build:
+      context: ${LOCAL_OVERLAY_CONTEXT:-.}
+      dockerfile: ${LOCAL_OVERLAY_DOCKERFILE:-Dockerfile.local-overlay}
+    environment:
+      HOST: 0.0.0.0
+      HOSTNAME: 0.0.0.0

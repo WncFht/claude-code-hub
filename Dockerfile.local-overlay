@@ -1,0 +1,16 @@
+FROM ghcr.io/ding113/claude-code-hub:latest
+
+USER root
+WORKDIR /app
+
+COPY --chown=node:node local-build-context/.next/standalone/node_modules ./node_modules
+COPY --chown=node:node local-build-context/.next/standalone/package.json ./package.json
+COPY --chown=node:node local-build-context/.next/standalone/server.js ./server.js
+COPY --chown=node:node local-build-context/.next/standalone/VERSION ./VERSION
+COPY --chown=node:node local-build-context/.next/standalone/drizzle ./drizzle
+COPY --chown=node:node local-build-context/.next/standalone/.next ./.next
+COPY --chown=node:node local-build-context/.next/static ./.next/static
+COPY --chown=node:node local-build-context/public ./public
+COPY --chown=node:node local-build-context/messages ./messages
+
+USER node
