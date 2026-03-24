@@ -27,7 +27,8 @@ jobs:
           bun-version: latest
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        # The repo tracks pnpm-lock.yaml and ignores bun.lock, so frozen Bun installs fail in CI.
+        run: bun install
 
       - name: Run linting
         run: bun run lint
@@ -51,7 +52,8 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        # The repo tracks pnpm-lock.yaml and ignores bun.lock, so frozen Bun installs fail in CI.
+        run: bun install
 
       - name: Run unit tests
         run: bun run test -- tests/unit/ --passWithNoTests
@@ -102,7 +104,8 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        # The repo tracks pnpm-lock.yaml and ignores bun.lock, so frozen Bun installs fail in CI.
+        run: bun install
 
       - name: Run database migrations
         run: bun run db:migrate
@@ -157,7 +160,8 @@ jobs:
         uses: oven-sh/setup-bun@v2
 
       - name: Install dependencies
-        run: bun install --frozen-lockfile
+        # The repo tracks pnpm-lock.yaml and ignores bun.lock, so frozen Bun installs fail in CI.
+        run: bun install
 
       - name: Run database migrations
         run: bun run db:migrate
