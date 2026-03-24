@@ -34,9 +34,10 @@ import {
 import type { Provider } from "@/types/provider";
 import type { SessionUsageUpdate } from "@/types/session";
 import type { LongContextPricingSpecialSetting } from "@/types/special-settings";
+import type { ResponseCreatedEvent, ResponseFailedEvent } from "../codex/types/response";
 import { GeminiAdapter } from "../gemini/adapter";
 import type { GeminiResponse } from "../gemini/types";
-import { isClientAbortError, isTransportError } from "./errors";
+import { diagnoseAbortError, isClientAbortError } from "./errors";
 import type { ProxySession } from "./session";
 import { consumeDeferredStreamingFinalization } from "./stream-finalization";
 
@@ -52,6 +53,240 @@ export type UsageMetrics = {
   input_image_tokens?: number;
   output_image_tokens?: number;
 };
+
+type StreamAbortReason =
+  | "CLIENT_ABORTED"
+  | "STREAM_RESPONSE_TIMEOUT"
+  | "STREAM_IDLE_TIMEOUT"
+  | "STREAM_UPSTREAM_ABORTED"
+  | "STREAM_PROCESSING_ERROR";
+
+type SyntheticResponseFailureCode =
+  | "stream_response_timeout"
+  | "stream_idle_timeout"
+  | "stream_upstream_aborted"
+  | "stream_processing_error";
+
+type ResponseStreamMetadata = Partial<Pick<ResponseCreatedEvent, "id" | "created" | "model">>;
+
+type StreamTermination = {
+  abortReason: StreamAbortReason;
+  statusCode: number;
+  syntheticCode: SyntheticResponseFailureCode | null;
+  syntheticMessage: string | null;
+  diagnosisCode: string;
+  clientAborted: boolean;
+};
+
+type ProxySessionWithRuntimeAbort = ProxySession & {
+  responseController?: AbortController;
+  clearResponseTimeout?: () => void;
+};
+
+function getResponseControllerSignal(session: ProxySession): AbortSignal | null {
+  return (session as ProxySessionWithRuntimeAbort).responseController?.signal ?? null;
+}
+
+function diagnoseStreamTermination(error: Error, session: ProxySession): StreamTermination {
+  const abortDiagnosis = diagnoseAbortError(error, {
+    clientAbortSignal: session.clientAbortSignal,
+    responseControllerSignal: getResponseControllerSignal(session),
+  });
+
+  switch (abortDiagnosis.code) {
+    case "client_abort":
+      return {
+        abortReason: "CLIENT_ABORTED",
+        statusCode: 499,
+        syntheticCode: null,
+        syntheticMessage: null,
+        diagnosisCode: abortDiagnosis.code,
+        clientAborted: true,
+      };
+    case "response_timeout":
+      return {
+        abortReason: "STREAM_RESPONSE_TIMEOUT",
+        statusCode: 502,
+        syntheticCode: "stream_response_timeout",
+        syntheticMessage: "Stream timed out before completion.",
+        diagnosisCode: abortDiagnosis.code,
+        clientAborted: false,
+      };
+    case "stream_idle_timeout":
+      return {
+        abortReason: "STREAM_IDLE_TIMEOUT",
+        statusCode: 502,
+        syntheticCode: "stream_idle_timeout",
+        syntheticMessage: "Stream went idle before completion.",
+        diagnosisCode: abortDiagnosis.code,
+        clientAborted: false,
+      };
+    case "upstream_abort":
+    case "transport_error":
+      return {
+        abortReason: "STREAM_UPSTREAM_ABORTED",
+        statusCode: 502,
+        syntheticCode: "stream_upstream_aborted",
+        syntheticMessage: "Upstream stream ended unexpectedly.",
+        diagnosisCode: abortDiagnosis.code,
+        clientAborted: false,
+      };
+    default:
+      return {
+        abortReason: "STREAM_PROCESSING_ERROR",
+        statusCode: 500,
+        syntheticCode: "stream_processing_error",
+        syntheticMessage: "Stream processing failed before completion.",
+        diagnosisCode: abortDiagnosis.code,
+        clientAborted: false,
+      };
+  }
+}
+
+function captureResponseStreamMetadata(frame: string, metadata: ResponseStreamMetadata): void {
+  let eventName = "";
+  const dataLines: string[] = [];
+
+  for (const rawLine of frame.split("\n")) {
+    const line = rawLine.trimEnd();
+    if (!line || line.startsWith(":")) {
+      continue;
+    }
+    if (line.startsWith("event:")) {
+      eventName = line.slice(6).trim();
+      continue;
+    }
+    if (line.startsWith("data:")) {
+      let value = line.slice(5);
+      if (value.startsWith(" ")) {
+        value = value.slice(1);
+      }
+      dataLines.push(value);
+    }
+  }
+
+  if (dataLines.length === 0) {
+    return;
+  }
+
+  try {
+    const parsed = JSON.parse(dataLines.join("\n")) as Record<string, unknown>;
+    const payloadType =
+      typeof parsed.type === "string"
+        ? parsed.type
+        : eventName || (typeof parsed.event === "string" ? parsed.event : "");
+
+    if (payloadType !== "response.created") {
+      return;
+    }
+
+    if (typeof parsed.id === "string" && !metadata.id) {
+      metadata.id = parsed.id;
+    }
+    if (typeof parsed.model === "string" && !metadata.model) {
+      metadata.model = parsed.model;
+    }
+    if (typeof parsed.created === "number" && metadata.created == null) {
+      metadata.created = parsed.created;
+    }
+  } catch {
+    // Ignore partial or non-JSON frames while sniffing metadata.
+  }
+}
+
+function buildSyntheticResponseFailedEvent(
+  metadata: ResponseStreamMetadata,
+  failureCode: SyntheticResponseFailureCode,
+  failureMessage: string
+): ResponseFailedEvent {
+  return {
+    ...(metadata.id ? { id: metadata.id } : {}),
+    ...(metadata.created != null ? { created: metadata.created } : {}),
+    ...(metadata.model ? { model: metadata.model } : {}),
+    object: "response",
+    type: "response.failed",
+    status: "failed",
+    error: {
+      code: failureCode,
+      message: failureMessage,
+    },
+    cch_synthetic: true,
+  };
+}
+
+function createResponseFailureTerminalizer(
+  stream: ReadableStream<Uint8Array>,
+  session: ProxySession
+): ReadableStream<Uint8Array> {
+  const reader = stream.getReader();
+  const encoder = new TextEncoder();
+  const decoder = new TextDecoder();
+  const metadata: ResponseStreamMetadata = {};
+  let buffer = "";
+
+  const processText = (text: string) => {
+    if (!text) {
+      return;
+    }
+
+    buffer = `${buffer}${text}`.replace(/\r\n/g, "\n");
+    let separatorIndex = buffer.indexOf("\n\n");
+
+    while (separatorIndex !== -1) {
+      const frame = buffer.slice(0, separatorIndex);
+      buffer = buffer.slice(separatorIndex + 2);
+      captureResponseStreamMetadata(frame, metadata);
+      separatorIndex = buffer.indexOf("\n\n");
+    }
+  };
+
+  return new ReadableStream<Uint8Array>({
+    async pull(controller) {
+      try {
+        const { value, done } = await reader.read();
+        if (done) {
+          processText(decoder.decode());
+          controller.close();
+          return;
+        }
+
+        if (value && value.byteLength > 0) {
+          processText(decoder.decode(value, { stream: true }));
+          controller.enqueue(value);
+        }
+      } catch (error) {
+        const normalizedError = error instanceof Error ? error : new Error(String(error));
+        processText(decoder.decode());
+
+        const termination = diagnoseStreamTermination(normalizedError, session);
+        if (
+          !termination.clientAborted &&
+          termination.syntheticCode &&
+          termination.syntheticMessage
+        ) {
+          const failureEvent = buildSyntheticResponseFailedEvent(
+            metadata,
+            termination.syntheticCode,
+            termination.syntheticMessage
+          );
+          controller.enqueue(encoder.encode(`\n\ndata: ${JSON.stringify(failureEvent)}\n\n`));
+          controller.close();
+          return;
+        }
+
+        if (termination.clientAborted) {
+          controller.close();
+          return;
+        }
+
+        controller.error(normalizedError);
+      }
+    },
+    async cancel(reason) {
+      await reader.cancel(reason);
+    },
+  });
+}
 
 function maybeSetCodexContext1m(
   session: ProxySession,
@@ -1225,18 +1460,13 @@ export class ProxyResponseHandler {
       } catch (error) {
         // 检测 AbortError 的来源：响应超时 vs 客户端中断
         const err = error as Error;
-        if (isClientAbortError(err)) {
-          // 获取 responseController 引用（由 forwarder.ts 传递）
-          const sessionWithController = session as typeof session & {
-            responseController?: AbortController;
-          };
+        const abortDiagnosis = diagnoseAbortError(err, {
+          clientAbortSignal: session.clientAbortSignal,
+          responseControllerSignal: getResponseControllerSignal(session),
+        });
 
-          // 区分超时和客户端中断
-          const isResponseTimeout =
-            sessionWithController.responseController?.signal.aborted &&
-            !session.clientAbortSignal?.aborted;
-
-          if (isResponseTimeout) {
+        if (abortDiagnosis.code === "response_timeout" || abortDiagnosis.code === "client_abort") {
+          if (abortDiagnosis.code === "response_timeout") {
             // ⚠️ 响应超时：计入熔断器并记录错误日志
             logger.error("ResponseHandler: Response timeout during non-stream body read", {
               taskId,
@@ -1303,6 +1533,15 @@ export class ProxyResponseHandler {
                 taskId,
                 providerId: provider.id,
                 finalizeError,
+              });
+              await persistRequestFailure({
+                session,
+                messageContext,
+                statusCode: 499,
+                error: finalizeError,
+                taskId,
+                phase: "non-stream",
+                errorMessageOverride: "CLIENT_ABORTED",
               });
             }
           }
@@ -1883,11 +2122,17 @@ export class ProxyResponseHandler {
     );
 
     const [clientStream, internalStream] = controllableStream.tee();
+    const clientOutputStream =
+      session.originalFormat === "response"
+        ? createResponseFailureTerminalizer(clientStream, session)
+        : clientStream;
     const statusCode = response.status;
 
     // 使用 AsyncTaskManager 管理后台处理任务
     const taskId = `stream-${messageContext?.id || `unknown-${Date.now()}`}`;
     const abortController = new AbortController();
+    let abortReasonOverride: StreamAbortReason | undefined;
+    let terminalErrorForFinalize: unknown;
 
     // ⭐ 提升 idleTimeoutId 到外部作用域，以便客户端断开时能清除
     let idleTimeoutId: NodeJS.Timeout | null = null;
@@ -1909,6 +2154,9 @@ export class ProxyResponseHandler {
         if (idleTimeoutMs === Infinity) return; // 禁用时跳过
         clearIdleTimer(); // 清除旧的
         idleTimeoutId = setTimeout(() => {
+          const idleError = new Error("streaming_idle");
+          abortReasonOverride = "STREAM_IDLE_TIMEOUT";
+          terminalErrorForFinalize = idleError;
           logger.warn("ResponseHandler: Streaming idle timeout triggered", {
             taskId,
             providerId: provider.id,
@@ -1919,7 +2167,7 @@ export class ProxyResponseHandler {
           // ⭐ 1. 关闭客户端流（让客户端收到连接关闭通知，避免悬挂）
           try {
             if (streamController) {
-              streamController.error(new Error("Streaming idle timeout"));
+              streamController.error(idleError);
               logger.debug("ResponseHandler: Client stream closed due to idle timeout", {
                 taskId,
                 providerId: provider.id,
@@ -1939,7 +2187,7 @@ export class ProxyResponseHandler {
               responseController?: AbortController;
             };
             if (sessionWithController.responseController) {
-              sessionWithController.responseController.abort(new Error("streaming_idle"));
+              sessionWithController.responseController.abort(idleError);
               logger.debug("ResponseHandler: Upstream connection aborted due to idle timeout", {
                 taskId,
                 providerId: provider.id,
@@ -1954,7 +2202,7 @@ export class ProxyResponseHandler {
           }
 
           // ⭐ 3. 终止后台读取任务
-          abortController.abort(new Error("streaming_idle"));
+          abortController.abort(idleError);
         }, idleTimeoutMs);
       };
       const clearIdleTimer = () => {
@@ -1979,7 +2227,8 @@ export class ProxyResponseHandler {
         allContent: string,
         streamEndedNormally: boolean,
         clientAborted: boolean,
-        abortReason?: string
+        abortReason?: string,
+        terminalError?: unknown
       ): Promise<void> => {
         const finalized = await finalizeDeferredStreamingFinalizationIfNeeded(
           session,
@@ -2168,6 +2417,8 @@ export class ProxyResponseHandler {
           );
         }
 
+        const errorDiagnostics = terminalError ? buildPersistedErrorDiagnostics(terminalError) : {};
+
         // 保存扩展信息（status code, tokens, provider chain）
         await updateMessageRequestDetails(messageContext.id, {
           statusCode: effectiveStatusCode,
@@ -2186,6 +2437,7 @@ export class ProxyResponseHandler {
           context1mApplied: session.getContext1mApplied(),
           swapCacheTtlApplied: provider.swapCacheTtlBilling ?? false,
           specialSettings: session.getSpecialSettings() ?? undefined,
+          ...errorDiagnostics,
         });
 
         emitLangfuseTrace(session, {
@@ -2259,7 +2511,13 @@ export class ProxyResponseHandler {
         const allContent = flushAndJoin();
         const clientAborted = session.clientAbortSignal?.aborted ?? false;
         try {
-          await finalizeStream(allContent, streamEndedNormally, clientAborted);
+          await finalizeStream(
+            allContent,
+            streamEndedNormally,
+            clientAborted,
+            abortReasonOverride,
+            terminalErrorForFinalize
+          );
         } catch (finalizeError) {
           logger.error("ResponseHandler: Failed to finalize stream", {
             taskId,
@@ -2275,158 +2533,52 @@ export class ProxyResponseHandler {
           await persistRequestFailure({
             session,
             messageContext,
-            statusCode: statusCode && statusCode >= 400 ? statusCode : 500,
+            statusCode:
+              abortReasonOverride === "CLIENT_ABORTED"
+                ? 499
+                : abortReasonOverride && abortReasonOverride !== "STREAM_PROCESSING_ERROR"
+                  ? 502
+                  : statusCode && statusCode >= 400
+                    ? statusCode
+                    : 500,
             error: finalizeError,
             taskId,
             phase: "stream",
+            errorMessageOverride:
+              abortReasonOverride && abortReasonOverride !== "CLIENT_ABORTED"
+                ? abortReasonOverride
+                : clientAborted
+                  ? "CLIENT_ABORTED"
+                  : undefined,
           });
         }
       } catch (error) {
-        // 检测 AbortError 的来源：响应超时 vs 静默期超时 vs 客户端/上游中断
         const err = error as Error;
-        const sessionWithController = session as typeof session & {
-          responseController?: AbortController;
-        };
-        const clientAborted = session.clientAbortSignal?.aborted ?? false;
-        const isResponseControllerAborted =
-          sessionWithController.responseController?.signal.aborted ?? false;
+        const termination = diagnoseStreamTermination(err, session);
+        abortReasonOverride = termination.abortReason;
+        terminalErrorForFinalize = err;
 
-        if (isClientAbortError(err)) {
-          // 区分不同的超时来源
-          const isResponseTimeout = isResponseControllerAborted && !clientAborted;
-          const isIdleTimeout = err.message?.includes("streaming_idle");
-
-          if (isResponseTimeout && !isIdleTimeout) {
-            // ⚠️ 响应超时（首字节超时）：计入熔断器并记录错误日志
-            logger.error("ResponseHandler: Response timeout during stream body read", {
-              taskId,
-              providerId: provider.id,
-              providerName: provider.name,
-              messageId: messageContext.id,
-              chunksCollected: chunks.length,
-              errorName: err.name,
-            });
-
-            // 注意：无法重试，因为客户端已收到 HTTP 200
-            // 错误已记录，不抛出异常（避免影响后台任务）
-
-            // 结算并消费 deferred meta，确保 provider chain/熔断归因完整
-            try {
-              const allContent = flushAndJoin();
-              await finalizeStream(allContent, false, false, "STREAM_RESPONSE_TIMEOUT");
-            } catch (finalizeError) {
-              logger.error("ResponseHandler: Failed to finalize response-timeout stream", {
-                taskId,
-                messageId: messageContext.id,
-                finalizeError,
-              });
-
-              // 回退：至少保证 DB 记录能落下，避免 orphan record
-              await persistRequestFailure({
-                session,
-                messageContext,
-                statusCode: statusCode && statusCode >= 400 ? statusCode : 502,
-                error: err,
-                taskId,
-                phase: "stream",
-              });
-            }
-          } else if (isIdleTimeout) {
-            // ⚠️ 静默期超时：计入熔断器并记录错误日志
-            logger.error("ResponseHandler: Streaming idle timeout", {
-              taskId,
-              providerId: provider.id,
-              providerName: provider.name,
-              messageId: messageContext.id,
-              chunksCollected: chunks.length,
-            });
-
-            // 注意：无法重试，因为客户端已收到 HTTP 200
-            // 错误已记录，不抛出异常（避免影响后台任务）
-
-            // 结算并消费 deferred meta，确保 provider chain/熔断归因完整
-            try {
-              const allContent = flushAndJoin();
-              await finalizeStream(allContent, false, false, "STREAM_IDLE_TIMEOUT");
-            } catch (finalizeError) {
-              logger.error("ResponseHandler: Failed to finalize idle-timeout stream", {
-                taskId,
-                messageId: messageContext.id,
-                finalizeError,
-              });
-
-              // 回退：至少保证 DB 记录能落下，避免 orphan record
-              await persistRequestFailure({
-                session,
-                messageContext,
-                statusCode: statusCode && statusCode >= 400 ? statusCode : 502,
-                error: err,
-                taskId,
-                phase: "stream",
-              });
-            }
-          } else if (!clientAborted) {
-            // 上游在流式过程中意外中断：视为供应商/网络错误
-            logger.error("ResponseHandler: Upstream stream aborted unexpectedly", {
-              taskId,
-              providerId: provider.id,
-              providerName: provider.name,
-              messageId: messageContext.id,
-              chunksCollected: chunks.length,
-              errorName: err.name,
-              errorMessage: err.message || "(empty message)",
-            });
-
-            // 结算并消费 deferred meta，确保 provider chain/熔断归因完整
-            try {
-              const allContent = flushAndJoin();
-              await finalizeStream(allContent, false, false, "STREAM_UPSTREAM_ABORTED");
-            } catch (finalizeError) {
-              logger.error("ResponseHandler: Failed to finalize upstream-aborted stream", {
-                taskId,
-                messageId: messageContext.id,
-                finalizeError,
-              });
-
-              // 回退：至少保证 DB 记录能落下，避免 orphan record
-              await persistRequestFailure({
-                session,
-                messageContext,
-                statusCode: 502,
-                error: err,
-                taskId,
-                phase: "stream",
-              });
-            }
-          } else {
-            // 客户端主动中断：正常日志，不抛出错误
-            logger.warn("ResponseHandler: Stream reading aborted by client", {
-              taskId,
-              providerId: provider.id,
-              providerName: provider.name,
-              messageId: messageContext.id,
-              chunksCollected: chunks.length,
-              errorName: err.name,
-              reason:
-                err.name === "ResponseAborted"
-                  ? "Response transmission interrupted"
-                  : "Client disconnected",
-            });
-            try {
-              const allContent = flushAndJoin();
-              await finalizeStream(allContent, false, true);
-            } catch (finalizeError) {
-              logger.error("ResponseHandler: Failed to finalize aborted stream response", {
-                taskId,
-                messageId: messageContext.id,
-                finalizeError,
-              });
-            }
-          }
-        } else if (isTransportError(err)) {
-          // 上游流传输错误（SocketError, ECONNRESET 等）：与 upstream abort 相同处理
-          // 参见 #916 — controller.error(err) 传播的 transport error
-          logger.error("ResponseHandler: Upstream stream transport error", {
+        if (termination.abortReason === "STREAM_RESPONSE_TIMEOUT") {
+          logger.error("ResponseHandler: Response timeout during stream body read", {
+            taskId,
+            providerId: provider.id,
+            providerName: provider.name,
+            messageId: messageContext.id,
+            chunksCollected: chunks.length,
+            errorName: err.name,
+            abortDiagnosis: termination.diagnosisCode,
+          });
+        } else if (termination.abortReason === "STREAM_IDLE_TIMEOUT") {
+          logger.error("ResponseHandler: Streaming idle timeout", {
+            taskId,
+            providerId: provider.id,
+            providerName: provider.name,
+            messageId: messageContext.id,
+            chunksCollected: chunks.length,
+            abortDiagnosis: termination.diagnosisCode,
+          });
+        } else if (termination.abortReason === "STREAM_UPSTREAM_ABORTED") {
+          logger.error("ResponseHandler: Upstream stream aborted unexpectedly", {
             taskId,
             providerId: provider.id,
             providerName: provider.name,
@@ -2435,51 +2587,52 @@ export class ProxyResponseHandler {
             errorName: err.name,
             errorMessage: err.message || "(empty message)",
             errorCode: (err as NodeJS.ErrnoException).code,
+            abortDiagnosis: termination.diagnosisCode,
           });
-
-          try {
-            const allContent = flushAndJoin();
-            await finalizeStream(allContent, false, false, "STREAM_UPSTREAM_ABORTED");
-          } catch (finalizeError) {
-            logger.error("ResponseHandler: Failed to finalize transport-error stream", {
-              taskId,
-              messageId: messageContext.id,
-              finalizeError,
-            });
-
-            await persistRequestFailure({
-              session,
-              messageContext,
-              statusCode: 502,
-              error: err,
-              taskId,
-              phase: "stream",
-            });
-          }
+        } else if (termination.abortReason === "CLIENT_ABORTED") {
+          logger.warn("ResponseHandler: Stream reading aborted by client", {
+            taskId,
+            providerId: provider.id,
+            providerName: provider.name,
+            messageId: messageContext.id,
+            chunksCollected: chunks.length,
+            errorName: err.name,
+            abortDiagnosis: termination.diagnosisCode,
+            reason:
+              err.name === "ResponseAborted"
+                ? "Response transmission interrupted"
+                : "Client disconnected",
+          });
         } else {
           logger.error("Failed to save SSE content:", error);
+        }
 
-          // 结算并消费 deferred meta，确保 provider chain/熔断归因完整
-          try {
-            const allContent = flushAndJoin();
-            await finalizeStream(allContent, false, clientAborted, "STREAM_PROCESSING_ERROR");
-          } catch (finalizeError) {
-            logger.error("ResponseHandler: Failed to finalize stream after processing error", {
-              taskId,
-              messageId: messageContext.id,
-              finalizeError,
-            });
+        try {
+          const allContent = flushAndJoin();
+          await finalizeStream(
+            allContent,
+            false,
+            termination.clientAborted,
+            termination.abortReason,
+            err
+          );
+        } catch (finalizeError) {
+          logger.error("ResponseHandler: Failed to finalize errored stream", {
+            taskId,
+            messageId: messageContext.id,
+            abortReason: termination.abortReason,
+            finalizeError,
+          });
 
-            // 回退：至少保证 DB 记录能落下，避免 orphan record
-            await persistRequestFailure({
-              session,
-              messageContext,
-              statusCode: statusCode && statusCode >= 400 ? statusCode : 500,
-              error,
-              taskId,
-              phase: "stream",
-            });
-          }
+          await persistRequestFailure({
+            session,
+            messageContext,
+            statusCode: termination.statusCode,
+            error: err,
+            taskId,
+            phase: "stream",
+            errorMessageOverride: termination.abortReason,
+          });
         }
       } finally {
         // 确保资源释放
@@ -2509,10 +2662,23 @@ export class ProxyResponseHandler {
       await persistRequestFailure({
         session,
         messageContext,
-        statusCode: statusCode && statusCode >= 400 ? statusCode : 500,
+        statusCode:
+          abortReasonOverride === "CLIENT_ABORTED"
+            ? 499
+            : abortReasonOverride && abortReasonOverride !== "STREAM_PROCESSING_ERROR"
+              ? 502
+              : statusCode && statusCode >= 400
+                ? statusCode
+                : 500,
         error,
         taskId,
         phase: "stream",
+        errorMessageOverride:
+          abortReasonOverride && abortReasonOverride !== "CLIENT_ABORTED"
+            ? abortReasonOverride
+            : abortReasonOverride === "CLIENT_ABORTED"
+              ? "CLIENT_ABORTED"
+              : undefined,
       });
     });
 
@@ -2524,6 +2690,8 @@ export class ProxyResponseHandler {
           providerId: provider.id,
           messageId: messageContext.id,
         });
+        abortReasonOverride = "CLIENT_ABORTED";
+        terminalErrorForFinalize = new Error("CLIENT_ABORTED");
 
         // ⭐ 1. 清除 idle timeout（避免误触发）
         if (idleTimeoutId) {
@@ -2546,7 +2714,7 @@ export class ProxyResponseHandler {
 
     // ⭐ 修复 Bun 运行时的 Transfer-Encoding 重复问题
     // 清理上游的传输 headers，让 Response API 自动管理
-    return new Response(clientStream, {
+    return new Response(clientOutputStream, {
       status: response.status,
       statusText: response.statusText,
       headers: cleanResponseHeaders(response.headers),
@@ -3490,6 +3658,41 @@ async function trackCostToRedis(
 }
 
 /**
+ * 提取持久化所需的错误诊断细节（限制长度，避免写入超大 payload）。
+ */
+function buildPersistedErrorDiagnostics(error: unknown): {
+  errorStack?: string;
+  errorCause?: string;
+} {
+  const MAX_ERROR_STACK_LENGTH = 8192;
+  const MAX_ERROR_CAUSE_LENGTH = 4096;
+
+  let errorStack = error instanceof Error ? error.stack : undefined;
+  if (errorStack && errorStack.length > MAX_ERROR_STACK_LENGTH) {
+    errorStack = `${errorStack.substring(0, MAX_ERROR_STACK_LENGTH)}\n...[truncated]`;
+  }
+
+  let errorCause: string | undefined;
+  if (error instanceof Error && (error as NodeJS.ErrnoException).cause) {
+    try {
+      const cause = (error as NodeJS.ErrnoException).cause;
+      errorCause = JSON.stringify(cause, Object.getOwnPropertyNames(cause as object));
+    } catch {
+      errorCause = String((error as NodeJS.ErrnoException).cause);
+    }
+
+    if (errorCause && errorCause.length > MAX_ERROR_CAUSE_LENGTH) {
+      errorCause = `${errorCause.substring(0, MAX_ERROR_CAUSE_LENGTH)}...[truncated]`;
+    }
+  }
+
+  return {
+    ...(errorStack ? { errorStack } : {}),
+    ...(errorCause ? { errorCause } : {}),
+  };
+}
+
+/**
  * 持久化请求失败信息到数据库
  * - 用于后台异步任务中的错误处理，确保 orphan records 被正确更新
  * - 包含完整的错误信息、duration、status code 和 provider chain
@@ -3501,8 +3704,10 @@ async function persistRequestFailure(options: {
   error: unknown;
   taskId: string;
   phase: "stream" | "non-stream";
+  errorMessageOverride?: string;
 }): Promise<void> {
-  const { session, messageContext, statusCode, error, taskId, phase } = options;
+  const { session, messageContext, statusCode, error, taskId, phase, errorMessageOverride } =
+    options;
 
   if (!messageContext) {
     logger.warn("ResponseHandler: Cannot persist failure without messageContext", {
@@ -3513,33 +3718,9 @@ async function persistRequestFailure(options: {
   }
 
   const tracker = ProxyStatusTracker.getInstance();
-  const errorMessage = formatProcessingError(error);
+  const errorMessage = errorMessageOverride ?? formatProcessingError(error);
   const duration = Date.now() - session.startTime;
-
-  // 提取完整错误信息用于排查（限制长度防止异常大的错误信息）
-  const MAX_ERROR_STACK_LENGTH = 8192; // 8KB，足够容纳大多数堆栈信息
-  const MAX_ERROR_CAUSE_LENGTH = 4096; // 4KB，足够容纳 JSON 序列化的错误原因
-
-  let errorStack = error instanceof Error ? error.stack : undefined;
-  if (errorStack && errorStack.length > MAX_ERROR_STACK_LENGTH) {
-    errorStack = `${errorStack.substring(0, MAX_ERROR_STACK_LENGTH)}\n...[truncated]`;
-  }
-
-  let errorCause: string | undefined;
-  if (error instanceof Error && (error as NodeJS.ErrnoException).cause) {
-    try {
-      // 序列化错误原因链，保留所有属性
-      const cause = (error as NodeJS.ErrnoException).cause;
-      errorCause = JSON.stringify(cause, Object.getOwnPropertyNames(cause as object));
-    } catch {
-      // 如果序列化失败，使用简单字符串
-      errorCause = String((error as NodeJS.ErrnoException).cause);
-    }
-    // 截断过长的错误原因
-    if (errorCause && errorCause.length > MAX_ERROR_CAUSE_LENGTH) {
-      errorCause = `${errorCause.substring(0, MAX_ERROR_CAUSE_LENGTH)}...[truncated]`;
-    }
-  }
+  const errorDiagnostics = buildPersistedErrorDiagnostics(error);
 
   try {
     // 更新请求持续时间
@@ -3549,8 +3730,6 @@ async function persistRequestFailure(options: {
     await updateMessageRequestDetails(messageContext.id, {
       statusCode,
       errorMessage,
-      errorStack,
-      errorCause,
       ttfbMs: phase === "non-stream" ? (session.ttfbMs ?? duration) : session.ttfbMs,
       providerChain: session.getProviderChain(),
       model: session.getCurrentModel() ?? undefined,
@@ -3558,6 +3737,7 @@ async function persistRequestFailure(options: {
       context1mApplied: session.getContext1mApplied(),
       swapCacheTtlApplied: session.provider?.swapCacheTtlBilling ?? false,
       specialSettings: session.getSpecialSettings() ?? undefined,
+      ...errorDiagnostics,
     });
 
     if (session.sessionId && session.requestSequence != null) {

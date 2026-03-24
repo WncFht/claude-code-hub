@@ -1,4 +1,4 @@
-import { isClientAbortError } from "@/app/v1/_lib/proxy/errors";
+import { diagnoseAbortError } from "@/app/v1/_lib/proxy/errors";
 import { logger } from "./logger";
 
 /**
@@ -109,12 +109,27 @@ class AsyncTaskManagerClass {
         });
       })
       .catch((error) => {
-        // 如果是取消操作，使用 info 级别
-        if (isClientAbortError(error)) {
+        const abortDiagnosis =
+          error instanceof Error
+            ? diagnoseAbortError(error)
+            : {
+                code: "unknown_abort",
+                isAbortLike: false,
+              };
+
+        // 仅真实客户端取消使用 info 级别
+        if (abortDiagnosis.code === "client_abort") {
           logger.info("[AsyncTaskManager] Task cancelled", {
             taskId,
             taskType,
-            reason: error.message,
+            reason: error instanceof Error ? error.message : String(error),
+          });
+        } else if (abortDiagnosis.isAbortLike) {
+          logger.warn("[AsyncTaskManager] Task aborted unexpectedly", {
+            taskId,
+            taskType,
+            abortDiagnosis: abortDiagnosis.code,
+            reason: error instanceof Error ? error.message : String(error),
           });
         } else {
           // 其他错误使用 error 级别

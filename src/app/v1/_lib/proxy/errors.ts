@@ -683,41 +683,163 @@ export async function getErrorOverrideAsync(
   return undefined;
 }
 
+export type AbortDiagnosisCode =
+  | "client_abort"
+  | "response_timeout"
+  | "stream_idle_timeout"
+  | "upstream_abort"
+  | "transport_error"
+  | "unknown_abort";
+
+export type AbortDiagnosis = {
+  code: AbortDiagnosisCode;
+  isAbortLike: boolean;
+  clientAborted: boolean;
+  responseControllerAborted: boolean;
+  responseControllerReason?: unknown;
+};
+
+export type AbortDiagnosisContext = {
+  clientAbortSignal?: AbortSignal | null;
+  clientAborted?: boolean;
+  responseControllerSignal?: AbortSignal | null;
+  responseControllerAborted?: boolean;
+  responseControllerReason?: unknown;
+};
+
+const CLIENT_ABORT_MESSAGES = ["This operation was aborted", "The user aborted a request"];
+
+function resolveSignalAborted(
+  explicit: boolean | undefined,
+  signal: AbortSignal | null | undefined
+): boolean {
+  if (explicit !== undefined) {
+    return explicit;
+  }
+  return signal?.aborted ?? false;
+}
+
+function extractSignalReason(explicit: unknown, signal: AbortSignal | null | undefined): unknown {
+  if (explicit !== undefined) {
+    return explicit;
+  }
+
+  if (!signal) {
+    return undefined;
+  }
+
+  return (signal as AbortSignal & { reason?: unknown }).reason;
+}
+
+function messageContainsAbortMessage(message: string | undefined): boolean {
+  if (!message) {
+    return false;
+  }
+
+  return CLIENT_ABORT_MESSAGES.some((candidate) => message.includes(candidate));
+}
+
+function messageContainsStreamingIdle(value: unknown): boolean {
+  if (typeof value !== "string") {
+    return false;
+  }
+
+  const normalized = value.toLowerCase();
+  return normalized.includes("streaming_idle") || normalized.includes("streaming idle timeout");
+}
+
+function errorContainsStreamingIdle(error: Error): boolean {
+  if (messageContainsStreamingIdle(error.message) || messageContainsStreamingIdle(error.name)) {
+    return true;
+  }
+
+  const cause = (error as Error & { cause?: unknown }).cause;
+  if (cause instanceof Error) {
+    return errorContainsStreamingIdle(cause);
+  }
+
+  return messageContainsStreamingIdle(cause);
+}
+
+export function diagnoseAbortError(
+  error: Error,
+  context: AbortDiagnosisContext = {}
+): AbortDiagnosis {
+  const clientAborted = resolveSignalAborted(context.clientAborted, context.clientAbortSignal);
+  const responseControllerAborted = resolveSignalAborted(
+    context.responseControllerAborted,
+    context.responseControllerSignal
+  );
+  const responseControllerReason = extractSignalReason(
+    context.responseControllerReason,
+    context.responseControllerSignal
+  );
+
+  const isLocalAbort499 =
+    error instanceof ProxyError && error.statusCode === 499 && error.isLocalAbort;
+  const isAbortNamed = error.name === "AbortError";
+  const isResponseAborted = error.name === "ResponseAborted";
+  const hasAbortMessage = messageContainsAbortMessage(error.message);
+  const isStreamingIdle =
+    errorContainsStreamingIdle(error) || messageContainsStreamingIdle(responseControllerReason);
+  const isTransport = isTransportError(error);
+  const isAbortLike =
+    isLocalAbort499 ||
+    isAbortNamed ||
+    isResponseAborted ||
+    hasAbortMessage ||
+    clientAborted ||
+    responseControllerAborted ||
+    isTransport ||
+    isStreamingIdle;
+
+  let code: AbortDiagnosisCode = "unknown_abort";
+
+  if (clientAborted || isLocalAbort499) {
+    code = "client_abort";
+  } else if (responseControllerAborted && isStreamingIdle) {
+    code = "stream_idle_timeout";
+  } else if (responseControllerAborted) {
+    code = "response_timeout";
+  } else if (isTransport) {
+    code = "transport_error";
+  } else if (isStreamingIdle) {
+    code = "stream_idle_timeout";
+  } else if (isResponseAborted) {
+    code = "upstream_abort";
+  } else if (isAbortNamed || hasAbortMessage) {
+    code = "unknown_abort";
+  }
+
+  return {
+    code,
+    isAbortLike,
+    clientAborted,
+    responseControllerAborted,
+    responseControllerReason,
+  };
+}
+
 /**
  * 检测是否为客户端中断错误
  *
- * 采用白名单模式，精确检测客户端主动中断的错误，避免误判业务错误。
+ * 仅在有明确本地上下文时才认定为客户端中断，避免把上游半截断流误记成 client abort。
  *
  * 检测逻辑（优先级从高到低）：
- * 1. 错误名称检查（最可靠）：AbortError、ResponseAborted
- * 2. HTTP 状态码检查：499（Client Closed Request）
- * 3. 错误消息检查（向后兼容）：仅检查精确的中断消息
+ * 1. 本地合成的 499（ProxyError + isLocalAbort=true）
+ * 2. 调用方明确传入了 clientAbortSignal/clientAborted=true
+ * 3. 精确消息白名单（仅用于兼容标准本地 abort message）
  *
  * @param error - 错误对象
  * @returns 是否为客户端中断错误
  *
  * @example
- * isClientAbortError(new Error('AbortError')) // true
+ * isClientAbortError(new Error('AbortError')) // false
+ * isClientAbortError(new Error('AbortError'), { clientAborted: true }) // true
  * isClientAbortError(new Error('User aborted transaction')) // false（业务错误，不是客户端中断）
  */
-export function isClientAbortError(error: Error): boolean {
-  // 1. 检查错误名称（最可靠）
-  if (error.name === "AbortError" || error.name === "ResponseAborted") {
-    return true;
-  }
-
-  // 2. 仅 CCH 本地合成的 499（非上游 HTTP 499）
-  if (error instanceof ProxyError && error.statusCode === 499 && error.isLocalAbort) {
-    return true;
-  }
-
-  // 3. 精确消息白名单（去掉 "aborted" 泛匹配，避免误伤上游错误文案）
-  const abortMessages = [
-    "This operation was aborted", // 标准 AbortError 消息
-    "The user aborted a request", // 浏览器标准消息
-  ];
-
-  return abortMessages.some((msg) => error.message.includes(msg));
+export function isClientAbortError(error: Error, context: AbortDiagnosisContext = {}): boolean {
+  return diagnoseAbortError(error, context).code === "client_abort";
 }
 
 /**
@@ -905,9 +1027,28 @@ export function isEmptyResponseError(error: unknown): error is EmptyResponseErro
  * @returns 错误分类（CLIENT_ABORT、NON_RETRYABLE_CLIENT_ERROR、PROVIDER_ERROR 或 SYSTEM_ERROR）
  */
 export async function categorizeErrorAsync(error: Error): Promise<ErrorCategory> {
-  // 优先级 1: 客户端中断检测（优先级最高）- 使用统一的精确检测函数
-  if (isClientAbortError(error)) {
-    return ErrorCategory.CLIENT_ABORT; // 客户端主动中断
+  const abortDiagnosis = diagnoseAbortError(error);
+
+  // 优先级 1: 客户端中断检测（优先级最高）
+  if (abortDiagnosis.code === "client_abort") {
+    return ErrorCategory.CLIENT_ABORT;
+  }
+
+  // 优先级 1.25: abort-like failures with explicit upstream/provider semantics
+  if (abortDiagnosis.code === "response_timeout") {
+    return ErrorCategory.PROVIDER_ERROR;
+  }
+  if (abortDiagnosis.code === "stream_idle_timeout") {
+    return ErrorCategory.PROVIDER_ERROR;
+  }
+  if (abortDiagnosis.code === "upstream_abort") {
+    return ErrorCategory.PROVIDER_ERROR;
+  }
+  if (abortDiagnosis.code === "transport_error") {
+    return ErrorCategory.SYSTEM_ERROR;
+  }
+  if (abortDiagnosis.isAbortLike) {
+    return ErrorCategory.SYSTEM_ERROR;
   }
 
   // 优先级 1.5: Native transport errors — must not be matched by error rules

@@ -54,10 +54,10 @@ import { isStrictStandardEndpointPath } from "./endpoint-paths";
 import {
   buildRequestDetails,
   categorizeErrorAsync,
+  diagnoseAbortError,
   EmptyResponseError,
   ErrorCategory,
   getErrorDetectionResultAsync,
-  isClientAbortError,
   isEmptyResponseError,
   isHttp2Error,
   isSSLCertificateError,
@@ -2502,6 +2502,10 @@ export class ProxyForwarder {
         errno?: number;
         syscall?: string; // 系统调用：如 'getaddrinfo'、'connect'、'read'、'write'
       };
+      const abortDiagnosis = diagnoseAbortError(err, {
+        clientAbortSignal: session.clientAbortSignal,
+        responseControllerSignal: responseController.signal,
+      });
 
       // ⭐ SSL 证书错误检测：标记 Agent 为不健康，下次请求将创建新 Agent
       const sslErrorCacheKey = proxyConfig?.cacheKey ?? directConnectionCacheKey;
@@ -2520,7 +2524,7 @@ export class ProxyForwarder {
 
       // ⭐ 超时错误检测（优先级：response > client）
 
-      if (responseController.signal.aborted && !session.clientAbortSignal?.aborted) {
+      if (abortDiagnosis.code === "response_timeout") {
         // 响应超时：HTTP 首包未在规定时间内到达
         // 修复：首字节超时应归类为供应商问题，计入熔断器并直接切换
         logger.error("ProxyForwarder: Response timeout (provider quality issue, will switch)", {
@@ -2564,7 +2568,7 @@ export class ProxyForwarder {
       }
 
       // ⭐ 检测流式静默期超时（streaming_idle）
-      if (err.message?.includes("streaming_idle") && !session.clientAbortSignal?.aborted) {
+      if (abortDiagnosis.code === "stream_idle_timeout") {
         // 流式静默期超时：首字节之后的连续静默窗口超时
         // 修复：静默期超时也是供应商问题，应计入熔断器
         logger.error(
@@ -2607,7 +2611,7 @@ export class ProxyForwarder {
       }
 
       // ⭐ 检测客户端主动中断（使用统一的精确检测函数）
-      if (isClientAbortError(err)) {
+      if (abortDiagnosis.code === "client_abort") {
         logger.warn("ProxyForwarder: Request/response aborted", {
           providerId: provider.id,
           providerName: provider.name,
@@ -2615,6 +2619,7 @@ export class ProxyForwarder {
           errorName: err.name,
           errorMessage: err.message || "(empty message)",
           errorCode: err.code || "N/A",
+          abortDiagnosis: abortDiagnosis.code,
         });
 
         // 客户端中断不应计入熔断器，也不重试，直接抛出错误

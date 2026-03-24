@@ -11,7 +11,12 @@ vi.mock("@/lib/logger", () => ({
 }));
 
 vi.mock("@/app/v1/_lib/proxy/errors", () => ({
-  isClientAbortError: vi.fn(() => false),
+  diagnoseAbortError: vi.fn(() => ({
+    code: "unknown_abort",
+    isAbortLike: false,
+    clientAborted: false,
+    responseControllerAborted: false,
+  })),
 }));
 
 describe.sequential("AsyncTaskManager edge runtime", () => {
@@ -200,12 +205,17 @@ describe.sequential("AsyncTaskManager edge runtime", () => {
     await Promise.all([firstPromise, secondPromise]);
   });
 
-  it("logs task cancelled when isClientAbortError returns true", async () => {
+  it("logs task cancelled when diagnoseAbortError returns client_abort", async () => {
     process.env.CI = "true";
     process.env.NEXT_RUNTIME = "nodejs";
 
-    const { isClientAbortError } = await import("@/app/v1/_lib/proxy/errors");
-    vi.mocked(isClientAbortError).mockReturnValue(true);
+    const { diagnoseAbortError } = await import("@/app/v1/_lib/proxy/errors");
+    vi.mocked(diagnoseAbortError).mockReturnValue({
+      code: "client_abort",
+      isAbortLike: true,
+      clientAborted: true,
+      responseControllerAborted: false,
+    });
 
     const { logger } = await import("@/lib/logger");
     const { AsyncTaskManager } = await import("@/lib/async-task-manager");
@@ -218,12 +228,17 @@ describe.sequential("AsyncTaskManager edge runtime", () => {
     expect(vi.mocked(logger.info)).toHaveBeenCalled();
   });
 
-  it("logs task failed when isClientAbortError returns false", async () => {
+  it("logs task failed when diagnoseAbortError returns non-abort", async () => {
     process.env.CI = "true";
     process.env.NEXT_RUNTIME = "nodejs";
 
-    const { isClientAbortError } = await import("@/app/v1/_lib/proxy/errors");
-    vi.mocked(isClientAbortError).mockReturnValue(false);
+    const { diagnoseAbortError } = await import("@/app/v1/_lib/proxy/errors");
+    vi.mocked(diagnoseAbortError).mockReturnValue({
+      code: "unknown_abort",
+      isAbortLike: false,
+      clientAborted: false,
+      responseControllerAborted: false,
+    });
 
     const { logger } = await import("@/lib/logger");
     const { AsyncTaskManager } = await import("@/lib/async-task-manager");

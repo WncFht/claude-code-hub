@@ -3,7 +3,7 @@
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { GeminiAuth } from "@/app/v1/_lib/gemini/auth";
-import { isClientAbortError } from "@/app/v1/_lib/proxy/errors";
+import { diagnoseAbortError } from "@/app/v1/_lib/proxy/errors";
 import { buildProxyUrl } from "@/app/v1/_lib/url";
 import { db } from "@/drizzle/db";
 import { providers as providersTable } from "@/drizzle/schema";
@@ -2815,11 +2815,19 @@ export async function testProviderProxy(data: {
         err.message.includes("ENOTFOUND") ||
         err.message.includes("ETIMEDOUT");
 
-      const errorType = isClientAbortError(err)
-        ? "Timeout"
-        : isProxyError
-          ? "ProxyError"
-          : "NetworkError";
+      const abortDiagnosis = diagnoseAbortError(err, {
+        responseControllerAborted:
+          err.name === "AbortError" ||
+          err.name === "TimeoutError" ||
+          err.message.includes("timeout"),
+      });
+
+      const errorType =
+        abortDiagnosis.code === "response_timeout"
+          ? "Timeout"
+          : isProxyError
+            ? "ProxyError"
+            : "NetworkError";
 
       return {
         ok: true,

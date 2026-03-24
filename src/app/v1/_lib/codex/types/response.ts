@@ -207,3 +207,21 @@ export interface ResponseCompletedEvent {
   output: OutputItem[];
   usage: ResponseObject["usage"];
 }
+
+export interface ResponseFailedEvent {
+  type: "response.failed";
+  object: "response";
+  status: "failed";
+  error: {
+    code:
+      | "stream_upstream_aborted"
+      | "stream_processing_error"
+      | "stream_idle_timeout"
+      | "stream_response_timeout";
+    message: string;
+  };
+  cch_synthetic: true;
+  id?: string;
+  created?: number;
+  model?: string;
+}
