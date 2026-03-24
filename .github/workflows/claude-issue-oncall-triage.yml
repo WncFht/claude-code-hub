@@ -1,10 +1,8 @@
 name: Claude Oncall Issue Triage
 
 on:
-  schedule:
-    # Run every 6 hours
-    - cron: '0 */6 * * *'
-  workflow_dispatch: # Allow manual trigger
+  # Disabled automatic LLM-triggered execution in this fork.
+  workflow_dispatch:
 
 jobs:
   oncall-triage:

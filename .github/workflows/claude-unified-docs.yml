@@ -1,12 +1,7 @@
 name: Claude Unified Documentation
 
 on:
-  # 当推送新 tag 时触发（更可靠）
-  push:
-    tags:
-      - "v*"
-
-  # 允许手动触发（用于重新生成文档）
+  # Disabled automatic LLM-triggered execution in this fork.
   workflow_dispatch:
     inputs:
       tag_name:

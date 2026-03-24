@@ -1,10 +1,8 @@
 name: Claude Issue Stale Cleanup
 
 on:
-  schedule:
-    # Run every day at 00:00 UTC
-    - cron: '0 0 * * *'
-  workflow_dispatch: # Allow manual trigger
+  # Disabled automatic LLM-triggered execution in this fork.
+  workflow_dispatch:
 
 jobs:
   stale-cleanup:

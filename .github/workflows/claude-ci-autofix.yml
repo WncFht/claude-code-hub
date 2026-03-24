@@ -1,11 +1,7 @@
 name: Claude CI Auto-Fix
 
 on:
-  workflow_run:
-    workflows: ["PR Build Check", "Non-Main Branch CI/CD"]
-    types: [completed]
-
-  # Support manual trigger or call from other workflows
+  # Disabled automatic LLM-triggered execution in this fork.
   workflow_dispatch:
     inputs:
       task_type:

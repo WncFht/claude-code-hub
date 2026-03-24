@@ -1,8 +1,8 @@
 name: Claude PR Description
 
 on:
-  pull_request_target:
-    types: [opened]
+  # Disabled automatic LLM-triggered execution in this fork.
+  workflow_dispatch:
 
 jobs:
   pr-description:
