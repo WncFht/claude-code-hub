@@ -1,0 +1,31 @@
+{
+  "capturedAt": "2026-03-25",
+  "baseUrl": "http://127.0.0.1:23000",
+  "locale": "zh-CN",
+  "captures": [
+    {
+      "id": "gui-logs-session-continued-page",
+      "path": "/home/fanghaotian/Desktop/src/cch/claude-code-hub/docs/reports/2026-03-25-client-abort-gui-changes/figures/logs-session-continued-page.png",
+      "url": "http://127.0.0.1:23000/zh-CN/console/traffic/logs?clientAbortOutcome=session_continued&statusCode=499",
+      "note": "日志页：筛选 session_continued 后的整体页面"
+    },
+    {
+      "id": "gui-logs-session-continued-detail",
+      "path": "/home/fanghaotian/Desktop/src/cch/claude-code-hub/docs/reports/2026-03-25-client-abort-gui-changes/figures/logs-session-continued-detail.png",
+      "url": "http://127.0.0.1:23000/zh-CN/console/traffic/logs?clientAbortOutcome=session_continued&statusCode=499",
+      "note": "日志详情：session_continued 明细弹窗"
+    },
+    {
+      "id": "gui-logs-after-stream-detail",
+      "path": "/home/fanghaotian/Desktop/src/cch/claude-code-hub/docs/reports/2026-03-25-client-abort-gui-changes/figures/logs-after-stream-detail.png",
+      "url": "http://127.0.0.1:23000/zh-CN/console/traffic/logs?clientAbortOutcome=after_stream_start&statusCode=499",
+      "note": "日志详情：after_stream_start 明细弹窗（含长时请求样例）"
+    },
+    {
+      "id": "gui-availability-overview",
+      "path": "/home/fanghaotian/Desktop/src/cch/claude-code-hub/docs/reports/2026-03-25-client-abort-gui-changes/figures/availability-overview.png",
+      "url": "http://127.0.0.1:23000/zh-CN/console/overview/availability",
+      "note": "availability 页面：overview 与 client abort counters"
+    }
+  ]
+}

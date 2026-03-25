@@ -4,6 +4,7 @@ import { and, desc, eq, gte, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { keys as keysTable, messageRequest, providers, usageLedger, users } from "@/drizzle/schema";
 import { TTLMap } from "@/lib/cache/ttl-map";
+import type { ClientAbortOutcome } from "@/lib/client-abort-observability";
 import { isLedgerOnlyMode } from "@/lib/ledger-fallback";
 import { extractAnthropicEffortFromSpecialSettings } from "@/lib/utils/anthropic-effort";
 import { buildUnifiedSpecialSettings } from "@/lib/utils/special-settings";
@@ -31,6 +32,7 @@ export interface UsageLogFilters {
   endpoint?: string;
   /** 最低重试次数（按 provider_chain 中“实际请求”数量 - 1 计算；<= 0 视为不筛选） */
   minRetryCount?: number;
+  clientAbortOutcome?: ClientAbortOutcome;
   page?: number;
   pageSize?: number;
 }
@@ -68,6 +70,10 @@ export interface UsageLogRow {
   context1mApplied: boolean | null; // 是否应用了1M上下文窗口
   swapCacheTtlApplied: boolean | null; // 是否启用了swap cache TTL billing
   specialSettings: SpecialSetting[] | null; // 特殊设置（审计/展示）
+  clientAbortOutcome: ClientAbortOutcome | null;
+  clientAbortLongRunning: boolean | null;
+  clientAbortContinuedByRequestId: number | null;
+  clientAbortContinuedAt: Date | null;
   _liveChain?: { chain: ProviderChainItem[]; phase: string; updatedAt: number } | null;
   anthropicEffort?: string | null;
 }
@@ -198,6 +204,10 @@ export async function findUsageLogsBatch(
       context1mApplied: messageRequest.context1mApplied,
       swapCacheTtlApplied: messageRequest.swapCacheTtlApplied,
       specialSettings: messageRequest.specialSettings,
+      clientAbortOutcome: messageRequest.clientAbortOutcome,
+      clientAbortLongRunning: messageRequest.clientAbortLongRunning,
+      clientAbortContinuedByRequestId: messageRequest.clientAbortContinuedByRequestId,
+      clientAbortContinuedAt: messageRequest.clientAbortContinuedAt,
     })
     .from(messageRequest)
     .innerJoin(users, eq(messageRequest.userId, users.id))
@@ -247,6 +257,10 @@ export async function findUsageLogsBatch(
       providerChain: row.providerChain as ProviderChainItem[] | null,
       endpoint: row.endpoint,
       specialSettings: unifiedSpecialSettings,
+      clientAbortOutcome: row.clientAbortOutcome,
+      clientAbortLongRunning: row.clientAbortLongRunning,
+      clientAbortContinuedByRequestId: row.clientAbortContinuedByRequestId,
+      clientAbortContinuedAt: row.clientAbortContinuedAt,
       anthropicEffort,
     };
   });
@@ -390,6 +404,10 @@ export async function findUsageLogsBatch(
       durationMs: row.durationMs,
       ttfbMs: row.ttfbMs,
       errorMessage: null,
+      clientAbortOutcome: null,
+      clientAbortLongRunning: null,
+      clientAbortContinuedByRequestId: null,
+      clientAbortContinuedAt: null,
       providerChain: null,
       blockedBy: null,
       blockedReason: null,
@@ -1001,6 +1019,10 @@ export async function findUsageLogsWithDetails(filters: UsageLogFilters): Promis
       context1mApplied: messageRequest.context1mApplied, // 1M上下文窗口
       swapCacheTtlApplied: messageRequest.swapCacheTtlApplied, // swap cache TTL billing
       specialSettings: messageRequest.specialSettings, // 特殊设置（审计/展示）
+      clientAbortOutcome: messageRequest.clientAbortOutcome,
+      clientAbortLongRunning: messageRequest.clientAbortLongRunning,
+      clientAbortContinuedByRequestId: messageRequest.clientAbortContinuedByRequestId,
+      clientAbortContinuedAt: messageRequest.clientAbortContinuedAt,
     })
     .from(messageRequest)
     .innerJoin(users, eq(messageRequest.userId, users.id))
@@ -1055,6 +1077,10 @@ export async function findUsageLogsWithDetails(filters: UsageLogFilters): Promis
       providerChain: row.providerChain as ProviderChainItem[] | null,
       endpoint: row.endpoint,
       specialSettings: unifiedSpecialSettings,
+      clientAbortOutcome: row.clientAbortOutcome,
+      clientAbortLongRunning: row.clientAbortLongRunning,
+      clientAbortContinuedByRequestId: row.clientAbortContinuedByRequestId,
+      clientAbortContinuedAt: row.clientAbortContinuedAt,
       anthropicEffort,
     };
   });
@@ -1173,6 +1199,67 @@ export async function findUsageLogSessionIdSuggestions(
   return results.map((r) => r.sessionId).filter((id): id is string => Boolean(id));
 }
 
+async function findUsageLogsStatsFromMessageRequest(
+  filters: Omit<UsageLogFilters, "page" | "pageSize">
+): Promise<UsageLogSummary> {
+  const { userId, keyId, providerId } = filters;
+
+  const conditions = [isNull(messageRequest.deletedAt)];
+
+  if (userId !== undefined) {
+    conditions.push(eq(messageRequest.userId, userId));
+  }
+
+  if (keyId !== undefined) {
+    conditions.push(eq(keysTable.id, keyId));
+  }
+
+  if (providerId !== undefined) {
+    conditions.push(eq(messageRequest.providerId, providerId));
+  }
+
+  conditions.push(...buildUsageLogConditions(filters));
+
+  const baseQuery = db
+    .select({
+      totalRequests: sql<number>`count(*) FILTER (WHERE ${EXCLUDE_WARMUP_CONDITION})::double precision`,
+      totalCost: sql<string>`COALESCE(sum(${messageRequest.costUsd}) FILTER (WHERE ${EXCLUDE_WARMUP_CONDITION}), 0)`,
+      totalInputTokens: sql<number>`COALESCE(sum(${messageRequest.inputTokens}) FILTER (WHERE ${EXCLUDE_WARMUP_CONDITION})::double precision, 0::double precision)`,
+      totalOutputTokens: sql<number>`COALESCE(sum(${messageRequest.outputTokens}) FILTER (WHERE ${EXCLUDE_WARMUP_CONDITION})::double precision, 0::double precision)`,
+      totalCacheCreationTokens: sql<number>`COALESCE(sum(${messageRequest.cacheCreationInputTokens}) FILTER (WHERE ${EXCLUDE_WARMUP_CONDITION})::double precision, 0::double precision)`,
+      totalCacheReadTokens: sql<number>`COALESCE(sum(${messageRequest.cacheReadInputTokens}) FILTER (WHERE ${EXCLUDE_WARMUP_CONDITION})::double precision, 0::double precision)`,
+      totalCacheCreation5mTokens: sql<number>`COALESCE(sum(${messageRequest.cacheCreation5mInputTokens}) FILTER (WHERE ${EXCLUDE_WARMUP_CONDITION})::double precision, 0::double precision)`,
+      totalCacheCreation1hTokens: sql<number>`COALESCE(sum(${messageRequest.cacheCreation1hInputTokens}) FILTER (WHERE ${EXCLUDE_WARMUP_CONDITION})::double precision, 0::double precision)`,
+    })
+    .from(messageRequest);
+
+  const query =
+    keyId !== undefined
+      ? baseQuery.innerJoin(keysTable, eq(messageRequest.key, keysTable.key))
+      : baseQuery;
+
+  const [summaryResult] = await query.where(and(...conditions));
+  const totalRequests = summaryResult?.totalRequests ?? 0;
+  const totalCost = parseFloat(summaryResult?.totalCost ?? "0");
+  const totalTokens =
+    (summaryResult?.totalInputTokens ?? 0) +
+    (summaryResult?.totalOutputTokens ?? 0) +
+    (summaryResult?.totalCacheCreationTokens ?? 0) +
+    (summaryResult?.totalCacheReadTokens ?? 0);
+
+  return {
+    totalRequests,
+    totalCost,
+    totalTokens,
+    totalInputTokens: summaryResult?.totalInputTokens ?? 0,
+    totalOutputTokens: summaryResult?.totalOutputTokens ?? 0,
+    totalCacheCreationTokens: summaryResult?.totalCacheCreationTokens ?? 0,
+    totalCacheReadTokens: summaryResult?.totalCacheReadTokens ?? 0,
+    totalCacheCreation5mTokens: summaryResult?.totalCacheCreation5mTokens ?? 0,
+    totalCacheCreation1hTokens: summaryResult?.totalCacheCreation1hTokens ?? 0,
+  };
+}
+
 /**
  * 独立获取使用日志聚合统计（用于可折叠面板按需加载）
  *
@@ -1184,6 +1271,10 @@ export async function findUsageLogSessionIdSuggestions(
 export async function findUsageLogsStats(
   filters: Omit<UsageLogFilters, "page" | "pageSize">
 ): Promise<UsageLogSummary> {
+  if (filters.clientAbortOutcome) {
+    return findUsageLogsStatsFromMessageRequest(filters);
+  }
+
   const { userId, keyId, providerId } = filters;
 
   // 在 ledger-only 模式下，message_request 为空 —— 依赖它的筛选条件必须短路处理。

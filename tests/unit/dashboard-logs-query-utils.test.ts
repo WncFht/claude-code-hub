@@ -27,6 +27,13 @@ describe("dashboard logs url query utils", () => {
     expect(parsed.statusCode).toBeUndefined();
   });
 
+  test("clientAbortOutcome only accepts supported values", () => {
+    expect(
+      parseLogsUrlFilters({ clientAbortOutcome: "session_continued" }).clientAbortOutcome
+    ).toBe("session_continued");
+    expect(parseLogsUrlFilters({ clientAbortOutcome: "bogus" }).clientAbortOutcome).toBeUndefined();
+  });
+
   test("parseIntParam returns undefined for invalid numbers", () => {
     const parsed = parseLogsUrlFilters({ userId: "NaN", startTime: "bad" });
     expect(parsed.userId).toBeUndefined();
@@ -86,5 +93,10 @@ describe("dashboard logs url query utils", () => {
   test("buildLogsUrlQuery includes minRetryCount even when 0", () => {
     const query = buildLogsUrlQuery({ minRetryCount: 0 });
     expect(query.get("minRetry")).toBe("0");
+  });
+
+  test("buildLogsUrlQuery includes clientAbortOutcome when provided", () => {
+    const query = buildLogsUrlQuery({ clientAbortOutcome: "after_stream_start" });
+    expect(query.get("clientAbortOutcome")).toBe("after_stream_start");
   });
 });

@@ -117,8 +117,15 @@
       "allModels": "All Models",
       "allEndpoints": "All Endpoints",
       "allStatusCodes": "All Status Codes",
+      "allClientAbortOutcomes": "All Client Abort Outcomes",
       "apiKey": "API Key",
       "statusCode": "Status Code",
+      "clientAbortOutcome": "Client Abort Outcome",
+      "clientAbortOutcomeValues": {
+        "session_continued": "Session Continued",
+        "after_stream_start": "After Stream Started",
+        "before_stream_start": "Before Stream Started"
+      },
       "minRetryCount": "Retry Count ≥",
       "minRetryCountPlaceholder": "Enter minimum retries",
       "apply": "Apply Filter",
@@ -214,6 +221,13 @@
       "fullscreen": "Fullscreen",
       "exitFullscreen": "Exit Fullscreen"
     },
+    "clientAbort": {
+      "outcomes": {
+        "session_continued": "Session Continued",
+        "after_stream_start": "After Stream Started",
+        "before_stream_start": "Before Stream Started"
+      }
+    },
     "error": {
       "loadFailed": "Load Failed",
       "loadKeysFailed": "Failed to load keys"
@@ -241,6 +255,14 @@
         "outputRate": "Output Rate",
         "viewFullError": "View full error",
         "viewSession": "View Session"
+      },
+      "clientAbort": {
+        "title": "Client Abort Classification",
+        "streamStarted": "Stream Started",
+        "streamNotStarted": "Stream Not Started",
+        "longRunning": "Long-running abort",
+        "continuedByRequest": "Continued by request #{requestId}",
+        "continuedAt": "Continued at"
       },
       "specialSettings": {
         "title": "Special settings"
@@ -1203,7 +1225,16 @@
       "avgLatency": "Avg Latency",
       "errorRate": "Error Rate",
       "activeProbes": "Active Probes",
-      "load": "Load"
+      "load": "Load",
+      "clientAbort": {
+        "title": "Client Aborts",
+        "description": "Local 499 aborts are tracked separately from provider failures.",
+        "total": "Total {count}",
+        "sessionContinued": "Continued {count}",
+        "afterStreamStart": "After stream start {count}",
+        "beforeStreamStart": "Before stream start {count}",
+        "longRunning": "Long-running {count}"
+      }
     },
     "status": {
       "green": "Healthy",

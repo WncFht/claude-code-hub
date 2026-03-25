@@ -117,8 +117,15 @@
       "allModels": "所有模型",
       "allEndpoints": "所有端點",
       "allStatusCodes": "所有狀態碼",
+      "allClientAbortOutcomes": "所有客戶端中斷分類",
       "apiKey": "API 金鑰",
       "statusCode": "狀態碼",
+      "clientAbortOutcome": "客戶端中斷分類",
+      "clientAbortOutcomeValues": {
+        "session_continued": "會話延續",
+        "after_stream_start": "開始串流後中斷",
+        "before_stream_start": "開始串流前中斷"
+      },
       "minRetryCount": "重試次數≥",
       "minRetryCountPlaceholder": "輸入次數（0 表示不限）",
       "apply": "套用篩選",
@@ -214,6 +221,13 @@
       "fullscreen": "全螢幕顯示",
       "exitFullscreen": "退出全螢幕"
     },
+    "clientAbort": {
+      "outcomes": {
+        "session_continued": "會話延續",
+        "after_stream_start": "開始串流後中斷",
+        "before_stream_start": "開始串流前中斷"
+      }
+    },
     "error": {
       "loadFailed": "載入失敗",
       "loadKeysFailed": "載入密鑰列表失敗"
@@ -241,6 +255,14 @@
         "outputRate": "輸出速率",
         "viewFullError": "查看完整錯誤",
         "viewSession": "查看工作階段"
+      },
+      "clientAbort": {
+        "title": "客戶端中斷分類",
+        "streamStarted": "已開始串流",
+        "streamNotStarted": "尚未開始串流",
+        "longRunning": "長時間請求中斷",
+        "continuedByRequest": "由請求 #{requestId} 延續",
+        "continuedAt": "延續時間"
       },
       "specialSettings": {
         "title": "特殊設定"
@@ -1189,7 +1211,16 @@
       "avgLatency": "平均延遲",
       "errorRate": "錯誤率",
       "activeProbes": "活躍探測",
-      "load": "負載"
+      "load": "負載",
+      "clientAbort": {
+        "title": "客戶端中斷",
+        "description": "本地 499 客戶端中斷會獨立統計，不再算入供應商失敗。",
+        "total": "總計 {count}",
+        "sessionContinued": "會話延續 {count}",
+        "afterStreamStart": "串流開始後中斷 {count}",
+        "beforeStreamStart": "串流開始前中斷 {count}",
+        "longRunning": "長時間中斷 {count}"
+      }
     },
     "timeRange": {
       "label": "時間範圍",

@@ -3,6 +3,8 @@
  * Based on relay-pulse aggregation patterns
  */
 
+import type { ClientAbortOutcome } from "@/lib/client-abort-observability";
+
 /**
  * Status values for availability calculation
  * - GREEN (1.0): HTTP 2xx/3xx (all successful requests)
@@ -43,7 +45,27 @@ export interface RequestStatusClassification {
   status: AvailabilityStatus;
   isSuccess: boolean;
   isError: boolean;
+  countsTowardAvailability: boolean;
+  countsTowardClientAbort: boolean;
+  clientAbortOutcome?: ClientAbortOutcome | null;
+  clientAbortLongRunning: boolean;
 }
+
+export interface ClientAbortCounters {
+  total: number;
+  sessionContinued: number;
+  afterStreamStart: number;
+  beforeStreamStart: number;
+  longRunning: number;
+}
+
+export const EMPTY_CLIENT_ABORT_COUNTERS: ClientAbortCounters = {
+  total: 0,
+  sessionContinued: 0,
+  afterStreamStart: 0,
+  beforeStreamStart: 0,
+  longRunning: 0,
+};
 
 /**
  * Single time bucket aggregation
@@ -59,6 +81,8 @@ export interface TimeBucketMetrics {
   greenCount: number;
   /** Failed requests (4xx/5xx or error) */
   redCount: number;
+  /** Local client abort counters excluded from provider availability scoring */
+  clientAbortCounts: ClientAbortCounters;
   /** Weighted availability score (0.0-1.0) */
   availabilityScore: number;
   /** Average latency in ms */
@@ -91,6 +115,8 @@ export interface ProviderAvailabilitySummary {
   totalRequests: number;
   /** Success rate (green requests / total) */
   successRate: number;
+  /** Local client abort counters excluded from provider availability scoring */
+  clientAbortCounts: ClientAbortCounters;
   /** Average latency in ms */
   avgLatencyMs: number;
   /** Last request timestamp */
@@ -133,6 +159,8 @@ export interface AvailabilityQueryResult {
   providers: ProviderAvailabilitySummary[];
   /** Overall system availability (weighted average) */
   systemAvailability: number;
+  /** Global local client abort counters */
+  clientAbortCounts: ClientAbortCounters;
 }
 
 /**
@@ -144,6 +172,8 @@ export interface RawRequestData {
   statusCode: number | null;
   durationMs: number | null;
   errorMessage: string | null;
+  clientAbortOutcome: ClientAbortOutcome | null;
+  clientAbortLongRunning: boolean | null;
   createdAt: Date | null;
 }
 
@@ -156,6 +186,7 @@ export interface AggregatedBucketData {
   totalRequests: number;
   greenCount: number;
   redCount: number;
+  clientAbortCounts: ClientAbortCounters;
   avgLatencyMs: number;
   latencies: number[];
 }

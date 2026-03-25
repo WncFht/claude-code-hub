@@ -172,6 +172,12 @@ export function toMessageRequest(dbMessage: any): MessageRequest {
     context1mApplied: dbMessage?.context1mApplied ?? false,
     swapCacheTtlApplied: dbMessage?.swapCacheTtlApplied ?? false,
     specialSettings: dbMessage?.specialSettings ?? null,
+    clientAbortOutcome: dbMessage?.clientAbortOutcome ?? null,
+    clientAbortLongRunning: dbMessage?.clientAbortLongRunning ?? null,
+    clientAbortContinuedByRequestId: dbMessage?.clientAbortContinuedByRequestId ?? null,
+    clientAbortContinuedAt: dbMessage?.clientAbortContinuedAt
+      ? new Date(dbMessage.clientAbortContinuedAt)
+      : null,
   };
 }
 

@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from "@/components/ui/sheet";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import type { ClientAbortOutcome } from "@/lib/client-abort-observability";
 import { cn } from "@/lib/utils";
 import type { ProviderChainItem } from "@/types/message";
 import type { SpecialSetting } from "@/types/special-settings";
@@ -42,6 +43,10 @@ interface ErrorDetailsDialogProps {
   context1mApplied?: boolean | null;
   durationMs?: number | null;
   ttfbMs?: number | null;
+  clientAbortOutcome?: ClientAbortOutcome | null;
+  clientAbortLongRunning?: boolean | null;
+  clientAbortContinuedByRequestId?: number | null;
+  clientAbortContinuedAt?: Date | null;
   externalOpen?: boolean;
   onExternalOpenChange?: (open: boolean) => void;
   scrollToRedirect?: boolean;
@@ -81,6 +86,10 @@ export function ErrorDetailsDialog({
   context1mApplied,
   durationMs,
   ttfbMs,
+  clientAbortOutcome,
+  clientAbortLongRunning,
+  clientAbortContinuedByRequestId,
+  clientAbortContinuedAt,
   externalOpen,
   onExternalOpenChange,
   scrollToRedirect,
@@ -225,6 +234,10 @@ export function ErrorDetailsDialog({
     context1mApplied,
     durationMs,
     ttfbMs,
+    clientAbortOutcome,
+    clientAbortLongRunning,
+    clientAbortContinuedByRequestId,
+    clientAbortContinuedAt,
   };
 
   return (

@@ -174,6 +174,7 @@ function UsageLogsViewContent({
       model: _params.get("model") ?? undefined,
       endpoint: _params.get("endpoint") ?? undefined,
       minRetry: _params.get("minRetry") ?? undefined,
+      clientAbortOutcome: _params.get("clientAbortOutcome") ?? undefined,
       page: _params.get("page") ?? undefined,
     });
 
@@ -269,6 +270,7 @@ function UsageLogsViewContent({
       model: filters.model,
       endpoint: filters.endpoint,
       minRetryCount: filters.minRetryCount,
+      clientAbortOutcome: filters.clientAbortOutcome,
     }),
     [
       filters.userId,
@@ -282,6 +284,7 @@ function UsageLogsViewContent({
       filters.model,
       filters.endpoint,
       filters.minRetryCount,
+      filters.clientAbortOutcome,
     ]
   );
 
@@ -298,6 +301,7 @@ function UsageLogsViewContent({
     if (statsFilters.model) count++;
     if (statsFilters.endpoint) count++;
     if (statsFilters.minRetryCount !== undefined && statsFilters.minRetryCount > 0) count++;
+    if (statsFilters.clientAbortOutcome) count++;
     return count;
   }, [statsFilters]);
   const [isFilterOpen, setIsFilterOpen] = useState(activeFilterCount > 0);

@@ -11,6 +11,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import type { ClientAbortOutcome } from "@/lib/client-abort-observability";
 import { useLazyStatusCodes } from "../../_hooks/use-lazy-filter-options";
 import type { UsageLogFilters } from "./types";
 
@@ -53,8 +54,15 @@ export function StatusFilters({ filters, onFiltersChange }: StatusFiltersProps) 
     });
   };
 
+  const handleClientAbortOutcomeChange = (value: string) => {
+    onFiltersChange({
+      ...filters,
+      clientAbortOutcome: value === "__all__" ? undefined : (value as ClientAbortOutcome),
+    });
+  };
+
   return (
-    <div className="grid gap-4 sm:grid-cols-2">
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {/* Status code selector */}
       <div className="space-y-2">
         <Label>{t("logs.filters.statusCode")}</Label>
@@ -101,6 +109,30 @@ export function StatusFilters({ filters, onFiltersChange }: StatusFiltersProps) 
           placeholder={t("logs.filters.minRetryCountPlaceholder")}
           onChange={handleMinRetryCountChange}
         />
+      </div>
+
+      <div className="space-y-2">
+        <Label>{t("logs.filters.clientAbortOutcome")}</Label>
+        <Select
+          value={filters.clientAbortOutcome ?? "__all__"}
+          onValueChange={handleClientAbortOutcomeChange}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder={t("logs.filters.allClientAbortOutcomes")} />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="__all__">{t("logs.filters.allClientAbortOutcomes")}</SelectItem>
+            <SelectItem value="session_continued">
+              {t("logs.filters.clientAbortOutcomeValues.session_continued")}
+            </SelectItem>
+            <SelectItem value="after_stream_start">
+              {t("logs.filters.clientAbortOutcomeValues.after_stream_start")}
+            </SelectItem>
+            <SelectItem value="before_stream_start">
+              {t("logs.filters.clientAbortOutcomeValues.before_stream_start")}
+            </SelectItem>
+          </SelectContent>
+        </Select>
       </div>
     </div>
   );

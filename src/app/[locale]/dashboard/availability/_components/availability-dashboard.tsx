@@ -99,6 +99,7 @@ export function AvailabilityDashboard() {
       systemAvailability: availabilityData?.systemAvailability ?? 0,
       avgLatency,
       errorRate,
+      clientAbortCounts: availabilityData?.clientAbortCounts ?? null,
       activeProbes,
       totalProbes: providers.length,
       healthyCount,
@@ -113,6 +114,7 @@ export function AvailabilityDashboard() {
         systemAvailability={overviewMetrics.systemAvailability}
         avgLatency={overviewMetrics.avgLatency}
         errorRate={overviewMetrics.errorRate}
+        clientAbortCounts={overviewMetrics.clientAbortCounts}
         activeProbes={overviewMetrics.activeProbes}
         totalProbes={overviewMetrics.totalProbes}
         loading={loading}

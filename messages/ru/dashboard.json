@@ -117,8 +117,15 @@
       "allModels": "Все модели",
       "allEndpoints": "Все эндпоинты",
       "allStatusCodes": "Все коды состояния",
+      "allClientAbortOutcomes": "Все категории клиентского прерывания",
       "apiKey": "API ключ",
       "statusCode": "Код состояния",
+      "clientAbortOutcome": "Категория клиентского прерывания",
+      "clientAbortOutcomeValues": {
+        "session_continued": "Сессия продолжилась",
+        "after_stream_start": "Прервано после начала стрима",
+        "before_stream_start": "Прервано до начала стрима"
+      },
       "minRetryCount": "Количество ретраев ≥",
       "minRetryCountPlaceholder": "Введите минимум (0 — без ограничения)",
       "apply": "Применить фильтр",
@@ -214,6 +221,13 @@
       "fullscreen": "Полный экран",
       "exitFullscreen": "Выйти из полного экрана"
     },
+    "clientAbort": {
+      "outcomes": {
+        "session_continued": "Сессия продолжилась",
+        "after_stream_start": "Прервано после начала стрима",
+        "before_stream_start": "Прервано до начала стрима"
+      }
+    },
     "error": {
       "loadFailed": "Ошибка загрузки",
       "loadKeysFailed": "Не удалось загрузить список ключей"
@@ -241,6 +255,14 @@
         "outputRate": "Скорость вывода",
         "viewFullError": "Показать полную ошибку",
         "viewSession": "Просмотр сеанса"
+      },
+      "clientAbort": {
+        "title": "Классификация клиентского прерывания",
+        "streamStarted": "Стрим уже начался",
+        "streamNotStarted": "Стрим еще не начался",
+        "longRunning": "Долгое прерывание",
+        "continuedByRequest": "Продолжено запросом #{requestId}",
+        "continuedAt": "Время продолжения"
       },
       "specialSettings": {
         "title": "Особые настройки"
@@ -1192,7 +1214,16 @@
       "avgLatency": "Средняя задержка",
       "errorRate": "Коэффициент ошибок",
       "activeProbes": "Активные проверки",
-      "load": "Нагрузка"
+      "load": "Нагрузка",
+      "clientAbort": {
+        "title": "Клиентские прерывания",
+        "description": "Локальные 499 учитываются отдельно и не считаются сбоями провайдера.",
+        "total": "Всего {count}",
+        "sessionContinued": "Продолжено {count}",
+        "afterStreamStart": "После начала стрима {count}",
+        "beforeStreamStart": "До начала стрима {count}",
+        "longRunning": "Долгие {count}"
+      }
     },
     "timeRange": {
       "label": "Временной диапазон",

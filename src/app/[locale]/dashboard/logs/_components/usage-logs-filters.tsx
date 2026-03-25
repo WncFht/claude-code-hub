@@ -38,6 +38,7 @@ const VALID_FILTER_KEYS: (keyof UsageLogFilters)[] = [
   "model",
   "endpoint",
   "minRetryCount",
+  "clientAbortOutcome",
 ];
 
 function sanitizeFilters(filters: UsageLogFilters): UsageLogFilters {
@@ -140,8 +141,14 @@ export function UsageLogsFilters({
     let count = 0;
     if (localFilters.statusCode !== undefined || localFilters.excludeStatusCode200) count++;
     if (localFilters.minRetryCount !== undefined && localFilters.minRetryCount > 0) count++;
+    if (localFilters.clientAbortOutcome) count++;
     return count;
-  }, [localFilters.statusCode, localFilters.excludeStatusCode200, localFilters.minRetryCount]);
+  }, [
+    localFilters.statusCode,
+    localFilters.excludeStatusCode200,
+    localFilters.minRetryCount,
+    localFilters.clientAbortOutcome,
+  ]);
 
   useEffect(() => {
     setLocalFilters(filters);

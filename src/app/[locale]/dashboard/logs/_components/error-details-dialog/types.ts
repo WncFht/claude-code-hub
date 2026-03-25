@@ -1,4 +1,5 @@
 import type { ProviderChainItem } from "@/types/message";
+import type { ClientAbortOutcome } from "@/lib/client-abort-observability";
 import type { SpecialSetting } from "@/types/special-settings";
 import type { BillingModelSource } from "@/types/system-config";
 
@@ -60,6 +61,14 @@ export interface TabSharedProps {
   durationMs?: number | null;
   /** Time to first byte in ms */
   ttfbMs?: number | null;
+  /** Derived client abort outcome */
+  clientAbortOutcome?: ClientAbortOutcome | null;
+  /** Whether the client abort was long-running */
+  clientAbortLongRunning?: boolean | null;
+  /** Request id that continued the session */
+  clientAbortContinuedByRequestId?: number | null;
+  /** When the session continuation request started */
+  clientAbortContinuedAt?: Date | null;
 }
 
 /**

@@ -19,6 +19,10 @@ import { AnthropicEffortBadge } from "@/components/customs/anthropic-effort-badg
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Link } from "@/i18n/routing";
+import {
+  getClientAbortOutcomeLabelKey,
+  hasClientAbortStreamStarted,
+} from "@/lib/client-abort-observability";
 import { cn, formatTokenAmount } from "@/lib/utils";
 import { extractAnthropicEffortInfo } from "@/lib/utils/anthropic-effort";
 import { formatCurrency } from "@/lib/utils/currency";
@@ -54,6 +58,10 @@ export function SummaryTab({
   context1mApplied,
   durationMs,
   ttfbMs,
+  clientAbortOutcome,
+  clientAbortLongRunning,
+  clientAbortContinuedByRequestId,
+  clientAbortContinuedAt,
   sessionId,
   requestSequence,
   userAgent,
@@ -64,6 +72,7 @@ export function SummaryTab({
   onViewLogicTrace,
 }: SummaryTabProps) {
   const t = useTranslations("dashboard.logs.details");
+  const tDashboard = useTranslations("dashboard");
 
   const isSuccess = isSuccessStatus(statusCode);
   const isInProgress = isInProgressStatus(statusCode);
@@ -87,6 +96,18 @@ export function SummaryTab({
     isFake200PostStreamFailure && fake200Code
       ? t(getFake200ReasonKey(fake200Code, "fake200Reasons"))
       : null;
+  const showClientAbortSection =
+    clientAbortOutcome !== null &&
+    clientAbortOutcome !== undefined &&
+    statusCode === 499 &&
+    errorMessage === "CLIENT_ABORTED";
+  const clientAbortStreamStarted = hasClientAbortStreamStarted({
+    statusCode,
+    errorMessage,
+    ttfbMs,
+    outputTokens,
+    costUsd,
+  });
 
   return (
     <div className="space-y-6">
@@ -288,6 +309,50 @@ export function SummaryTab({
                 <code className="text-xs font-mono break-all">{endpoint}</code>
               </div>
             )}
+          </div>
+        </div>
+      )}
+
+      {showClientAbortSection && (
+        <div className="space-y-2">
+          <h4 className="text-sm font-semibold flex items-center gap-2">
+            <InfoIcon className="h-4 w-4 text-slate-600" />
+            {t("clientAbort.title")}
+          </h4>
+          <div className="rounded-lg border bg-slate-50 dark:bg-slate-950/20 p-4 space-y-3">
+            <div className="flex flex-wrap items-center gap-2">
+              <Badge variant="outline" className="text-xs">
+                {tDashboard(getClientAbortOutcomeLabelKey(clientAbortOutcome))}
+              </Badge>
+              <Badge variant="outline" className="text-xs">
+                {clientAbortStreamStarted
+                  ? t("clientAbort.streamStarted")
+                  : t("clientAbort.streamNotStarted")}
+              </Badge>
+              {clientAbortLongRunning ? (
+                <Badge
+                  variant="outline"
+                  className="text-xs bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/30 dark:text-amber-300 dark:border-amber-800"
+                >
+                  {t("clientAbort.longRunning")}
+                </Badge>
+              ) : null}
+            </div>
+            {clientAbortContinuedByRequestId ? (
+              <div className="text-xs text-muted-foreground space-y-1">
+                <div>
+                  {t("clientAbort.continuedByRequest", {
+                    requestId: clientAbortContinuedByRequestId,
+                  })}
+                </div>
+                {clientAbortContinuedAt ? (
+                  <div>
+                    {t("clientAbort.continuedAt")}:{" "}
+                    <span className="font-mono">{clientAbortContinuedAt.toISOString()}</span>
+                  </div>
+                ) : null}
+              </div>
+            ) : null}
           </div>
         </div>
       )}

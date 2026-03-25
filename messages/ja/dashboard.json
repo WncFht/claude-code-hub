@@ -117,8 +117,15 @@
       "allModels": "すべてのモデル",
       "allEndpoints": "すべてのエンドポイント",
       "allStatusCodes": "すべてのステータスコード",
+      "allClientAbortOutcomes": "すべてのクライアント中断分類",
       "apiKey": "API キー",
       "statusCode": "ステータスコード",
+      "clientAbortOutcome": "クライアント中断分類",
+      "clientAbortOutcomeValues": {
+        "session_continued": "セッション継続",
+        "after_stream_start": "ストリーム開始後に中断",
+        "before_stream_start": "ストリーム開始前に中断"
+      },
       "minRetryCount": "リトライ回数≥",
       "minRetryCountPlaceholder": "回数を入力(0 で制限なし)",
       "apply": "フィルターを適用",
@@ -214,6 +221,13 @@
       "fullscreen": "全画面表示",
       "exitFullscreen": "全画面を終了"
     },
+    "clientAbort": {
+      "outcomes": {
+        "session_continued": "セッション継続",
+        "after_stream_start": "ストリーム開始後に中断",
+        "before_stream_start": "ストリーム開始前に中断"
+      }
+    },
     "error": {
       "loadFailed": "読み込み失敗",
       "loadKeysFailed": "キーリストの読み込みに失敗しました"
@@ -241,6 +255,14 @@
         "outputRate": "出力速度",
         "viewFullError": "完全なエラーを表示",
         "viewSession": "セッションを表示"
+      },
+      "clientAbort": {
+        "title": "クライアント中断分類",
+        "streamStarted": "ストリーム開始済み",
+        "streamNotStarted": "ストリーム未開始",
+        "longRunning": "長時間実行の中断",
+        "continuedByRequest": "リクエスト #{requestId} で継続",
+        "continuedAt": "継続時刻"
       },
       "specialSettings": {
         "title": "特殊設定"
@@ -1190,7 +1212,16 @@
       "avgLatency": "平均遅延",
       "errorRate": "エラー率",
       "activeProbes": "アクティブプローブ",
-      "load": "負荷"
+      "load": "負荷",
+      "clientAbort": {
+        "title": "クライアント中断",
+        "description": "ローカル 499 のクライアント中断は、プロバイダー障害とは別に集計されます。",
+        "total": "合計 {count}",
+        "sessionContinued": "継続 {count}",
+        "afterStreamStart": "開始後中断 {count}",
+        "beforeStreamStart": "開始前中断 {count}",
+        "longRunning": "長時間中断 {count}"
+      }
     },
     "timeRange": {
       "label": "時間範囲",

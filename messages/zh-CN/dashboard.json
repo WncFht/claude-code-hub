@@ -117,8 +117,15 @@
       "allModels": "全部模型",
       "allEndpoints": "全部端点",
       "allStatusCodes": "全部状态码",
+      "allClientAbortOutcomes": "全部客户端中断分类",
       "apiKey": "API 密钥",
       "statusCode": "状态码",
+      "clientAbortOutcome": "客户端中断分类",
+      "clientAbortOutcomeValues": {
+        "session_continued": "会话继续",
+        "after_stream_start": "已开始流式输出后中断",
+        "before_stream_start": "开始流式输出前中断"
+      },
       "minRetryCount": "重试次数≥",
       "minRetryCountPlaceholder": "输入次数（0 表示不限）",
       "apply": "应用筛选",
@@ -214,6 +221,13 @@
       "fullscreen": "全屏显示",
       "exitFullscreen": "退出全屏"
     },
+    "clientAbort": {
+      "outcomes": {
+        "session_continued": "会话继续",
+        "after_stream_start": "已开始流式输出后中断",
+        "before_stream_start": "开始流式输出前中断"
+      }
+    },
     "error": {
       "loadFailed": "加载失败",
       "loadKeysFailed": "加载密钥列表失败"
@@ -241,6 +255,14 @@
         "outputRate": "输出速率",
         "viewFullError": "查看完整错误",
         "viewSession": "查看会话"
+      },
+      "clientAbort": {
+        "title": "客户端中断分类",
+        "streamStarted": "已开始流式输出",
+        "streamNotStarted": "尚未开始流式输出",
+        "longRunning": "长时请求中断",
+        "continuedByRequest": "由请求 #{requestId} 继续",
+        "continuedAt": "继续时间"
       },
       "specialSettings": {
         "title": "特殊设置"
@@ -1308,7 +1330,16 @@
       "avgLatency": "平均延迟",
       "errorRate": "错误率",
       "activeProbes": "活跃探测",
-      "load": "负载"
+      "load": "负载",
+      "clientAbort": {
+        "title": "客户端中断",
+        "description": "本地 499 客户端中断会单独统计，不再计入供应商失败。",
+        "total": "总计 {count}",
+        "sessionContinued": "会话继续 {count}",
+        "afterStreamStart": "流开始后中断 {count}",
+        "beforeStreamStart": "流开始前中断 {count}",
+        "longRunning": "长时中断 {count}"
+      }
     },
     "status": {
       "green": "正常",

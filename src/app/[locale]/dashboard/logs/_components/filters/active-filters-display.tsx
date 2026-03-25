@@ -132,6 +132,14 @@ export function ActiveFiltersDisplay({
       });
     }
 
+    if (filters.clientAbortOutcome) {
+      result.push({
+        key: "clientAbortOutcome",
+        label: t("clientAbortOutcome"),
+        value: t(`clientAbortOutcomeValues.${filters.clientAbortOutcome}`),
+      });
+    }
+
     return result;
   }, [filters, displayNames, isAdmin, t]);
 

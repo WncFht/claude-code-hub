@@ -171,6 +171,13 @@ import { ErrorDetailsDialog } from "./error-details-dialog";
 const messages = {
   dashboard: {
     logs: {
+      clientAbort: {
+        outcomes: {
+          session_continued: "Session Continued",
+          after_stream_start: "After Stream Started",
+          before_stream_start: "Before Stream Started",
+        },
+      },
       columns: {
         endpoint: "Endpoint",
       },
@@ -196,6 +203,14 @@ const messages = {
           outputRate: "Output Rate",
           viewFullError: "View full error",
           viewSession: "View Session",
+        },
+        clientAbort: {
+          title: "Client Abort Classification",
+          streamStarted: "Stream Started",
+          streamNotStarted: "Stream Not Started",
+          longRunning: "Long-running abort",
+          continuedByRequest: "Continued by request #{requestId}",
+          continuedAt: "Continued at",
         },
         skipped: {
           title: "Skipped",
@@ -498,6 +513,31 @@ describe("error-details-dialog layout", () => {
 
     expect(html).toContain("Output Rate");
     expect(html).toContain("100.0 tok/s");
+  });
+
+  test("renders client-abort classification details for local 499 rows", () => {
+    const html = renderWithIntl(
+      <ErrorDetailsDialog
+        externalOpen
+        statusCode={499}
+        errorMessage="CLIENT_ABORTED"
+        providerChain={null}
+        sessionId={null}
+        outputTokens={16}
+        ttfbMs={120}
+        clientAbortOutcome="session_continued"
+        clientAbortLongRunning
+        clientAbortContinuedByRequestId={42}
+        clientAbortContinuedAt={new Date("2026-03-25T12:00:05.000Z")}
+      />
+    );
+
+    expect(html).toContain("Client Abort Classification");
+    expect(html).toContain("Session Continued");
+    expect(html).toContain("Stream Started");
+    expect(html).toContain("Long-running abort");
+    expect(html).toContain("Continued by request #42");
+    expect(html).toContain("2026-03-25T12:00:05.000Z");
   });
 
   test("hides tok/s when TTFB is close to duration and rate is abnormally high", () => {

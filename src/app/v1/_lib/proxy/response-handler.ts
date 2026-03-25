@@ -1,5 +1,9 @@
 import { ResponseFixer } from "@/app/v1/_lib/proxy/response-fixer";
 import { AsyncTaskManager } from "@/lib/async-task-manager";
+import {
+  buildProvisionalClientAbortObservability,
+  isLocalClientAbortStatus,
+} from "@/lib/client-abort-observability";
 import { getEnvConfig } from "@/lib/config/env.schema";
 import { logger } from "@/lib/logger";
 import { requestCloudPriceTableSync } from "@/lib/price-sync/cloud-price-updater";
@@ -26,6 +30,10 @@ import {
   detectUpstreamErrorFromSseOrJsonText,
   inferUpstreamErrorStatusCodeFromText,
 } from "@/lib/utils/upstream-error-detection";
+import {
+  reconcileClientAbortContinuationFromLocalAbort,
+  updateMessageRequestClientAbortObservability,
+} from "@/repository/client-abort-observability";
 import {
   updateMessageRequestCost,
   updateMessageRequestDetails,
@@ -1170,6 +1178,7 @@ export class ProxyResponseHandler {
           await updateMessageRequestDuration(messageContext.id, duration);
           await updateMessageRequestDetails(messageContext.id, {
             statusCode: finalizedStatusCode,
+            ...(finalizedStatusCode === 499 ? { errorMessage: "CLIENT_ABORTED" } : {}),
             ttfbMs: session.ttfbMs ?? duration,
             providerChain: session.getProviderChain(),
             model: session.getCurrentModel() ?? undefined, // 更新重定向后的模型
@@ -1177,6 +1186,16 @@ export class ProxyResponseHandler {
             context1mApplied: session.getContext1mApplied(),
             swapCacheTtlApplied: session.provider?.swapCacheTtlBilling ?? false,
           });
+          if (finalizedStatusCode === 499) {
+            await persistLocalClientAbortObservability({
+              session,
+              messageId: messageContext.id,
+              statusCode: finalizedStatusCode,
+              errorMessage: "CLIENT_ABORTED",
+              durationMs: duration,
+              ttfbMs: session.ttfbMs ?? duration,
+            });
+          }
           const tracker = ProxyStatusTracker.getInstance();
           tracker.endRequest(messageContext.user.id, messageContext.id);
         }
@@ -2440,6 +2459,19 @@ export class ProxyResponseHandler {
           ...errorDiagnostics,
         });
 
+        if (isLocalClientAbortStatus(effectiveStatusCode, streamErrorMessage)) {
+          await persistLocalClientAbortObservability({
+            session,
+            messageId: messageContext.id,
+            statusCode: effectiveStatusCode,
+            errorMessage: streamErrorMessage,
+            durationMs: duration,
+            ttfbMs: session.ttfbMs,
+            outputTokens: usageForCost?.output_tokens,
+            costUsd: costUsdStr ?? null,
+          });
+        }
+
         emitLangfuseTrace(session, {
           responseHeaders: response.headers,
           responseText: allContent,
@@ -3692,6 +3724,47 @@ function buildPersistedErrorDiagnostics(error: unknown): {
   };
 }
 
+async function persistLocalClientAbortObservability(options: {
+  session: ProxySession;
+  messageId: number;
+  statusCode: number | null | undefined;
+  errorMessage: string | null | undefined;
+  durationMs: number | null | undefined;
+  ttfbMs?: number | null;
+  outputTokens?: number | null;
+  costUsd?: string | null;
+}): Promise<void> {
+  const { session, messageId, statusCode, errorMessage, durationMs, ttfbMs, outputTokens, costUsd } =
+    options;
+
+  const provisional = buildProvisionalClientAbortObservability({
+    statusCode,
+    errorMessage,
+    durationMs,
+    ttfbMs,
+    outputTokens,
+    costUsd,
+  });
+
+  if (!provisional) {
+    return;
+  }
+
+  await updateMessageRequestClientAbortObservability(messageId, provisional);
+
+  if (!session.messageContext) {
+    return;
+  }
+
+  await reconcileClientAbortContinuationFromLocalAbort({
+    abortedRequestId: messageId,
+    abortedCreatedAt: session.messageContext.createdAt,
+    abortedDurationMs: durationMs ?? null,
+    sessionId: session.sessionId,
+    requestSequence: session.requestSequence,
+  });
+}
+
 /**
  * 持久化请求失败信息到数据库
  * - 用于后台异步任务中的错误处理，确保 orphan records 被正确更新
@@ -3739,6 +3812,17 @@ async function persistRequestFailure(options: {
       specialSettings: session.getSpecialSettings() ?? undefined,
       ...errorDiagnostics,
     });
+
+    if (isLocalClientAbortStatus(statusCode, errorMessage)) {
+      await persistLocalClientAbortObservability({
+        session,
+        messageId: messageContext.id,
+        statusCode,
+        errorMessage,
+        durationMs: duration,
+        ttfbMs: phase === "non-stream" ? (session.ttfbMs ?? duration) : session.ttfbMs,
+      });
+    }
 
     if (session.sessionId && session.requestSequence != null) {
       void deleteLiveChain(session.sessionId, session.requestSequence);

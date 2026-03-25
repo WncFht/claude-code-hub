@@ -1,5 +1,6 @@
 import type { Numeric } from "decimal.js-light";
 import type { CacheTtlApplied } from "./cache";
+import type { ClientAbortOutcome } from "@/lib/client-abort-observability";
 import type { ProviderType } from "./provider";
 import type { SpecialSetting } from "./special-settings";
 
@@ -258,6 +259,12 @@ export interface MessageRequest {
   // 错误信息
   errorMessage?: string;
 
+  // Client abort observability
+  clientAbortOutcome?: ClientAbortOutcome | null;
+  clientAbortLongRunning?: boolean | null;
+  clientAbortContinuedByRequestId?: number | null;
+  clientAbortContinuedAt?: Date | null;
+
   // User-Agent（用于客户端类型分析）
   userAgent?: string;
 
@@ -321,6 +328,12 @@ export interface CreateMessageRequestData {
 
   // 错误信息
   error_message?: string;
+
+  // Client abort observability
+  client_abort_outcome?: ClientAbortOutcome | null;
+  client_abort_long_running?: boolean | null;
+  client_abort_continued_by_request_id?: number | null;
+  client_abort_continued_at?: Date | null;
 
   // User-Agent（用于客户端类型分析）
   user_agent?: string;

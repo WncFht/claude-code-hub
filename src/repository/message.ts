@@ -4,6 +4,7 @@ import { and, asc, desc, eq, gt, inArray, isNull, lt, sql } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { keys as keysTable, messageRequest, providers, usageLedger, users } from "@/drizzle/schema";
 import { getEnvConfig } from "@/lib/config/env.schema";
+import type { ClientAbortOutcome } from "@/lib/client-abort-observability";
 import { isLedgerOnlyMode } from "@/lib/ledger-fallback";
 import { formatCostForStorage } from "@/lib/utils/currency";
 import type { CreateMessageRequestData, MessageRequest, ProviderChainItem } from "@/types/message";
@@ -63,6 +64,10 @@ export async function createMessageRequest(
     cacheCreation1hInputTokens: messageRequest.cacheCreation1hInputTokens,
     cacheReadInputTokens: messageRequest.cacheReadInputTokens,
     specialSettings: messageRequest.specialSettings,
+    clientAbortOutcome: messageRequest.clientAbortOutcome,
+    clientAbortLongRunning: messageRequest.clientAbortLongRunning,
+    clientAbortContinuedByRequestId: messageRequest.clientAbortContinuedByRequestId,
+    clientAbortContinuedAt: messageRequest.clientAbortContinuedAt,
     createdAt: messageRequest.createdAt,
     updatedAt: messageRequest.updatedAt,
     deletedAt: messageRequest.deletedAt,
@@ -139,6 +144,10 @@ export async function updateMessageRequestDetails(
     context1mApplied?: boolean; // 是否应用了1M上下文窗口
     swapCacheTtlApplied?: boolean; // Swap Cache TTL Billing active at request time
     specialSettings?: CreateMessageRequestData["special_settings"]; // 特殊设置（审计/展示）
+    clientAbortOutcome?: ClientAbortOutcome | null;
+    clientAbortLongRunning?: boolean | null;
+    clientAbortContinuedByRequestId?: number | null;
+    clientAbortContinuedAt?: Date | null;
   }
 ): Promise<void> {
   if (getEnvConfig().MESSAGE_REQUEST_WRITE_MODE === "async") {
@@ -203,6 +212,18 @@ export async function updateMessageRequestDetails(
   }
   if (details.specialSettings !== undefined) {
     updateData.specialSettings = details.specialSettings;
+  }
+  if (details.clientAbortOutcome !== undefined) {
+    updateData.clientAbortOutcome = details.clientAbortOutcome;
+  }
+  if (details.clientAbortLongRunning !== undefined) {
+    updateData.clientAbortLongRunning = details.clientAbortLongRunning;
+  }
+  if (details.clientAbortContinuedByRequestId !== undefined) {
+    updateData.clientAbortContinuedByRequestId = details.clientAbortContinuedByRequestId;
+  }
+  if (details.clientAbortContinuedAt !== undefined) {
+    updateData.clientAbortContinuedAt = details.clientAbortContinuedAt;
   }
 
   await db.update(messageRequest).set(updateData).where(eq(messageRequest.id, id));

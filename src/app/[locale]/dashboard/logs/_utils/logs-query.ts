@@ -1,3 +1,5 @@
+import type { ClientAbortOutcome } from "@/lib/client-abort-observability";
+
 export interface LogsUrlFilters {
   userId?: number;
   keyId?: number;
@@ -10,8 +12,15 @@ export interface LogsUrlFilters {
   model?: string;
   endpoint?: string;
   minRetryCount?: number;
+  clientAbortOutcome?: ClientAbortOutcome;
   page?: number;
 }
+
+const CLIENT_ABORT_OUTCOMES = new Set<ClientAbortOutcome>([
+  "session_continued",
+  "after_stream_start",
+  "before_stream_start",
+]);
 
 function firstString(value: string | string[] | undefined): string | undefined {
   if (Array.isArray(value)) return value[0];
@@ -29,6 +38,17 @@ function parseStringParam(value: string | string[] | undefined): string | undefi
   const raw = firstString(value);
   const trimmed = raw?.trim();
   return trimmed ? trimmed : undefined;
+}
+
+function parseClientAbortOutcomeParam(
+  value: string | string[] | undefined
+): ClientAbortOutcome | undefined {
+  const raw = parseStringParam(value);
+  if (!raw || !CLIENT_ABORT_OUTCOMES.has(raw as ClientAbortOutcome)) {
+    return undefined;
+  }
+
+  return raw as ClientAbortOutcome;
 }
 
 export function parseLogsUrlFilters(searchParams: {
@@ -55,6 +75,7 @@ export function parseLogsUrlFilters(searchParams: {
     model: parseStringParam(searchParams.model),
     endpoint: parseStringParam(searchParams.endpoint),
     minRetryCount: parseIntParam(searchParams.minRetry),
+    clientAbortOutcome: parseClientAbortOutcomeParam(searchParams.clientAbortOutcome),
     page,
   };
 }
@@ -83,6 +104,10 @@ export function buildLogsUrlQuery(filters: LogsUrlFilters): URLSearchParams {
 
   if (filters.minRetryCount !== undefined) {
     query.set("minRetry", filters.minRetryCount.toString());
+  }
+
+  if (filters.clientAbortOutcome) {
+    query.set("clientAbortOutcome", filters.clientAbortOutcome);
   }
 
   if (filters.page !== undefined && filters.page > 1) {

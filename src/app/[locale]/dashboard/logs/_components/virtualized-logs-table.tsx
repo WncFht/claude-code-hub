@@ -19,6 +19,10 @@ import { Button } from "@/components/ui/button";
 import { RelativeTime } from "@/components/ui/relative-time";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { useVirtualizedInfiniteList } from "@/hooks/use-virtualized-infinite-list";
+import {
+  getClientAbortOutcomeLabelKey,
+  type ClientAbortOutcome,
+} from "@/lib/client-abort-observability";
 import type { LogsTableColumn } from "@/lib/column-visibility";
 import { cn, formatTokenAmount } from "@/lib/utils";
 import { copyTextToClipboard } from "@/lib/utils/clipboard";
@@ -57,6 +61,7 @@ export interface VirtualizedLogsTableFilters {
   model?: string;
   endpoint?: string;
   minRetryCount?: number;
+  clientAbortOutcome?: ClientAbortOutcome;
 }
 
 interface VirtualizedLogsTableProps {
@@ -787,48 +792,62 @@ export function VirtualizedLogsTable({
 
                     {/* Status */}
                     <div className="flex-[0.7] min-w-[70px] pr-3">
-                      <ErrorDetailsDialog
-                        statusCode={log.statusCode}
-                        errorMessage={log.errorMessage}
-                        providerChain={log.providerChain}
-                        sessionId={log.sessionId}
-                        requestSequence={log.requestSequence}
-                        blockedBy={log.blockedBy}
-                        blockedReason={log.blockedReason}
-                        originalModel={log.originalModel}
-                        currentModel={log.model}
-                        userAgent={log.userAgent}
-                        messagesCount={log.messagesCount}
-                        endpoint={log.endpoint}
-                        billingModelSource={billingModelSource}
-                        specialSettings={log.specialSettings}
-                        inputTokens={log.inputTokens}
-                        outputTokens={log.outputTokens}
-                        cacheCreationInputTokens={log.cacheCreationInputTokens}
-                        cacheCreation5mInputTokens={log.cacheCreation5mInputTokens}
-                        cacheCreation1hInputTokens={log.cacheCreation1hInputTokens}
-                        cacheReadInputTokens={log.cacheReadInputTokens}
-                        cacheTtlApplied={log.cacheTtlApplied}
-                        swapCacheTtlApplied={log.swapCacheTtlApplied}
-                        costUsd={log.costUsd}
-                        costMultiplier={log.costMultiplier}
-                        context1mApplied={log.context1mApplied}
-                        durationMs={log.durationMs}
-                        ttfbMs={log.ttfbMs}
-                        externalOpen={dialogState.logId === log.id ? true : undefined}
-                        onExternalOpenChange={(open) => {
-                          if (!open) setDialogState({ logId: null, scrollToRedirect: false });
-                        }}
-                        scrollToRedirect={
-                          dialogState.logId === log.id && dialogState.scrollToRedirect
-                        }
-                        initialTab={
-                          dialogState.logId === log.id ? dialogState.targetTab : undefined
-                        }
-                        initialExpandedChainIndex={
-                          dialogState.logId === log.id ? dialogState.expandedChainIndex : undefined
-                        }
-                      />
+                      <div className="flex flex-col items-start gap-1">
+                        <ErrorDetailsDialog
+                          statusCode={log.statusCode}
+                          errorMessage={log.errorMessage}
+                          providerChain={log.providerChain}
+                          sessionId={log.sessionId}
+                          requestSequence={log.requestSequence}
+                          blockedBy={log.blockedBy}
+                          blockedReason={log.blockedReason}
+                          originalModel={log.originalModel}
+                          currentModel={log.model}
+                          userAgent={log.userAgent}
+                          messagesCount={log.messagesCount}
+                          endpoint={log.endpoint}
+                          billingModelSource={billingModelSource}
+                          specialSettings={log.specialSettings}
+                          inputTokens={log.inputTokens}
+                          outputTokens={log.outputTokens}
+                          cacheCreationInputTokens={log.cacheCreationInputTokens}
+                          cacheCreation5mInputTokens={log.cacheCreation5mInputTokens}
+                          cacheCreation1hInputTokens={log.cacheCreation1hInputTokens}
+                          cacheReadInputTokens={log.cacheReadInputTokens}
+                          cacheTtlApplied={log.cacheTtlApplied}
+                          swapCacheTtlApplied={log.swapCacheTtlApplied}
+                          costUsd={log.costUsd}
+                          costMultiplier={log.costMultiplier}
+                          context1mApplied={log.context1mApplied}
+                          durationMs={log.durationMs}
+                          ttfbMs={log.ttfbMs}
+                          clientAbortOutcome={log.clientAbortOutcome}
+                          clientAbortLongRunning={log.clientAbortLongRunning}
+                          clientAbortContinuedByRequestId={log.clientAbortContinuedByRequestId}
+                          clientAbortContinuedAt={log.clientAbortContinuedAt}
+                          externalOpen={dialogState.logId === log.id ? true : undefined}
+                          onExternalOpenChange={(open) => {
+                            if (!open) setDialogState({ logId: null, scrollToRedirect: false });
+                          }}
+                          scrollToRedirect={
+                            dialogState.logId === log.id && dialogState.scrollToRedirect
+                          }
+                          initialTab={
+                            dialogState.logId === log.id ? dialogState.targetTab : undefined
+                          }
+                          initialExpandedChainIndex={
+                            dialogState.logId === log.id ? dialogState.expandedChainIndex : undefined
+                          }
+                        />
+                        {log.clientAbortOutcome ? (
+                          <Badge
+                            variant="outline"
+                            className="bg-slate-50 text-slate-700 border-slate-200 dark:bg-slate-900/40 dark:text-slate-300 dark:border-slate-700 text-[10px] leading-4"
+                          >
+                            {t(getClientAbortOutcomeLabelKey(log.clientAbortOutcome))}
+                          </Badge>
+                        ) : null}
+                      </div>
                     </div>
                   </div>
                 );

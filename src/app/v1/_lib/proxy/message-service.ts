@@ -1,4 +1,6 @@
 import { extractAnthropicEffortFromRequestBody } from "@/lib/utils/anthropic-effort";
+import { logger } from "@/lib/logger";
+import { reconcileClientAbortContinuationFromNewRequest } from "@/repository/client-abort-observability";
 import { createMessageRequest } from "@/repository/message";
 import type { ProxySession } from "./session";
 
@@ -63,6 +65,20 @@ export class ProxyMessageService {
       messages_count: session.getMessagesLength(), // 传入 messages 数量
       endpoint, // 传入请求端点（可能为 undefined）
       special_settings: session.getSpecialSettings(), // 特殊设置（审计/展示）
+    });
+
+    void reconcileClientAbortContinuationFromNewRequest({
+      currentRequestId: messageRequest.id,
+      currentCreatedAt: messageRequest.createdAt,
+      sessionId: messageRequest.sessionId ?? null,
+      requestSequence: messageRequest.requestSequence ?? null,
+    }).catch((error: unknown) => {
+      logger.warn("[ProxyMessageService] Failed to reconcile client abort continuation", {
+        messageId: messageRequest.id,
+        sessionId: messageRequest.sessionId,
+        requestSequence: messageRequest.requestSequence,
+        error: error instanceof Error ? error.message : String(error),
+      });
     });
 
     session.setMessageContext({

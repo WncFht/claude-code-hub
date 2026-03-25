@@ -1,4 +1,5 @@
 import type { Key } from "@/types/key";
+import type { ClientAbortOutcome } from "@/lib/client-abort-observability";
 import type { ProviderDisplay } from "@/types/provider";
 
 /**
@@ -18,6 +19,7 @@ export interface UsageLogFilters {
   model?: string;
   endpoint?: string;
   minRetryCount?: number;
+  clientAbortOutcome?: ClientAbortOutcome;
 }
 
 /**

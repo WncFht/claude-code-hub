@@ -488,6 +488,13 @@ export const messageRequest = pgTable('message_request', {
   errorStack: text('error_stack'),  // 完整堆栈信息，用于排查 TypeError: terminated 等流错误
   errorCause: text('error_cause'),  // 嵌套错误原因（JSON 格式），如 NGHTTP2_INTERNAL_ERROR
 
+  // Client abort observability（在保留原始 499 审计语义的基础上补充可解释归因）
+  clientAbortOutcome: varchar('client_abort_outcome', { length: 32 })
+    .$type<'session_continued' | 'after_stream_start' | 'before_stream_start'>(),
+  clientAbortLongRunning: boolean('client_abort_long_running'),
+  clientAbortContinuedByRequestId: integer('client_abort_continued_by_request_id'),
+  clientAbortContinuedAt: timestamp('client_abort_continued_at', { withTimezone: true }),
+
   // 拦截原因（用于记录被敏感词等规则拦截的请求）
   blockedBy: varchar('blocked_by', { length: 50 }),
   blockedReason: text('blocked_reason'),
@@ -553,6 +560,9 @@ export const messageRequest = pgTable('message_request', {
   // #779：筛选器 DISTINCT model / status_code 加速（admin usage logs）
   messageRequestModelActiveIdx: index('idx_message_request_model_active').on(table.model).where(sql`${table.deletedAt} IS NULL AND ${table.model} IS NOT NULL`),
   messageRequestStatusCodeActiveIdx: index('idx_message_request_status_code_active').on(table.statusCode).where(sql`${table.deletedAt} IS NULL AND ${table.statusCode} IS NOT NULL`),
+  messageRequestClientAbortOutcomeActiveIdx: index('idx_message_request_client_abort_outcome_active')
+    .on(table.clientAbortOutcome)
+    .where(sql`${table.deletedAt} IS NULL AND ${table.clientAbortOutcome} IS NOT NULL`),
   messageRequestCreatedAtIdx: index('idx_message_request_created_at').on(table.createdAt),
   messageRequestDeletedAtIdx: index('idx_message_request_deleted_at').on(table.deletedAt),
   // #slow-query: DISTINCT ON / LATERAL last-provider lookup per key

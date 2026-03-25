@@ -135,6 +135,10 @@ function makeLog(overrides: Partial<UsageLogRow>): UsageLogRow {
     durationMs: 100,
     ttfbMs: 50,
     errorMessage: null,
+    clientAbortOutcome: null,
+    clientAbortLongRunning: null,
+    clientAbortContinuedByRequestId: null,
+    clientAbortContinuedAt: null,
     providerChain: null,
     blockedBy: null,
     blockedReason: null,
@@ -189,6 +193,28 @@ describe("virtualized-logs-table multiplier badge", () => {
     expect(
       renderToStaticMarkup(<VirtualizedLogsTable filters={{}} autoRefreshEnabled={false} />)
     ).toContain("logs.table.noData");
+  });
+
+  test("renders a derived client-abort badge for local 499 rows", () => {
+    mockIsLoading = false;
+    mockIsError = false;
+    mockError = null;
+    mockHasNextPage = false;
+    mockIsFetchingNextPage = false;
+    mockLogs = [
+      makeLog({
+        id: 1,
+        statusCode: 499,
+        errorMessage: "CLIENT_ABORTED",
+        clientAbortOutcome: "session_continued",
+      }),
+    ];
+
+    const html = renderToStaticMarkup(
+      <VirtualizedLogsTable filters={{}} autoRefreshEnabled={false} />
+    );
+
+    expect(html).toContain("logs.clientAbort.outcomes.session_continued");
   });
 
   test("does not render cost multiplier badge for null/undefined/empty/NaN/Infinity", () => {

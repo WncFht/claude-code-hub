@@ -5,6 +5,7 @@ import { sql } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { getEnvConfig } from "@/lib/config/env.schema";
 import { logger } from "@/lib/logger";
+import type { ClientAbortOutcome } from "@/lib/client-abort-observability";
 import type { CreateMessageRequestData } from "@/types/message";
 
 export type MessageRequestUpdatePatch = {
@@ -28,6 +29,10 @@ export type MessageRequestUpdatePatch = {
   context1mApplied?: boolean;
   swapCacheTtlApplied?: boolean;
   specialSettings?: CreateMessageRequestData["special_settings"];
+  clientAbortOutcome?: ClientAbortOutcome | null;
+  clientAbortLongRunning?: boolean | null;
+  clientAbortContinuedByRequestId?: number | null;
+  clientAbortContinuedAt?: Date | null;
 };
 
 type MessageRequestUpdateRecord = {
@@ -62,6 +67,10 @@ const COLUMN_MAP: Record<keyof MessageRequestUpdatePatch, string> = {
   context1mApplied: "context_1m_applied",
   swapCacheTtlApplied: "swap_cache_ttl_applied",
   specialSettings: "special_settings",
+  clientAbortOutcome: "client_abort_outcome",
+  clientAbortLongRunning: "client_abort_long_running",
+  clientAbortContinuedByRequestId: "client_abort_continued_by_request_id",
+  clientAbortContinuedAt: "client_abort_continued_at",
 };
 
 function loadWriterConfig(): WriterConfig {

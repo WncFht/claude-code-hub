@@ -7,15 +7,21 @@
 import { and, desc, eq, gte, inArray, isNull, lte } from "drizzle-orm";
 import { db } from "@/drizzle/db";
 import { messageRequest, providers } from "@/drizzle/schema";
+import {
+  type ClientAbortOutcome,
+  isLocalClientAbortStatus,
+} from "@/lib/client-abort-observability";
 import { logger } from "@/lib/logger";
 import type {
   AvailabilityQueryOptions,
   AvailabilityQueryResult,
   AvailabilityStatus,
+  ClientAbortCounters,
   ProviderAvailabilitySummary,
   RequestStatusClassification,
   TimeBucketMetrics,
 } from "./types";
+import { EMPTY_CLIENT_ABORT_COUNTERS } from "./types";
 
 // Maximum requests to load per query to prevent OOM
 const MAX_REQUESTS_PER_QUERY = 100000;
@@ -24,13 +30,35 @@ const MAX_REQUESTS_PER_QUERY = 100000;
  * Classify a single request's status
  * Simple: success (2xx/3xx) = green, failure = red
  */
-export function classifyRequestStatus(statusCode: number | null): RequestStatusClassification {
+export function classifyRequestStatus(params: {
+  statusCode: number | null;
+  errorMessage: string | null;
+  clientAbortOutcome: ClientAbortOutcome | null;
+  clientAbortLongRunning: boolean | null;
+}): RequestStatusClassification {
+  const { statusCode, errorMessage, clientAbortOutcome, clientAbortLongRunning } = params;
+
+  if (clientAbortOutcome && isLocalClientAbortStatus(statusCode, errorMessage)) {
+    return {
+      status: "unknown",
+      isSuccess: false,
+      isError: false,
+      countsTowardAvailability: false,
+      countsTowardClientAbort: true,
+      clientAbortOutcome,
+      clientAbortLongRunning: clientAbortLongRunning === true,
+    };
+  }
+
   // No status code means network error or timeout
   if (statusCode === null) {
     return {
       status: "red",
       isSuccess: false,
       isError: true,
+      countsTowardAvailability: true,
+      countsTowardClientAbort: false,
+      clientAbortLongRunning: false,
     };
   }
 
@@ -40,6 +68,9 @@ export function classifyRequestStatus(statusCode: number | null): RequestStatusC
       status: "red",
       isSuccess: false,
       isError: true,
+      countsTowardAvailability: true,
+      countsTowardClientAbort: false,
+      clientAbortLongRunning: false,
     };
   }
 
@@ -48,7 +79,37 @@ export function classifyRequestStatus(statusCode: number | null): RequestStatusC
     status: "green",
     isSuccess: true,
     isError: false,
+    countsTowardAvailability: true,
+    countsTowardClientAbort: false,
+    clientAbortLongRunning: false,
   };
+}
+
+function createEmptyClientAbortCounters(): ClientAbortCounters {
+  return { ...EMPTY_CLIENT_ABORT_COUNTERS };
+}
+
+function incrementClientAbortCounters(
+  counters: ClientAbortCounters,
+  classification: RequestStatusClassification
+): void {
+  if (!classification.countsTowardClientAbort || !classification.clientAbortOutcome) {
+    return;
+  }
+
+  counters.total += 1;
+
+  if (classification.clientAbortOutcome === "session_continued") {
+    counters.sessionContinued += 1;
+  } else if (classification.clientAbortOutcome === "after_stream_start") {
+    counters.afterStreamStart += 1;
+  } else if (classification.clientAbortOutcome === "before_stream_start") {
+    counters.beforeStreamStart += 1;
+  }
+
+  if (classification.clientAbortLongRunning) {
+    counters.longRunning += 1;
+  }
 }
 
 /**
@@ -140,6 +201,7 @@ export async function queryProviderAvailability(
       bucketSizeMinutes: explicitBucketSize ?? 60,
       providers: [],
       systemAvailability: 0,
+      clientAbortCounts: createEmptyClientAbortCounters(),
     };
   }
 
@@ -160,6 +222,8 @@ export async function queryProviderAvailability(
       statusCode: messageRequest.statusCode,
       durationMs: messageRequest.durationMs,
       errorMessage: messageRequest.errorMessage,
+      clientAbortOutcome: messageRequest.clientAbortOutcome,
+      clientAbortLongRunning: messageRequest.clientAbortLongRunning,
       createdAt: messageRequest.createdAt,
     })
     .from(messageRequest)
@@ -194,6 +258,7 @@ export async function queryProviderAvailability(
       {
         greenCount: number;
         redCount: number;
+        clientAbortCounts: ClientAbortCounters;
         latencies: number[];
       }
     >
@@ -218,18 +283,26 @@ export async function queryProviderAvailability(
       providerData.set(bucketKey, {
         greenCount: 0,
         redCount: 0,
+        clientAbortCounts: createEmptyClientAbortCounters(),
         latencies: [],
       });
     }
 
     const bucket = providerData.get(bucketKey)!;
-    const classification = classifyRequestStatus(req.statusCode);
+    const classification = classifyRequestStatus({
+      statusCode: req.statusCode,
+      errorMessage: req.errorMessage,
+      clientAbortOutcome: req.clientAbortOutcome,
+      clientAbortLongRunning: req.clientAbortLongRunning,
+    });
 
-    if (classification.status === "green") {
+    if (classification.status === "green" && classification.countsTowardAvailability) {
       bucket.greenCount++;
-    } else {
+    } else if (classification.status === "red" && classification.countsTowardAvailability) {
       bucket.redCount++;
     }
+
+    incrementClientAbortCounters(bucket.clientAbortCounts, classification);
 
     if (req.durationMs !== null) {
       bucket.latencies.push(req.durationMs);
@@ -245,6 +318,7 @@ export async function queryProviderAvailability(
 
     let totalGreen = 0;
     let totalRed = 0;
+    const totalClientAbortCounts = createEmptyClientAbortCounters();
     const allLatencies: number[] = [];
     let lastRequestAt: string | null = null;
 
@@ -258,6 +332,11 @@ export async function queryProviderAvailability(
 
       totalGreen += bucket.greenCount;
       totalRed += bucket.redCount;
+      totalClientAbortCounts.total += bucket.clientAbortCounts.total;
+      totalClientAbortCounts.sessionContinued += bucket.clientAbortCounts.sessionContinued;
+      totalClientAbortCounts.afterStreamStart += bucket.clientAbortCounts.afterStreamStart;
+      totalClientAbortCounts.beforeStreamStart += bucket.clientAbortCounts.beforeStreamStart;
+      totalClientAbortCounts.longRunning += bucket.clientAbortCounts.longRunning;
       allLatencies.push(...bucket.latencies);
 
       const sortedLatencies = [...bucket.latencies].sort((a, b) => a - b);
@@ -269,6 +348,7 @@ export async function queryProviderAvailability(
         totalRequests: total,
         greenCount: bucket.greenCount,
         redCount: bucket.redCount,
+        clientAbortCounts: { ...bucket.clientAbortCounts },
         availabilityScore: calculateAvailabilityScore(bucket.greenCount, bucket.redCount),
         avgLatencyMs:
           sortedLatencies.length > 0
@@ -309,6 +389,7 @@ export async function queryProviderAvailability(
       currentAvailability: calculateAvailabilityScore(totalGreen, totalRed),
       totalRequests,
       successRate: totalRequests > 0 ? totalGreen / totalRequests : 0,
+      clientAbortCounts: totalClientAbortCounts,
       avgLatencyMs:
         sortedAllLatencies.length > 0
           ? sortedAllLatencies.reduce((a, b) => a + b, 0) / sortedAllLatencies.length
@@ -320,6 +401,14 @@ export async function queryProviderAvailability(
 
   // Calculate system-wide availability
   const totalSystemRequests = providerSummaries.reduce((sum, p) => sum + p.totalRequests, 0);
+  const systemClientAbortCounts = createEmptyClientAbortCounters();
+  for (const summary of providerSummaries) {
+    systemClientAbortCounts.total += summary.clientAbortCounts.total;
+    systemClientAbortCounts.sessionContinued += summary.clientAbortCounts.sessionContinued;
+    systemClientAbortCounts.afterStreamStart += summary.clientAbortCounts.afterStreamStart;
+    systemClientAbortCounts.beforeStreamStart += summary.clientAbortCounts.beforeStreamStart;
+    systemClientAbortCounts.longRunning += summary.clientAbortCounts.longRunning;
+  }
   const weightedSystemAvailability =
     totalSystemRequests > 0
       ? providerSummaries.reduce((sum, p) => sum + p.currentAvailability * p.totalRequests, 0) /
@@ -333,6 +422,7 @@ export async function queryProviderAvailability(
     bucketSizeMinutes,
     providers: providerSummaries,
     systemAvailability: weightedSystemAvailability,
+    clientAbortCounts: systemClientAbortCounts,
   };
 }
 
@@ -374,6 +464,9 @@ export async function getCurrentProviderStatus(): Promise<
       providerId: messageRequest.providerId,
       statusCode: messageRequest.statusCode,
       durationMs: messageRequest.durationMs,
+      errorMessage: messageRequest.errorMessage,
+      clientAbortOutcome: messageRequest.clientAbortOutcome,
+      clientAbortLongRunning: messageRequest.clientAbortLongRunning,
       createdAt: messageRequest.createdAt,
     })
     .from(messageRequest)
@@ -408,11 +501,16 @@ export async function getCurrentProviderStatus(): Promise<
     const stats = providerStats.get(req.providerId);
     if (!stats) continue;
 
-    const classification = classifyRequestStatus(req.statusCode);
+    const classification = classifyRequestStatus({
+      statusCode: req.statusCode,
+      errorMessage: req.errorMessage,
+      clientAbortOutcome: req.clientAbortOutcome,
+      clientAbortLongRunning: req.clientAbortLongRunning,
+    });
 
-    if (classification.status === "green") {
+    if (classification.status === "green" && classification.countsTowardAvailability) {
       stats.greenCount++;
-    } else {
+    } else if (classification.status === "red" && classification.countsTowardAvailability) {
       stats.redCount++;
     }
 

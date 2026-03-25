@@ -1,6 +1,7 @@
 import type { SQL } from "drizzle-orm";
 import { eq, gte, lt, sql } from "drizzle-orm";
 import { messageRequest } from "@/drizzle/schema";
+import type { ClientAbortOutcome } from "@/lib/client-abort-observability";
 
 export interface UsageLogFilterParams {
   sessionId?: string;
@@ -11,6 +12,7 @@ export interface UsageLogFilterParams {
   model?: string;
   endpoint?: string;
   minRetryCount?: number;
+  clientAbortOutcome?: ClientAbortOutcome;
 }
 
 // 重试次数计算：
@@ -97,6 +99,10 @@ export function buildUsageLogConditions(filters: UsageLogFilterParams): SQL[] {
 
   if (filters.endpoint) {
     conditions.push(eq(messageRequest.endpoint, filters.endpoint));
+  }
+
+  if (filters.clientAbortOutcome) {
+    conditions.push(eq(messageRequest.clientAbortOutcome, filters.clientAbortOutcome));
   }
 
   const minRetryCount = filters.minRetryCount ?? 0;
