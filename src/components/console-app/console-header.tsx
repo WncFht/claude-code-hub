@@ -1,11 +1,15 @@
 import { AnimatePresence, motion } from "framer-motion";
 
+import { Link } from "@/i18n/routing";
+
 interface ConsoleHeaderProps {
   siteTitle: string;
   activeModuleLabel: string;
   activeScreenLabel: string;
   currentPath: string;
   direction: number;
+  docsHref?: string;
+  docsLabel?: string;
 }
 
 function getBrandMonogram(siteTitle: string) {
@@ -26,6 +30,8 @@ export function ConsoleHeader({
   activeScreenLabel,
   currentPath,
   direction,
+  docsHref,
+  docsLabel,
 }: ConsoleHeaderProps) {
   const headerTextTransition = {
     duration: 0.3,
@@ -113,6 +119,15 @@ export function ConsoleHeader({
             transition={headerTextTransition}
             className="absolute inset-0 flex min-w-0 flex-wrap items-center gap-2 md:justify-end"
           >
+            {docsHref && docsLabel ? (
+              <Link
+                href={docsHref}
+                data-slot="console-doc-link"
+                className="rounded-full border border-border/70 bg-card/75 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-[0_10px_30px_rgba(15,23,42,0.06)] transition-colors hover:border-border hover:text-foreground"
+              >
+                {docsLabel}
+              </Link>
+            ) : null}
             <div
               data-slot="console-screen-label"
               className="rounded-full border border-border/70 bg-card/75 px-3 py-1.5 text-xs font-medium text-muted-foreground shadow-[0_10px_30px_rgba(15,23,42,0.06)]"

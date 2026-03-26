@@ -12,6 +12,8 @@ interface ConsoleShellProps {
   currentPath: string;
   activeModuleLabel: string;
   activeScreenLabel: string;
+  docsHref?: string;
+  docsLabel?: string;
   activeRoute: ConsoleRuntimeRouteDefinition;
   direction: number;
   navigationItems: ConsoleSidebarItem[];
@@ -25,6 +27,8 @@ export function ConsoleShell({
   currentPath,
   activeModuleLabel,
   activeScreenLabel,
+  docsHref,
+  docsLabel,
   activeRoute,
   direction,
   navigationItems,
@@ -55,6 +59,8 @@ export function ConsoleShell({
             activeScreenLabel={activeScreenLabel}
             currentPath={currentPath}
             direction={direction}
+            docsHref={docsHref}
+            docsLabel={docsLabel}
           />
 
           <AnimatePresence initial={false} mode="wait">

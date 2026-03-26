@@ -100,15 +100,16 @@ const messages = {
       data: "Data",
       notifications: "Notifications",
       logs: "Logs",
+      docs: "Documentation",
     },
   },
 };
 
-function makeBootstrap(pathname: string) {
+function makeBootstrap(pathname: string, role: "admin" | "user" = "admin") {
   return buildConsoleBootstrap({
     locale: "en",
     pathname,
-    role: "admin",
+    role,
   });
 }
 
@@ -387,6 +388,12 @@ describe("ConsoleApp", () => {
     expect(header?.querySelector('[data-slot="console-screen-label"]')?.textContent).toContain(
       "Request Filters"
     );
+    expect(header?.querySelector('[data-slot="console-doc-link"]')?.textContent).toContain(
+      "Documentation"
+    );
+    expect(header?.querySelector('[data-slot="console-doc-link"]')?.getAttribute("href")).toBe(
+      "/usage-doc"
+    );
     expect(moduleTabs).not.toBeNull();
     expect(moduleTabs?.querySelector('[data-tab-id="sensitive-words"]')?.textContent).toContain(
       "Sensitive Words"
@@ -400,6 +407,28 @@ describe("ConsoleApp", () => {
     expect(
       moduleTabs?.querySelector('[data-tab-id="request-filters"]')?.getAttribute("data-active")
     ).toBe("true");
+
+    await view.unmount();
+  });
+
+  test("keeps the docs entry visible for regular web ui users", async () => {
+    routingState.pathname = "/console/traffic/logs";
+    const { ConsoleApp } = await import("@/components/console-app/console-app");
+
+    const view = await render(
+      <NextIntlClientProvider locale="en" messages={messages}>
+        <ConsoleApp bootstrap={makeBootstrap("/console/traffic/logs", "user")} />
+      </NextIntlClientProvider>
+    );
+
+    const header = view.container.querySelector('[data-slot="console-header"]');
+
+    expect(header?.querySelector('[data-slot="console-doc-link"]')?.textContent).toContain(
+      "Documentation"
+    );
+    expect(header?.querySelector('[data-slot="console-doc-link"]')?.getAttribute("href")).toBe(
+      "/usage-doc"
+    );
 
     await view.unmount();
   });

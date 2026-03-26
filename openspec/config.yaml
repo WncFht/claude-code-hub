@@ -1,0 +1,15 @@
+schema: spec-driven
+
+context: |
+  Use Simplified Chinese by default for all OpenSpec-generated artifact content.
+  Keep code, commands, file paths, API names, and other technical identifiers in their original language when needed for clarity.
+
+rules:
+  proposal:
+    - Write all explanatory prose in Simplified Chinese.
+  specs:
+    - Write all explanatory prose in Simplified Chinese.
+  design:
+    - Write all explanatory prose in Simplified Chinese.
+  tasks:
+    - Write all explanatory prose in Simplified Chinese.

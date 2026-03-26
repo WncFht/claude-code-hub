@@ -2,6 +2,22 @@ import { renderToStaticMarkup } from "react-dom/server";
 import type { ReactNode } from "react";
 import { describe, expect, test, vi } from "vitest";
 
+vi.mock("@/i18n/routing", () => ({
+  Link: ({
+    href,
+    children,
+    ...rest
+  }: {
+    href: string;
+    children: ReactNode;
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...rest}>
+      {children}
+    </a>
+  ),
+}));
+
 vi.mock("framer-motion", () => ({
   AnimatePresence: ({ children }: { children: ReactNode }) => <>{children}</>,
   motion: {
@@ -47,11 +63,14 @@ describe("ConsoleHeader motion profile", () => {
         activeScreenLabel="Request Filters"
         currentPath="/console/policy/request-filters"
         direction={1}
+        docsHref="/usage-doc"
+        docsLabel="Documentation"
       />
     );
 
     expect(html).toContain('data-slot="console-header-title-stack"');
     expect(html).toContain('data-current-path="/console/policy/request-filters"');
+    expect(html).toContain('data-slot="console-doc-link"');
     expect(html).toContain('data-slot="console-header-route-meta"');
     expect(html).toContain('data-motion-initial="{&quot;opacity&quot;:0,&quot;y&quot;:34}"');
     expect(html).toContain('data-motion-animate="{&quot;opacity&quot;:1,&quot;y&quot;:0}"');

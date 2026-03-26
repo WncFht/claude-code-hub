@@ -62,6 +62,7 @@ export function ConsoleApp({ bootstrap }: ConsoleAppProps) {
   const tSettingsNav = useTranslations("settings.nav");
   const tRateLimits = useTranslations("dashboard.rateLimits");
   const tUserInsights = useTranslations("dashboard.leaderboard.userInsights");
+  const docsLabel = tSettingsNav("docs");
   const moduleLabels = getModuleLabels(tModules);
   const { currentPath, activeRoute, direction } = useConsoleRoute(bootstrap);
   const hasMountedRef = useRef(false);
@@ -139,6 +140,8 @@ export function ConsoleApp({ bootstrap }: ConsoleAppProps) {
           currentPath={currentPath}
           activeModuleLabel={moduleLabels[activeRoute.moduleId]}
           activeScreenLabel={activeScreenLabel}
+          docsHref="/usage-doc"
+          docsLabel={docsLabel}
           activeRoute={activeRoute}
           direction={direction}
           navigationItems={navigationItems}
