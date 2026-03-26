@@ -10,7 +10,7 @@ BLUE='\033[0;34m'
 NC='\033[0m' # No Color
 
 # Script version
-VERSION="1.1.0"
+VERSION="1.2.0"
 
 # Logging functions (defined early for use in parse_args)
 log_info() {
@@ -40,6 +40,13 @@ BRANCH_NAME="main"
 APP_PORT="23000"
 UPDATE_MODE=false
 FORCE_NEW=false
+RESTART_MODE=false
+PROBE_ONLY=false
+COMPOSE_FILE=""
+ENV_FILE=""
+APP_SERVICE="app"
+RESTART_TIMEOUT_SECONDS=90
+TAIL_LOG_LINES=80
 
 # CLI argument variables
 BRANCH_ARG=""
@@ -61,6 +68,13 @@ Options:
   -p, --port <port>          App external port (default: 23000)
   -t, --admin-token <token>  Custom admin token (default: auto-generated)
   -d, --deploy-dir <path>    Custom deployment directory
+      --compose-file <path>  Existing compose file used by --restart/--probe-only
+      --env-file <path>      Existing env file used by --restart/--probe-only
+      --app-service <name>   App service name for probes (default: app)
+      --restart              Restart an existing deployment and run probes
+      --probe-only           Only run deployment probes; do not change containers
+      --restart-timeout <s>  Probe timeout for --restart/--probe-only (default: 90)
+      --tail-log-lines <n>   Lines of logs to show on probe failure (default: 80)
       --domain <domain>      Domain for Caddy HTTPS (enables Caddy automatically)
       --enable-caddy         Enable Caddy reverse proxy without HTTPS (HTTP only)
       --force-new            Force fresh installation (ignore existing deployment)
@@ -76,6 +90,8 @@ Examples:
   $0 --enable-caddy -y                  # Deploy with Caddy HTTP-only
   $0 -y                                 # Update existing deployment (auto-detected)
   $0 --force-new -y                     # Force fresh install even if deployment exists
+  $0 --restart -d /path/to/runtime -y   # Restart an existing deployment
+  $0 --probe-only -d /path/to/runtime -y
 
 For more information, visit: https://github.com/ding113/claude-code-hub
 EOF
@@ -114,6 +130,54 @@ parse_args() {
                     exit 1
                 fi
                 DIR_ARG="$2"
+                shift 2
+                ;;
+            --compose-file)
+                if [[ -z "${2:-}" ]] || [[ "$2" == -* ]]; then
+                    log_error "Option $1 requires an argument"
+                    exit 1
+                fi
+                COMPOSE_FILE="$2"
+                shift 2
+                ;;
+            --env-file)
+                if [[ -z "${2:-}" ]] || [[ "$2" == -* ]]; then
+                    log_error "Option $1 requires an argument"
+                    exit 1
+                fi
+                ENV_FILE="$2"
+                shift 2
+                ;;
+            --app-service)
+                if [[ -z "${2:-}" ]] || [[ "$2" == -* ]]; then
+                    log_error "Option $1 requires an argument"
+                    exit 1
+                fi
+                APP_SERVICE="$2"
+                shift 2
+                ;;
+            --restart)
+                RESTART_MODE=true
+                shift
+                ;;
+            --probe-only)
+                PROBE_ONLY=true
+                shift
+                ;;
+            --restart-timeout)
+                if [[ -z "${2:-}" ]] || [[ "$2" == -* ]]; then
+                    log_error "Option $1 requires an argument"
+                    exit 1
+                fi
+                RESTART_TIMEOUT_SECONDS="$2"
+                shift 2
+                ;;
+            --tail-log-lines)
+                if [[ -z "${2:-}" ]] || [[ "$2" == -* ]]; then
+                    log_error "Option $1 requires an argument"
+                    exit 1
+                fi
+                TAIL_LOG_LINES="$2"
                 shift 2
                 ;;
             --domain)
@@ -199,6 +263,21 @@ validate_inputs() {
             log_error "Invalid domain format: $DOMAIN_ARG"
             exit 1
         fi
+    fi
+
+    if [[ "${RESTART_MODE}" == true && "${PROBE_ONLY}" == true ]]; then
+        log_error "--restart and --probe-only cannot be used together"
+        exit 1
+    fi
+
+    if ! [[ "${RESTART_TIMEOUT_SECONDS}" =~ ^[0-9]+$ ]] || [[ "${RESTART_TIMEOUT_SECONDS}" -lt 5 ]]; then
+        log_error "Invalid --restart-timeout: ${RESTART_TIMEOUT_SECONDS}"
+        exit 1
+    fi
+
+    if ! [[ "${TAIL_LOG_LINES}" =~ ^[0-9]+$ ]] || [[ "${TAIL_LOG_LINES}" -lt 1 ]]; then
+        log_error "Invalid --tail-log-lines: ${TAIL_LOG_LINES}"
+        exit 1
     fi
 }
 
@@ -415,6 +494,357 @@ load_existing_env() {
             APP_PORT="$existing_port"
         fi
     fi
+}
+
+resolve_runtime_paths() {
+    if [[ -z "$COMPOSE_FILE" ]]; then
+        if [[ -f "$DEPLOY_DIR/docker-compose.archbox.yaml" ]]; then
+            COMPOSE_FILE="$DEPLOY_DIR/docker-compose.archbox.yaml"
+        elif [[ -f "$DEPLOY_DIR/docker-compose.yaml" ]]; then
+            COMPOSE_FILE="$DEPLOY_DIR/docker-compose.yaml"
+        else
+            COMPOSE_FILE="$DEPLOY_DIR/docker-compose.yaml"
+        fi
+    fi
+
+    if [[ -z "$ENV_FILE" ]]; then
+        ENV_FILE="$DEPLOY_DIR/.env"
+    fi
+}
+
+compose_cmd() {
+    local compose_args=()
+    if [[ -n "$ENV_FILE" ]] && [[ -f "$ENV_FILE" ]]; then
+        compose_args+=(--env-file "$ENV_FILE")
+    fi
+
+    if docker compose version &> /dev/null; then
+        (
+            cd "$DEPLOY_DIR"
+            docker compose -f "$COMPOSE_FILE" "${compose_args[@]}" "$@"
+        )
+    else
+        (
+            cd "$DEPLOY_DIR"
+            docker-compose -f "$COMPOSE_FILE" "${compose_args[@]}" "$@"
+        )
+    fi
+}
+
+compose_command_hint() {
+    local deploy_dir_quoted
+    local compose_file_quoted
+    local env_file_quoted
+    printf -v deploy_dir_quoted '%q' "$DEPLOY_DIR"
+    printf -v compose_file_quoted '%q' "$COMPOSE_FILE"
+    printf -v env_file_quoted '%q' "$ENV_FILE"
+
+    local compose_flag=""
+    local env_flag=""
+    if [[ "$COMPOSE_FILE" != "$DEPLOY_DIR/docker-compose.yaml" ]]; then
+        compose_flag="-f ${compose_file_quoted} "
+    fi
+    if [[ -n "$ENV_FILE" ]] && [[ "$ENV_FILE" != "$DEPLOY_DIR/.env" ]]; then
+        env_flag="--env-file ${env_file_quoted} "
+    fi
+    echo "cd ${deploy_dir_quoted} && docker compose ${compose_flag}${env_flag}"
+}
+
+get_env_value() {
+    local key="$1"
+    local default_value="${2:-}"
+
+    if [[ -f "$ENV_FILE" ]]; then
+        local value
+        value=$(grep -E "^${key}=" "$ENV_FILE" | tail -n 1 | cut -d'=' -f2- || true)
+        if [[ -n "$value" ]]; then
+            echo "$value"
+            return 0
+        fi
+    fi
+
+    echo "$default_value"
+}
+
+get_runtime_app_port() {
+    get_env_value "APP_PORT" "$APP_PORT"
+}
+
+list_runtime_services() {
+    local services
+    services=$(compose_cmd config --services 2>/dev/null || true)
+    if [[ -n "$services" ]]; then
+        printf '%s\n' "$services"
+        return 0
+    fi
+
+    printf '%s\n' "postgres" "redis" "$APP_SERVICE"
+}
+
+service_container_id() {
+    local service_name="$1"
+    compose_cmd ps -q "$service_name" 2>/dev/null | head -n 1
+}
+
+container_name_from_id() {
+    local container_id="$1"
+    if [[ -z "$container_id" ]]; then
+        return 1
+    fi
+    docker inspect --format='{{.Name}}' "$container_id" 2>/dev/null | sed 's#^/##'
+}
+
+container_state_from_id() {
+    local container_id="$1"
+    if [[ -z "$container_id" ]]; then
+        return 1
+    fi
+    docker inspect --format='{{.State.Status}}' "$container_id" 2>/dev/null
+}
+
+container_health_from_id() {
+    local container_id="$1"
+    if [[ -z "$container_id" ]]; then
+        return 1
+    fi
+    docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' "$container_id" 2>/dev/null
+}
+
+container_ports_from_id() {
+    local container_id="$1"
+    if [[ -z "$container_id" ]]; then
+        return 1
+    fi
+
+    local ports
+    ports=$(docker port "$container_id" 2>/dev/null | paste -sd ', ' - || true)
+    if [[ -z "$ports" ]]; then
+        echo "none"
+        return 0
+    fi
+    echo "$ports"
+}
+
+probe_host_health_silent() {
+    local app_port="$1"
+    curl -fsS -m 5 "http://127.0.0.1:${app_port}/api/actions/health" >/dev/null 2>&1
+}
+
+probe_container_health_silent() {
+    local container_id="$1"
+    local app_port="$2"
+    docker exec "$container_id" sh -lc "curl -fsS -m 5 http://127.0.0.1:${app_port}/api/actions/health >/dev/null" >/dev/null 2>&1
+}
+
+print_host_health_probe() {
+    local app_port="$1"
+    local url="http://127.0.0.1:${app_port}/api/actions/health"
+    local http_code
+    http_code=$(curl -sS -m 5 -o /tmp/cch-deploy-health-host.txt -w '%{http_code}' "$url" 2>/tmp/cch-deploy-health-host.err || true)
+
+    if [[ "$http_code" == "200" ]]; then
+        log_success "Host health probe: ${url} -> 200"
+        return 0
+    fi
+
+    local err_msg=""
+    if [[ -f /tmp/cch-deploy-health-host.err ]]; then
+        err_msg=$(tr '\n' ' ' < /tmp/cch-deploy-health-host.err | sed 's/[[:space:]]\+/ /g' | sed 's/^ //; s/ $//')
+    fi
+    if [[ -z "$err_msg" ]]; then
+        err_msg="HTTP ${http_code:-unknown}"
+    fi
+    log_warning "Host health probe: ${url} -> ${err_msg}"
+    return 1
+}
+
+print_container_health_probe() {
+    local container_id="$1"
+    local container_name="$2"
+    local app_port="$3"
+    local probe_output
+
+    probe_output=$(docker exec "$container_id" sh -lc "curl -sS -m 5 http://127.0.0.1:${app_port}/api/actions/health" 2>&1 || true)
+    if [[ "$probe_output" == *'"status":"ok"'* ]]; then
+        log_success "Container health probe: ${container_name} -> ok"
+        return 0
+    fi
+
+    local truncated
+    truncated=$(printf '%s' "$probe_output" | head -c 160)
+    if [[ -z "$truncated" ]]; then
+        truncated="probe returned no output"
+    fi
+    log_warning "Container health probe: ${container_name} -> ${truncated}"
+    return 1
+}
+
+print_runtime_probe() {
+    local app_port="$1"
+    local ready=1
+
+    echo ""
+    log_info "Runtime probe summary"
+    echo "  deploy_dir: $DEPLOY_DIR"
+    echo "  compose_file: $COMPOSE_FILE"
+    echo "  env_file: $ENV_FILE"
+    echo "  app_service: $APP_SERVICE"
+    echo "  app_port: $app_port"
+    echo ""
+
+    log_info "docker compose ps"
+    compose_cmd ps || true
+    echo ""
+
+    while IFS= read -r service_name; do
+        [[ -z "$service_name" ]] && continue
+
+        local container_id
+        container_id=$(service_container_id "$service_name")
+        if [[ -z "$container_id" ]]; then
+            log_warning "service=${service_name} container=missing"
+            continue
+        fi
+
+        local container_name
+        local container_state
+        local container_health
+        local container_ports
+        container_name=$(container_name_from_id "$container_id")
+        container_state=$(container_state_from_id "$container_id")
+        container_health=$(container_health_from_id "$container_id")
+        container_ports=$(container_ports_from_id "$container_id")
+
+        echo "  service=${service_name} container=${container_name:-unknown} state=${container_state:-unknown} health=${container_health:-unknown} ports=${container_ports:-none}"
+
+        if [[ "$service_name" == "$APP_SERVICE" ]] && [[ "$container_health" == "healthy" ]]; then
+            ready=0
+        fi
+    done < <(list_runtime_services)
+    echo ""
+
+    if print_host_health_probe "$app_port"; then
+        ready=0
+    fi
+
+    local app_container_id
+    app_container_id=$(service_container_id "$APP_SERVICE")
+    if [[ -n "$app_container_id" ]]; then
+        local app_container_name
+        app_container_name=$(container_name_from_id "$app_container_id")
+        if print_container_health_probe "$app_container_id" "${app_container_name:-$APP_SERVICE}" "$app_port"; then
+            ready=0
+        fi
+    else
+        log_warning "App service container is missing; skipping container health probe"
+    fi
+
+    return "$ready"
+}
+
+runtime_ready() {
+    local app_port="$1"
+    local app_container_id
+    app_container_id=$(service_container_id "$APP_SERVICE")
+    if [[ -z "$app_container_id" ]]; then
+        return 1
+    fi
+
+    local container_health
+    container_health=$(container_health_from_id "$app_container_id")
+    if [[ "$container_health" == "healthy" ]]; then
+        return 0
+    fi
+
+    if probe_container_health_silent "$app_container_id" "$app_port"; then
+        return 0
+    fi
+
+    if probe_host_health_silent "$app_port"; then
+        return 0
+    fi
+
+    return 1
+}
+
+print_runtime_failure_logs() {
+    log_warning "Recent ${APP_SERVICE} logs (tail ${TAIL_LOG_LINES})"
+    compose_cmd logs --tail "$TAIL_LOG_LINES" "$APP_SERVICE" || true
+}
+
+wait_for_runtime_ready() {
+    local app_port="$1"
+    log_info "Waiting for runtime readiness (max ${RESTART_TIMEOUT_SECONDS} seconds)..."
+
+    local elapsed=0
+    while [[ "$elapsed" -lt "$RESTART_TIMEOUT_SECONDS" ]]; do
+        if runtime_ready "$app_port"; then
+            log_success "Runtime probes passed"
+            return 0
+        fi
+
+        local app_container_id
+        local state="missing"
+        local health="missing"
+        app_container_id=$(service_container_id "$APP_SERVICE")
+        if [[ -n "$app_container_id" ]]; then
+            state=$(container_state_from_id "$app_container_id")
+            health=$(container_health_from_id "$app_container_id")
+        fi
+
+        log_info "Probe attempt ${elapsed}s/${RESTART_TIMEOUT_SECONDS}s: app state=${state:-unknown}, health=${health:-unknown}"
+        sleep 5
+        elapsed=$((elapsed + 5))
+    done
+
+    log_warning "Runtime did not become ready within ${RESTART_TIMEOUT_SECONDS} seconds"
+    return 1
+}
+
+restart_runtime() {
+    local app_port="$1"
+
+    log_info "Restarting existing deployment"
+    if ! compose_cmd restart; then
+        log_warning "docker compose restart failed; falling back to docker compose up -d"
+        compose_cmd up -d
+    fi
+
+    if wait_for_runtime_ready "$app_port"; then
+        print_runtime_probe "$app_port" || true
+        return 0
+    fi
+
+    print_runtime_probe "$app_port" || true
+    print_runtime_failure_logs
+    return 1
+}
+
+run_runtime_mode() {
+    resolve_runtime_paths
+
+    if [[ ! -d "$DEPLOY_DIR" ]]; then
+        log_error "Deployment directory does not exist: $DEPLOY_DIR"
+        exit 1
+    fi
+
+    if [[ ! -f "$COMPOSE_FILE" ]]; then
+        log_error "Compose file does not exist: $COMPOSE_FILE"
+        exit 1
+    fi
+
+    local app_port
+    app_port=$(get_runtime_app_port)
+
+    if [[ "$PROBE_ONLY" == true ]]; then
+        log_info "=== PROBE MODE ==="
+        print_runtime_probe "$app_port"
+        return $?
+    fi
+
+    log_info "=== RESTART MODE ==="
+    print_runtime_probe "$app_port" || true
+    restart_runtime "$app_port"
 }
 
 create_deployment_dir() {
@@ -692,49 +1122,26 @@ EOF
 
 start_services() {
     log_info "Starting Docker services..."
-    
-    cd "$DEPLOY_DIR"
-    
-    if docker compose version &> /dev/null; then
-        docker compose pull
-        docker compose up -d
-    else
-        docker-compose pull
-        docker-compose up -d
-    fi
-    
+
+    compose_cmd pull
+    compose_cmd up -d
+
     log_success "Docker services started"
 }
 
 wait_for_health() {
-    log_info "Waiting for services to become healthy (max 60 seconds)..."
-    
-    cd "$DEPLOY_DIR"
-    
-    local max_attempts=12
-    local attempt=0
-    
-    while [ $attempt -lt $max_attempts ]; do
-        attempt=$((attempt + 1))
-        
-        local postgres_health=$(docker inspect --format='{{.State.Health.Status}}' "claude-code-hub-db-${SUFFIX}" 2>/dev/null || echo "unknown")
-        local redis_health=$(docker inspect --format='{{.State.Health.Status}}' "claude-code-hub-redis-${SUFFIX}" 2>/dev/null || echo "unknown")
-        local app_health=$(docker inspect --format='{{.State.Health.Status}}' "claude-code-hub-app-${SUFFIX}" 2>/dev/null || echo "unknown")
-        
-        log_info "Health status - Postgres: $postgres_health, Redis: $redis_health, App: $app_health"
-        
-        if [[ "$postgres_health" == "healthy" ]] && [[ "$redis_health" == "healthy" ]] && [[ "$app_health" == "healthy" ]]; then
-            log_success "All services are healthy!"
-            return 0
-        fi
-        
-        if [ $attempt -lt $max_attempts ]; then
-            sleep 5
-        fi
-    done
-    
-    log_warning "Services did not become healthy within 60 seconds"
-    log_info "You can check the logs with: cd $DEPLOY_DIR && docker compose logs -f"
+    local app_port
+    app_port=$(get_runtime_app_port)
+
+    if wait_for_runtime_ready "$app_port"; then
+        print_runtime_probe "$app_port" || true
+        return 0
+    fi
+
+    print_runtime_probe "$app_port" || true
+    print_runtime_failure_logs
+    log_warning "Services did not become healthy within ${RESTART_TIMEOUT_SECONDS} seconds"
+    log_info "You can check the logs with: $(compose_command_hint)logs -f"
     return 1
 }
 
@@ -822,9 +1229,11 @@ print_success_message() {
     fi
     echo ""
     echo -e "${BLUE}Useful Commands:${NC}"
-    echo -e "   View logs:    ${YELLOW}cd $DEPLOY_DIR && docker compose logs -f${NC}"
-    echo -e "   Stop services: ${YELLOW}cd $DEPLOY_DIR && docker compose down${NC}"
-    echo -e "   Restart:      ${YELLOW}cd $DEPLOY_DIR && docker compose restart${NC}"
+    local compose_hint
+    compose_hint=$(compose_command_hint)
+    echo -e "   View logs:    ${YELLOW}${compose_hint}logs -f${NC}"
+    echo -e "   Stop services: ${YELLOW}${compose_hint}down${NC}"
+    echo -e "   Restart:      ${YELLOW}${compose_hint}restart${NC}"
 
     if [[ "$ENABLE_CADDY" == true ]]; then
         echo ""
@@ -867,6 +1276,11 @@ main() {
             exit 1
         fi
     fi
+
+    if [[ "$RESTART_MODE" == true || "$PROBE_ONLY" == true ]]; then
+        run_runtime_mode
+        exit $?
+    fi
     
     select_branch
 
@@ -887,6 +1301,9 @@ main() {
     write_compose_file
     write_caddyfile
     write_env_file
+
+    COMPOSE_FILE="$DEPLOY_DIR/docker-compose.yaml"
+    ENV_FILE="$DEPLOY_DIR/.env"
     
     start_services
     
@@ -898,7 +1315,7 @@ main() {
         else
             log_warning "Deployment completed but some services may not be fully healthy yet"
         fi
-        log_info "Please check the logs: cd $DEPLOY_DIR && docker compose logs -f"
+        log_info "Please check the logs: $(compose_command_hint)logs -f"
         print_success_message
     fi
 }

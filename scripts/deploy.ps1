@@ -18,6 +18,22 @@ param(
     
     [Alias("d")]
     [string]$DeployDir = "",
+
+    [string]$ComposeFile = "",
+
+    [string]$EnvFile = "",
+
+    [string]$AppService = "app",
+
+    [switch]$Restart,
+
+    [switch]$ProbeOnly,
+
+    [ValidateRange(5, 3600)]
+    [int]$RestartTimeout = 90,
+
+    [ValidateRange(1, 10000)]
+    [int]$TailLogLines = 80,
     
     [string]$Domain = "",
     
@@ -33,7 +49,7 @@ param(
 )
 
 # Script version
-$VERSION = "1.1.0"
+$VERSION = "1.2.0"
 
 # Global variables
 $script:SUFFIX = ""
@@ -47,6 +63,13 @@ $script:ENABLE_CADDY = $false
 $script:DOMAIN_ARG = ""
 $script:UPDATE_MODE = $false
 $script:FORCE_NEW = $false
+$script:RESTART_MODE = $false
+$script:PROBE_ONLY = $false
+$script:COMPOSE_FILE = ""
+$script:ENV_FILE = ""
+$script:APP_SERVICE = "app"
+$script:RESTART_TIMEOUT_SECONDS = 90
+$script:TAIL_LOG_LINES = 80
 
 function Show-Help {
     $helpText = @"
@@ -59,6 +82,13 @@ Options:
   -Port, -p <port>           App external port (default: 23000)
   -AdminToken, -t <token>    Custom admin token (default: auto-generated)
   -DeployDir, -d <path>      Custom deployment directory
+  -ComposeFile <path>        Existing compose file used by -Restart/-ProbeOnly
+  -EnvFile <path>            Existing env file used by -Restart/-ProbeOnly
+  -AppService <name>         App service name for probes (default: app)
+  -Restart                   Restart an existing deployment and run probes
+  -ProbeOnly                 Only run deployment probes; do not change containers
+  -RestartTimeout <seconds>  Probe timeout for -Restart/-ProbeOnly (default: 90)
+  -TailLogLines <count>      Lines of logs to show on probe failure (default: 80)
   -Domain <domain>           Domain for Caddy HTTPS (enables Caddy automatically)
   -EnableCaddy               Enable Caddy reverse proxy without HTTPS (HTTP only)
   -ForceNew                  Force fresh installation (ignore existing deployment)
@@ -74,6 +104,8 @@ Examples:
   .\deploy.ps1 -EnableCaddy -Yes                  # Deploy with Caddy HTTP-only
   .\deploy.ps1 -Yes                               # Update existing deployment (auto-detected)
   .\deploy.ps1 -ForceNew -Yes                     # Force fresh install even if deployment exists
+  .\deploy.ps1 -Restart -DeployDir C:\claude-code-hub -Yes
+  .\deploy.ps1 -ProbeOnly -ComposeFile C:\claude-code-hub\docker-compose.yaml
 
 For more information, visit: https://github.com/ding113/claude-code-hub
 "@
@@ -81,6 +113,11 @@ For more information, visit: https://github.com/ding113/claude-code-hub
 }
 
 function Initialize-Parameters {
+    if ($Restart -and $ProbeOnly) {
+        Write-ColorOutput "-Restart and -ProbeOnly cannot be used together" -Type Error
+        exit 1
+    }
+
     # Apply CLI parameters
     if ($Branch) {
         if ($Branch -eq "main") {
@@ -107,6 +144,29 @@ function Initialize-Parameters {
     if ($DeployDir) {
         $script:DEPLOY_DIR = $DeployDir
     }
+
+    if ($ComposeFile) {
+        $script:COMPOSE_FILE = $ComposeFile
+    }
+
+    if ($EnvFile) {
+        $script:ENV_FILE = $EnvFile
+    }
+
+    if ($AppService) {
+        $script:APP_SERVICE = $AppService
+    }
+
+    if ($Restart) {
+        $script:RESTART_MODE = $true
+    }
+
+    if ($ProbeOnly) {
+        $script:PROBE_ONLY = $true
+    }
+
+    $script:RESTART_TIMEOUT_SECONDS = $RestartTimeout
+    $script:TAIL_LOG_LINES = $TailLogLines
     
     if ($Domain) {
         # Validate domain format
@@ -335,6 +395,469 @@ function Import-ExistingEnv {
             $script:APP_PORT = ($portLine.Line -split '=', 2)[1]
         }
     }
+}
+
+function Resolve-RuntimePaths {
+    if (-not $script:COMPOSE_FILE) {
+        $archboxCompose = Join-Path $script:DEPLOY_DIR "docker-compose.archbox.yaml"
+        $defaultCompose = Join-Path $script:DEPLOY_DIR "docker-compose.yaml"
+
+        if (Test-Path $archboxCompose) {
+            $script:COMPOSE_FILE = $archboxCompose
+        }
+        elseif (Test-Path $defaultCompose) {
+            $script:COMPOSE_FILE = $defaultCompose
+        }
+        else {
+            $script:COMPOSE_FILE = $defaultCompose
+        }
+    }
+
+    if (-not $script:ENV_FILE) {
+        $script:ENV_FILE = Join-Path $script:DEPLOY_DIR ".env"
+    }
+}
+
+function Get-ComposeArgs {
+    param(
+        [string[]]$Arguments
+    )
+
+    $composeArgs = @("compose", "-f", $script:COMPOSE_FILE)
+    if ($script:ENV_FILE -and (Test-Path $script:ENV_FILE)) {
+        $composeArgs += @("--env-file", $script:ENV_FILE)
+    }
+    if ($Arguments) {
+        $composeArgs += $Arguments
+    }
+    return ,$composeArgs
+}
+
+function Invoke-Compose {
+    param(
+        [string[]]$Arguments
+    )
+
+    Push-Location $script:DEPLOY_DIR
+    try {
+        & docker @(Get-ComposeArgs -Arguments $Arguments)
+    }
+    finally {
+        Pop-Location
+    }
+}
+
+function Get-ComposeCommandHint {
+    $parts = @("cd `"$($script:DEPLOY_DIR)`"", "docker compose")
+
+    if ($script:COMPOSE_FILE -and $script:COMPOSE_FILE -ne (Join-Path $script:DEPLOY_DIR "docker-compose.yaml")) {
+        $parts += "-f `"$($script:COMPOSE_FILE)`""
+    }
+
+    if ($script:ENV_FILE -and $script:ENV_FILE -ne (Join-Path $script:DEPLOY_DIR ".env")) {
+        $parts += "--env-file `"$($script:ENV_FILE)`""
+    }
+
+    return (($parts -join " ") + " ")
+}
+
+function Get-EnvValue {
+    param(
+        [string]$Key,
+        [string]$DefaultValue = ""
+    )
+
+    if ($script:ENV_FILE -and (Test-Path $script:ENV_FILE)) {
+        $line = Select-String -Path $script:ENV_FILE -Pattern "^$Key=" | Select-Object -Last 1
+        if ($line) {
+            return ($line.Line -split '=', 2)[1]
+        }
+    }
+
+    return $DefaultValue
+}
+
+function Get-RuntimeAppPort {
+    return (Get-EnvValue -Key "APP_PORT" -DefaultValue $script:APP_PORT)
+}
+
+function Get-RuntimeServices {
+    try {
+        $services = Invoke-Compose -Arguments @("config", "--services") 2>$null
+        $serviceList = @($services | Where-Object { $_ -and $_.Trim() })
+        if ($serviceList.Count -gt 0) {
+            return $serviceList
+        }
+    }
+    catch {
+    }
+
+    return @("postgres", "redis", $script:APP_SERVICE)
+}
+
+function Get-ServiceContainerId {
+    param(
+        [string]$ServiceName
+    )
+
+    try {
+        $containerId = Invoke-Compose -Arguments @("ps", "-q", $ServiceName) 2>$null | Select-Object -First 1
+        if ($containerId) {
+            return $containerId.Trim()
+        }
+    }
+    catch {
+    }
+
+    return $null
+}
+
+function Get-ContainerName {
+    param(
+        [string]$ContainerId
+    )
+
+    if (-not $ContainerId) {
+        return $null
+    }
+
+    $containerName = (& docker inspect --format='{{.Name}}' $ContainerId 2>$null)
+    if ($LASTEXITCODE -ne 0 -or -not $containerName) {
+        return $null
+    }
+
+    return $containerName.Trim().TrimStart('/')
+}
+
+function Get-ContainerState {
+    param(
+        [string]$ContainerId
+    )
+
+    if (-not $ContainerId) {
+        return $null
+    }
+
+    $containerState = (& docker inspect --format='{{.State.Status}}' $ContainerId 2>$null)
+    if ($LASTEXITCODE -ne 0 -or -not $containerState) {
+        return $null
+    }
+
+    return $containerState.Trim()
+}
+
+function Get-ContainerHealth {
+    param(
+        [string]$ContainerId
+    )
+
+    if (-not $ContainerId) {
+        return $null
+    }
+
+    $containerHealth = (& docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}none{{end}}' $ContainerId 2>$null)
+    if ($LASTEXITCODE -ne 0 -or -not $containerHealth) {
+        return $null
+    }
+
+    return $containerHealth.Trim()
+}
+
+function Get-ContainerPorts {
+    param(
+        [string]$ContainerId
+    )
+
+    if (-not $ContainerId) {
+        return "none"
+    }
+
+    $ports = @(& docker port $ContainerId 2>$null)
+    if ($LASTEXITCODE -ne 0 -or -not $ports -or $ports.Count -eq 0) {
+        return "none"
+    }
+
+    return ($ports | Where-Object { $_ -and $_.Trim() } | ForEach-Object { $_.Trim() }) -join ", "
+}
+
+function Test-HostHealthSilent {
+    param(
+        [string]$AppPort
+    )
+
+    $url = "http://127.0.0.1:$AppPort/api/actions/health"
+
+    try {
+        $response = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5
+        return ($response.StatusCode -eq 200)
+    }
+    catch {
+        return $false
+    }
+}
+
+function Test-ContainerHealthSilent {
+    param(
+        [string]$ContainerId,
+        [string]$AppPort
+    )
+
+    if (-not $ContainerId) {
+        return $false
+    }
+
+    & docker exec $ContainerId sh -lc "curl -fsS -m 5 http://127.0.0.1:$AppPort/api/actions/health >/dev/null" *> $null
+    return ($LASTEXITCODE -eq 0)
+}
+
+function Show-HostHealthProbe {
+    param(
+        [string]$AppPort
+    )
+
+    $url = "http://127.0.0.1:$AppPort/api/actions/health"
+
+    try {
+        $response = Invoke-WebRequest -UseBasicParsing -Uri $url -TimeoutSec 5
+        if ($response.StatusCode -eq 200) {
+            Write-ColorOutput "Host health probe: $url -> 200" -Type Success
+            return $true
+        }
+
+        Write-ColorOutput "Host health probe: $url -> HTTP $($response.StatusCode)" -Type Warning
+        return $false
+    }
+    catch {
+        $message = $_.Exception.Message
+        if (-not $message) {
+            $message = "request failed"
+        }
+        Write-ColorOutput "Host health probe: $url -> $message" -Type Warning
+        return $false
+    }
+}
+
+function Show-ContainerHealthProbe {
+    param(
+        [string]$ContainerId,
+        [string]$ContainerName,
+        [string]$AppPort
+    )
+
+    if (-not $ContainerId) {
+        Write-ColorOutput "Container health probe: $ContainerName -> missing container" -Type Warning
+        return $false
+    }
+
+    $probeOutput = (& docker exec $ContainerId sh -lc "curl -sS -m 5 http://127.0.0.1:$AppPort/api/actions/health" 2>&1 | Out-String).Trim()
+    if ($LASTEXITCODE -eq 0 -and $probeOutput -like '*"status":"ok"*') {
+        Write-ColorOutput "Container health probe: $ContainerName -> ok" -Type Success
+        return $true
+    }
+
+    if (-not $probeOutput) {
+        $probeOutput = "probe returned no output"
+    }
+
+    if ($probeOutput.Length -gt 160) {
+        $probeOutput = $probeOutput.Substring(0, 160)
+    }
+
+    Write-ColorOutput "Container health probe: $ContainerName -> $probeOutput" -Type Warning
+    return $false
+}
+
+function Show-RuntimeProbe {
+    param(
+        [string]$AppPort
+    )
+
+    $ready = $false
+
+    Write-Host ""
+    Write-ColorOutput "Runtime probe summary" -Type Info
+    Write-Host "  deploy_dir: $($script:DEPLOY_DIR)"
+    Write-Host "  compose_file: $($script:COMPOSE_FILE)"
+    Write-Host "  env_file: $($script:ENV_FILE)"
+    Write-Host "  app_service: $($script:APP_SERVICE)"
+    Write-Host "  app_port: $AppPort"
+    Write-Host ""
+
+    Write-ColorOutput "docker compose ps" -Type Info
+    try {
+        Invoke-Compose -Arguments @("ps")
+    }
+    catch {
+    }
+    Write-Host ""
+
+    foreach ($serviceName in (Get-RuntimeServices)) {
+        if (-not $serviceName) {
+            continue
+        }
+
+        $containerId = Get-ServiceContainerId -ServiceName $serviceName
+        if (-not $containerId) {
+            Write-ColorOutput "service=$serviceName container=missing" -Type Warning
+            continue
+        }
+
+        $containerName = Get-ContainerName -ContainerId $containerId
+        $containerState = Get-ContainerState -ContainerId $containerId
+        $containerHealth = Get-ContainerHealth -ContainerId $containerId
+        $containerPorts = Get-ContainerPorts -ContainerId $containerId
+
+        Write-Host "  service=$serviceName container=$containerName state=$containerState health=$containerHealth ports=$containerPorts"
+
+        if ($serviceName -eq $script:APP_SERVICE -and $containerHealth -eq "healthy") {
+            $ready = $true
+        }
+    }
+    Write-Host ""
+
+    if (Show-HostHealthProbe -AppPort $AppPort) {
+        $ready = $true
+    }
+
+    $appContainerId = Get-ServiceContainerId -ServiceName $script:APP_SERVICE
+    if ($appContainerId) {
+        $appContainerName = Get-ContainerName -ContainerId $appContainerId
+        if (Show-ContainerHealthProbe -ContainerId $appContainerId -ContainerName $appContainerName -AppPort $AppPort) {
+            $ready = $true
+        }
+    }
+    else {
+        Write-ColorOutput "App service container is missing; skipping container health probe" -Type Warning
+    }
+
+    return $ready
+}
+
+function Test-RuntimeReady {
+    param(
+        [string]$AppPort
+    )
+
+    $appContainerId = Get-ServiceContainerId -ServiceName $script:APP_SERVICE
+    if (-not $appContainerId) {
+        return $false
+    }
+
+    $containerHealth = Get-ContainerHealth -ContainerId $appContainerId
+    if ($containerHealth -eq "healthy") {
+        return $true
+    }
+
+    if (Test-ContainerHealthSilent -ContainerId $appContainerId -AppPort $AppPort) {
+        return $true
+    }
+
+    if (Test-HostHealthSilent -AppPort $AppPort) {
+        return $true
+    }
+
+    return $false
+}
+
+function Show-RuntimeFailureLogs {
+    Write-ColorOutput "Recent $($script:APP_SERVICE) logs (tail $($script:TAIL_LOG_LINES))" -Type Warning
+    try {
+        Invoke-Compose -Arguments @("logs", "--tail", $script:TAIL_LOG_LINES.ToString(), $script:APP_SERVICE)
+    }
+    catch {
+    }
+}
+
+function Wait-ForRuntimeReady {
+    param(
+        [string]$AppPort
+    )
+
+    Write-ColorOutput "Waiting for runtime readiness (max $($script:RESTART_TIMEOUT_SECONDS) seconds)..." -Type Info
+
+    $elapsed = 0
+    while ($elapsed -lt $script:RESTART_TIMEOUT_SECONDS) {
+        if (Test-RuntimeReady -AppPort $AppPort) {
+            Write-ColorOutput "Runtime probes passed" -Type Success
+            return $true
+        }
+
+        $appContainerId = Get-ServiceContainerId -ServiceName $script:APP_SERVICE
+        $state = "missing"
+        $health = "missing"
+        if ($appContainerId) {
+            $state = Get-ContainerState -ContainerId $appContainerId
+            $health = Get-ContainerHealth -ContainerId $appContainerId
+        }
+
+        Write-ColorOutput "Probe attempt ${elapsed}s/$($script:RESTART_TIMEOUT_SECONDS)s: app state=$state, health=$health" -Type Info
+        Start-Sleep -Seconds 5
+        $elapsed += 5
+    }
+
+    Write-ColorOutput "Runtime did not become ready within $($script:RESTART_TIMEOUT_SECONDS) seconds" -Type Warning
+    return $false
+}
+
+function Restart-Runtime {
+    param(
+        [string]$AppPort
+    )
+
+    Write-ColorOutput "Restarting existing deployment" -Type Info
+
+    $restartSucceeded = $true
+    try {
+        Invoke-Compose -Arguments @("restart")
+        if ($LASTEXITCODE -ne 0) {
+            $restartSucceeded = $false
+        }
+    }
+    catch {
+        $restartSucceeded = $false
+    }
+
+    if (-not $restartSucceeded) {
+        Write-ColorOutput "docker compose restart failed; falling back to docker compose up -d" -Type Warning
+        Invoke-Compose -Arguments @("up", "-d")
+        if ($LASTEXITCODE -ne 0) {
+            throw "Failed to restart deployment"
+        }
+    }
+
+    if (Wait-ForRuntimeReady -AppPort $AppPort) {
+        [void](Show-RuntimeProbe -AppPort $AppPort)
+        return $true
+    }
+
+    [void](Show-RuntimeProbe -AppPort $AppPort)
+    Show-RuntimeFailureLogs
+    return $false
+}
+
+function Invoke-RuntimeMode {
+    Resolve-RuntimePaths
+
+    if (-not (Test-Path $script:DEPLOY_DIR)) {
+        Write-ColorOutput "Deployment directory does not exist: $($script:DEPLOY_DIR)" -Type Error
+        return $false
+    }
+
+    if (-not (Test-Path $script:COMPOSE_FILE)) {
+        Write-ColorOutput "Compose file does not exist: $($script:COMPOSE_FILE)" -Type Error
+        return $false
+    }
+
+    $appPort = Get-RuntimeAppPort
+
+    if ($script:PROBE_ONLY) {
+        Write-ColorOutput "=== PROBE MODE ===" -Type Info
+        return (Show-RuntimeProbe -AppPort $appPort)
+    }
+
+    Write-ColorOutput "=== RESTART MODE ===" -Type Info
+    [void](Show-RuntimeProbe -AppPort $appPort)
+    return (Restart-Runtime -AppPort $appPort)
 }
 
 function New-DeploymentDirectory {
@@ -642,68 +1165,36 @@ function Start-Services {
     Write-ColorOutput "Starting Docker services..." -Type Info
     
     try {
-        Push-Location $DEPLOY_DIR
-        
-        docker compose pull
+        Invoke-Compose -Arguments @("pull")
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to pull Docker images"
         }
         
-        docker compose up -d
+        Invoke-Compose -Arguments @("up", "-d")
         if ($LASTEXITCODE -ne 0) {
             throw "Failed to start services"
         }
-        
-        Pop-Location
+
         Write-ColorOutput "Docker services started" -Type Success
     }
     catch {
-        Pop-Location
         Write-ColorOutput "Failed to start services: $_" -Type Error
         exit 1
     }
 }
 
 function Wait-ForHealth {
-    Write-ColorOutput "Waiting for services to become healthy (max 60 seconds)..." -Type Info
-    
-    $maxAttempts = 12
-    $attempt = 0
-    
-    Push-Location $DEPLOY_DIR
-    
-    while ($attempt -lt $maxAttempts) {
-        $attempt++
-        
-        try {
-            $postgresHealth = (docker inspect --format='{{.State.Health.Status}}' "claude-code-hub-db-$SUFFIX" 2>$null)
-            $redisHealth = (docker inspect --format='{{.State.Health.Status}}' "claude-code-hub-redis-$SUFFIX" 2>$null)
-            $appHealth = (docker inspect --format='{{.State.Health.Status}}' "claude-code-hub-app-$SUFFIX" 2>$null)
-            
-            if (-not $postgresHealth) { $postgresHealth = "unknown" }
-            if (-not $redisHealth) { $redisHealth = "unknown" }
-            if (-not $appHealth) { $appHealth = "unknown" }
-            
-            Write-ColorOutput "Health status - Postgres: $postgresHealth, Redis: $redisHealth, App: $appHealth" -Type Info
-            
-            if ($postgresHealth -eq "healthy" -and $redisHealth -eq "healthy" -and $appHealth -eq "healthy") {
-                Pop-Location
-                Write-ColorOutput "All services are healthy!" -Type Success
-                return $true
-            }
-        }
-        catch {
-            # Continue waiting
-        }
-        
-        if ($attempt -lt $maxAttempts) {
-            Start-Sleep -Seconds 5
-        }
+    $appPort = Get-RuntimeAppPort
+
+    if (Wait-ForRuntimeReady -AppPort $appPort) {
+        [void](Show-RuntimeProbe -AppPort $appPort)
+        return $true
     }
-    
-    Pop-Location
-    Write-ColorOutput "Services did not become healthy within 60 seconds" -Type Warning
-    Write-ColorOutput "You can check the logs with: cd $DEPLOY_DIR; docker compose logs -f" -Type Info
+
+    [void](Show-RuntimeProbe -AppPort $appPort)
+    Show-RuntimeFailureLogs
+    Write-ColorOutput "Services did not become healthy within $($script:RESTART_TIMEOUT_SECONDS) seconds" -Type Warning
+    Write-ColorOutput "You can check the logs with: $(Get-ComposeCommandHint)logs -f" -Type Info
     return $false
 }
 
@@ -795,9 +1286,10 @@ function Show-SuccessMessage {
     Write-Host ""
     
     Write-Host "Useful Commands:" -ForegroundColor Blue
-    Write-Host "   View logs:     cd $DEPLOY_DIR; docker compose logs -f" -ForegroundColor Yellow
-    Write-Host "   Stop services: cd $DEPLOY_DIR; docker compose down" -ForegroundColor Yellow
-    Write-Host "   Restart:       cd $DEPLOY_DIR; docker compose restart" -ForegroundColor Yellow
+    $composeHint = Get-ComposeCommandHint
+    Write-Host "   View logs:     $($composeHint)logs -f" -ForegroundColor Yellow
+    Write-Host "   Stop services: $($composeHint)down" -ForegroundColor Yellow
+    Write-Host "   Restart:       $($composeHint)restart" -ForegroundColor Yellow
 
     if ($script:ENABLE_CADDY) {
         Write-Host ""
@@ -838,6 +1330,14 @@ function Main {
         Show-DockerInstallInstructions
         exit 1
     }
+
+    if ($script:RESTART_MODE -or $script:PROBE_ONLY) {
+        $runtimeOk = Invoke-RuntimeMode
+        if (-not $runtimeOk) {
+            exit 1
+        }
+        exit 0
+    }
     
     Select-Branch
 
@@ -859,6 +1359,9 @@ function Main {
     Write-ComposeFile
     Write-Caddyfile
     Write-EnvFile
+
+    $script:COMPOSE_FILE = Join-Path $script:DEPLOY_DIR "docker-compose.yaml"
+    $script:ENV_FILE = Join-Path $script:DEPLOY_DIR ".env"
     
     Start-Services
     
@@ -874,7 +1377,7 @@ function Main {
         else {
             Write-ColorOutput "Deployment completed but some services may not be fully healthy yet" -Type Warning
         }
-        Write-ColorOutput "Please check the logs: cd $DEPLOY_DIR; docker compose logs -f" -Type Info
+        Write-ColorOutput "Please check the logs: $(Get-ComposeCommandHint)logs -f" -Type Info
         Show-SuccessMessage
     }
 }
